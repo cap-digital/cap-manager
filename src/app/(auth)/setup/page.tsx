@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,20 +28,9 @@ export default function SetupPage() {
 
   const checkExistingAdmin = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('cap_manager_usuarios')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1)
-
-      if (error) {
-        // Tabela pode não existir ainda
-        console.log('Tabela não existe ou erro:', error.message)
-        setHasAdmin(false)
-      } else {
-        setHasAdmin(data && data.length > 0)
-      }
+      const response = await fetch('/api/setup')
+      const data = await response.json()
+      setHasAdmin(data.hasAdmin)
     } catch {
       setHasAdmin(false)
     } finally {
@@ -74,7 +62,6 @@ export default function SetupPage() {
     setIsLoading(true)
 
     try {
-      // Usar a API route para criar o admin
       const response = await fetch('/api/setup', {
         method: 'POST',
         headers: {
@@ -92,15 +79,12 @@ export default function SetupPage() {
       setSuccess(true)
       toast({
         title: 'Admin criado com sucesso!',
-        description: data.needsEmailConfirmation
-          ? 'Verifique seu e-mail para confirmar o cadastro.'
-          : 'Você já pode fazer login.',
+        description: 'Você já pode fazer login.',
       })
 
-      // Redirecionar após alguns segundos
       setTimeout(() => {
         router.push('/login')
-      }, 3000)
+      }, 2000)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({
@@ -157,7 +141,7 @@ export default function SetupPage() {
             </div>
             <CardTitle>Admin criado com sucesso!</CardTitle>
             <CardDescription>
-              Verifique seu e-mail para confirmar o cadastro. Você será redirecionado para o login em instantes...
+              Você será redirecionado para o login em instantes...
             </CardDescription>
           </CardHeader>
           <CardContent>

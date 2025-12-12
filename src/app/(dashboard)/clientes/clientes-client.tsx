@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Card,
   CardContent,
@@ -90,7 +88,6 @@ export function ClientesClient({
   })
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const filteredClientes = clientes.filter(
     cliente =>
@@ -134,38 +131,23 @@ export function ClientesClient({
     e.preventDefault()
     setIsLoading(true)
 
-    const payload = {
-      ...formData,
-      agencia_id: formData.agencia_id || null,
-      link_drive: formData.link_drive || null,
-      cnpj: formData.cnpj || null,
-      whatsapp: formData.whatsapp || null,
-    }
-
     try {
+      const response = await fetch('/api/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) throw new Error('Erro ao salvar cliente')
+
+      const data = await response.json()
+
       if (editingCliente) {
-        const { data, error } = await supabase
-          .from('cap_manager_clientes')
-          .update(payload)
-          .eq('id', editingCliente.id)
-          .select('*, agencia:cap_manager_agencias(*)')
-          .single()
-
-        if (error) throw error
-
         setClientes(prev =>
           prev.map(c => (c.id === editingCliente.id ? data : c))
         )
         toast({ title: 'Cliente atualizado com sucesso!' })
       } else {
-        const { data, error } = await supabase
-          .from('cap_manager_clientes')
-          .insert(payload)
-          .select('*, agencia:cap_manager_agencias(*)')
-          .single()
-
-        if (error) throw error
-
         setClientes(prev => [...prev, data])
         toast({ title: 'Cliente criado com sucesso!' })
       }
@@ -189,9 +171,11 @@ export function ClientesClient({
     if (!confirm('Tem certeza que deseja excluir este cliente?')) return
 
     try {
-      const { error } = await supabase.from('cap_manager_clientes').delete().eq('id', id)
+      const response = await fetch(`/api/clientes?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao excluir')
 
       setClientes(prev => prev.filter(c => c.id !== id))
       toast({ title: 'Cliente excluído com sucesso!' })

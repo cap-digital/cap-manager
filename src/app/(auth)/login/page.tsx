@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,12 +15,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [nome, setNome] = useState('')
   const [isChecking, setIsChecking] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   useEffect(() => {
     checkSetup()
@@ -28,19 +25,14 @@ export default function LoginPage() {
 
   const checkSetup = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cap_manager_usuarios')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1)
+      const response = await fetch('/api/setup')
+      const data = await response.json()
 
-      // Se não há admin, redirecionar para setup
-      if (!error && (!data || data.length === 0)) {
+      if (!data.hasAdmin) {
         router.push('/setup')
         return
       }
     } catch {
-      // Se a tabela não existe, redirecionar para setup
       router.push('/setup')
       return
     }
@@ -52,40 +44,27 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              nome,
-            },
-          },
-        })
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      })
 
-        if (error) throw error
-
+      if (result?.error) {
         toast({
-          title: 'Conta criada!',
-          description: 'Verifique seu e-mail para confirmar o cadastro.',
+          variant: 'destructive',
+          title: 'Erro ao entrar',
+          description: result.error,
         })
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-
-        if (error) throw error
-
         router.push('/')
         router.refresh()
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: errorMessage,
+        description: 'Ocorreu um erro ao fazer login',
       })
     } finally {
       setIsLoading(false)
@@ -118,30 +97,13 @@ export default function LoginPage() {
 
         <Card className="shadow-xl">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl">
-              {isSignUp ? 'Criar conta' : 'Entrar'}
-            </CardTitle>
+            <CardTitle className="text-2xl">Entrar</CardTitle>
             <CardDescription>
-              {isSignUp
-                ? 'Preencha os dados para criar sua conta'
-                : 'Entre com seu e-mail e senha'}
+              Entre com seu e-mail e senha
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome completo</Label>
-                  <Input
-                    id="nome"
-                    placeholder="Seu nome"
-                    value={nome}
-                    onChange={e => setNome(e.target.value)}
-                    required={isSignUp}
-                  />
-                </div>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
@@ -183,22 +145,9 @@ export default function LoginPage() {
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSignUp ? 'Criar conta' : 'Entrar'}
+                Entrar
               </Button>
             </form>
-
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">
-                {isSignUp ? 'Já tem uma conta?' : 'Não tem uma conta?'}
-              </span>{' '}
-              <Button
-                variant="link"
-                className="p-0 h-auto font-semibold"
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
-                {isSignUp ? 'Entrar' : 'Criar conta'}
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

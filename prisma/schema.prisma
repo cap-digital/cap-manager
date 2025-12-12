@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// CAP MANAGER - Schema do Banco de Dados
+// =============================================
+
+model Usuario {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  senha     String
+  nome      String
+  avatarUrl String?  @map("avatar_url")
+  role      Role     @default(trader)
+  whatsapp  String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relações
+  campanhasComoTrader Campanha[]  @relation("TraderCampanhas")
+  tarefas             Tarefa[]    @relation("ResponsavelTarefas")
+  followUps           FollowUp[]
+  alertas             Alerta[]
+
+  @@map("cap_manager_usuarios")
+}
+
+enum Role {
+  admin
+  trader
+  gestor
+  cliente
+}
+
+model Agencia {
+  id          String   @id @default(uuid())
+  nome        String
+  porcentagem Decimal  @default(0) @db.Decimal(5, 2)
+  local       String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relações
+  clientes Cliente[]
+
+  @@map("cap_manager_agencias")
+}
+
+model Cliente {
+  id             String         @id @default(uuid())
+  nome           String
+  agenciaId      String?        @map("agencia_id")
+  linkDrive      String?        @map("link_drive")
+  contato        String
+  cnpj           String?
+  email          String
+  diaCobranca    Int            @default(1) @map("dia_cobranca")
+  formaPagamento FormaPagamento @default(pix) @map("forma_pagamento")
+  whatsapp       String?
+  ativo          Boolean        @default(true)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Relações
+  agencia   Agencia?   @relation(fields: [agenciaId], references: [id], onDelete: SetNull)
+  campanhas Campanha[]
+  tarefas   Tarefa[]
+
+  @@map("cap_manager_clientes")
+}
+
+enum FormaPagamento {
+  pix
+  boleto
+  cartao
+  transferencia
+}
+
+model Campanha {
+  id                    String          @id @default(uuid())
+  clienteId             String          @map("cliente_id")
+  nome                  String
+  pi                    String?
+  porcentagemPlataforma Decimal         @default(0) @map("porcentagem_plataforma") @db.Decimal(5, 2)
+  porcentagemAgencia    Decimal         @default(0) @map("porcentagem_agencia") @db.Decimal(5, 2)
+  traderId              String?         @map("trader_id")
+  objetivo              ObjetivoCampanha
+  status                StatusCampanha  @default(rascunho)
+  idCampanhaPlataforma  String          @map("id_campanha_plataforma")
+  dataInicio            DateTime?       @map("data_inicio") @db.Date
+  dataFim               DateTime?       @map("data_fim") @db.Date
+  orcamento             Decimal?        @db.Decimal(12, 2)
+  nomenclaturaPadrao    String?         @map("nomenclatura_padrao")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  // Relações
+  cliente    Cliente     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  trader     Usuario?    @relation("TraderCampanhas", fields: [traderId], references: [id], onDelete: SetNull)
+  tarefas    Tarefa[]
+  followUps  FollowUp[]
+  utmConfigs UtmConfig[]
+
+  @@map("cap_manager_campanhas")
+}
+
+enum ObjetivoCampanha {
+  awareness
+  consideracao
+  conversao
+  leads
+  vendas
+  trafego
+  engajamento
+}
+
+enum StatusCampanha {
+  rascunho
+  ativa
+  pausada
+  finalizada
+  cancelada
+}
+
+model Tarefa {
+  id             String          @id @default(uuid())
+  titulo         String
+  descricao      String?         @db.Text
+  status         StatusTarefa    @default(backlog)
+  prioridade     PrioridadeTarefa @default(media)
+  campanhaId     String?         @map("campanha_id")
+  clienteId      String?         @map("cliente_id")
+  responsavelId  String?         @map("responsavel_id")
+  dataVencimento DateTime?       @map("data_vencimento") @db.Date
+  ordem          Int             @default(0)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  // Relações
+  campanha    Campanha? @relation(fields: [campanhaId], references: [id], onDelete: SetNull)
+  cliente     Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  responsavel Usuario?  @relation("ResponsavelTarefas", fields: [responsavelId], references: [id], onDelete: SetNull)
+
+  @@map("cap_manager_tarefas")
+}
+
+enum StatusTarefa {
+  backlog
+  todo
+  doing
+  review
+  done
+}
+
+enum PrioridadeTarefa {
+  baixa
+  media
+  alta
+  urgente
+}
+
+model FollowUp {
+  id         String       @id @default(uuid())
+  campanhaId String       @map("campanha_id")
+  traderId   String       @map("trader_id")
+  conteudo   String       @db.Text
+  tipo       TipoFollowUp @default(nota)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  // Relações
+  campanha Campanha @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  trader   Usuario  @relation(fields: [traderId], references: [id], onDelete: Cascade)
+
+  @@map("cap_manager_follow_ups")
+}
+
+enum TipoFollowUp {
+  nota
+  alerta
+  atualizacao
+  reuniao
+}
+
+model UtmConfig {
+  id          String   @id @default(uuid())
+  campanhaId  String?  @map("campanha_id")
+  utmSource   String   @map("utm_source")
+  utmMedium   String   @map("utm_medium")
+  utmCampaign String   @map("utm_campaign")
+  utmTerm     String?  @map("utm_term")
+  utmContent  String?  @map("utm_content")
+  urlDestino  String   @map("url_destino")
+  urlGerada   String   @map("url_gerada") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relações
+  campanha Campanha? @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+
+  @@map("cap_manager_utm_configs")
+}
+
+model Alerta {
+  id                String      @id @default(uuid())
+  tipo              TipoAlerta
+  titulo            String
+  mensagem          String      @db.Text
+  destinatarioId    String      @map("destinatario_id")
+  lido              Boolean     @default(false)
+  enviadoWhatsapp   Boolean     @default(false) @map("enviado_whatsapp")
+  dataEnvioWhatsapp DateTime?   @map("data_envio_whatsapp")
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  // Relações
+  destinatario Usuario @relation(fields: [destinatarioId], references: [id], onDelete: Cascade)
+
+  @@map("cap_manager_alertas")
+}
+
+enum TipoAlerta {
+  cobranca
+  campanha
+  tarefa
+  sistema
+}
