@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -56,11 +55,29 @@ import {
 import type { Campanha, CampanhaStatus, CampanhaObjetivo } from '@/types'
 import { formatCurrency, formatDate, generateNomenclatura } from '@/lib/utils'
 
+interface SimplifiedCampanha {
+  id: string
+  cliente_id: string
+  nome: string
+  pi: string | null
+  porcentagem_plataforma: number
+  porcentagem_agencia: number
+  trader_id: string | null
+  objetivo: CampanhaObjetivo
+  status: CampanhaStatus
+  id_campanha_plataforma: string | null
+  data_inicio: string | null
+  data_fim: string | null
+  orcamento: number | null
+  nomenclatura_padrao: string | null
+  created_at: string
+  updated_at: string
+  cliente: { id: string; nome: string } | null
+  trader: { id: string; nome: string } | null
+}
+
 interface CampanhasClientProps {
-  campanhas: (Campanha & {
-    cliente: { id: string; nome: string } | null
-    trader: { id: string; nome: string } | null
-  })[]
+  campanhas: SimplifiedCampanha[]
   clientes: { id: string; nome: string }[]
   traders: { id: string; nome: string }[]
 }
@@ -92,7 +109,7 @@ export function CampanhasClient({
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [isOpen, setIsOpen] = useState(false)
-  const [editingCampanha, setEditingCampanha] = useState<Campanha | null>(null)
+  const [editingCampanha, setEditingCampanha] = useState<SimplifiedCampanha | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     cliente_id: '',
@@ -110,13 +127,12 @@ export function CampanhasClient({
   })
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const filteredCampanhas = campanhas.filter(campanha => {
     const matchesSearch =
       campanha.nome.toLowerCase().includes(search.toLowerCase()) ||
       campanha.cliente?.nome.toLowerCase().includes(search.toLowerCase()) ||
-      campanha.id_campanha_plataforma.toLowerCase().includes(search.toLowerCase())
+      (campanha.id_campanha_plataforma || '').toLowerCase().includes(search.toLowerCase())
 
     const matchesStatus =
       statusFilter === 'all' || campanha.status === statusFilter
@@ -142,7 +158,7 @@ export function CampanhasClient({
     setEditingCampanha(null)
   }
 
-  const openEditDialog = (campanha: Campanha) => {
+  const openEditDialog = (campanha: SimplifiedCampanha) => {
     setEditingCampanha(campanha)
     setFormData({
       cliente_id: campanha.cliente_id,
@@ -153,7 +169,7 @@ export function CampanhasClient({
       trader_id: campanha.trader_id || '',
       objetivo: campanha.objetivo,
       status: campanha.status,
-      id_campanha_plataforma: campanha.id_campanha_plataforma,
+      id_campanha_plataforma: campanha.id_campanha_plataforma || '',
       data_inicio: campanha.data_inicio || '',
       data_fim: campanha.data_fim || '',
       orcamento: campanha.orcamento?.toString() || '',
@@ -198,29 +214,24 @@ export function CampanhasClient({
 
     try {
       if (editingCampanha) {
-        const { data, error } = await supabase
-          .from('cap_manager_campanhas')
-          .update(payload)
-          .eq('id', editingCampanha.id)
-          .select('*, cliente:cap_manager_clientes(id, nome), trader:cap_manager_usuarios(id, nome)')
-          .single()
+        const response = await fetch(`/api/campanhas?id=${editingCampanha.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
 
-        if (error) throw error
+        if (!response.ok) throw new Error('Erro ao atualizar campanha')
 
-        setCampanhas(prev =>
-          prev.map(c => (c.id === editingCampanha.id ? data : c))
-        )
         toast({ title: 'Campanha atualizada com sucesso!' })
       } else {
-        const { data, error } = await supabase
-          .from('cap_manager_campanhas')
-          .insert(payload)
-          .select('*, cliente:cap_manager_clientes(id, nome), trader:cap_manager_usuarios(id, nome)')
-          .single()
+        const response = await fetch('/api/campanhas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
 
-        if (error) throw error
+        if (!response.ok) throw new Error('Erro ao criar campanha')
 
-        setCampanhas(prev => [data, ...prev])
         toast({ title: 'Campanha criada com sucesso!' })
       }
 
@@ -243,9 +254,11 @@ export function CampanhasClient({
     if (!confirm('Tem certeza que deseja excluir esta campanha?')) return
 
     try {
-      const { error } = await supabase.from('cap_manager_campanhas').delete().eq('id', id)
+      const response = await fetch(`/api/campanhas?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao excluir campanha')
 
       setCampanhas(prev => prev.filter(c => c.id !== id))
       toast({ title: 'Campanha excluída com sucesso!' })

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -98,7 +97,6 @@ export function FollowUpClient({
   })
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const filteredFollowUps = followUps.filter(followUp => {
     const matchesSearch =
@@ -139,22 +137,19 @@ export function FollowUpClient({
     }
 
     try {
-      const { data, error } = await supabase
-        .from('cap_manager_follow_ups')
-        .insert({
+      const response = await fetch('/api/follow-ups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           campanha_id: formData.campanha_id,
           trader_id: currentUser.id,
           conteudo: formData.conteudo,
           tipo: formData.tipo,
-        })
-        .select(
-          '*, campanha:cap_manager_campanhas(id, nome, cliente:cap_manager_clientes(nome)), trader:cap_manager_usuarios(id, nome)'
-        )
-        .single()
+        }),
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao criar follow-up')
 
-      setFollowUps(prev => [data, ...prev])
       toast({ title: 'Follow-up adicionado!' })
       setIsOpen(false)
       resetForm()

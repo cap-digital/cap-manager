@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -59,7 +58,6 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
   })
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const filteredAgencias = agencias.filter(
     agencia =>
@@ -88,29 +86,37 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
 
     try {
       if (editingAgencia) {
-        const { data, error } = await supabase
-          .from('cap_manager_agencias')
-          .update(formData)
-          .eq('id', editingAgencia.id)
-          .select()
-          .single()
+        const response = await fetch(`/api/agencias?id=${editingAgencia.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
 
-        if (error) throw error
+        if (!response.ok) throw new Error('Erro ao atualizar agência')
 
+        const data = await response.json()
         setAgencias(prev =>
-          prev.map(a => (a.id === editingAgencia.id ? data : a))
+          prev.map(a => (a.id === editingAgencia.id ? { ...a, ...formData } : a))
         )
         toast({ title: 'Agência atualizada com sucesso!' })
       } else {
-        const { data, error } = await supabase
-          .from('cap_manager_agencias')
-          .insert(formData)
-          .select()
-          .single()
+        const response = await fetch('/api/agencias', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
 
-        if (error) throw error
+        if (!response.ok) throw new Error('Erro ao criar agência')
 
-        setAgencias(prev => [...prev, data])
+        const data = await response.json()
+        setAgencias(prev => [...prev, {
+          id: data.id,
+          nome: data.nome,
+          porcentagem: Number(data.porcentagem),
+          local: data.local,
+          created_at: data.createdAt,
+          updated_at: data.updatedAt,
+        }])
         toast({ title: 'Agência criada com sucesso!' })
       }
 
@@ -133,9 +139,11 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
     if (!confirm('Tem certeza que deseja excluir esta agência?')) return
 
     try {
-      const { error } = await supabase.from('cap_manager_agencias').delete().eq('id', id)
+      const response = await fetch(`/api/agencias?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao excluir agência')
 
       setAgencias(prev => prev.filter(a => a.id !== id))
       toast({ title: 'Agência excluída com sucesso!' })

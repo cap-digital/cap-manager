@@ -49,3 +49,60 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
+    }
+
+    const data = await request.json()
+
+    const agencia = await prisma.agencia.update({
+      where: { id },
+      data: {
+        nome: data.nome,
+        porcentagem: data.porcentagem || 0,
+        local: data.local,
+      },
+    })
+
+    return NextResponse.json(agencia)
+  } catch (error) {
+    console.error('Erro ao atualizar agência:', error)
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
+    }
+
+    await prisma.agencia.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Erro ao excluir agência:', error)
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  }
+}

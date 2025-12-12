@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -94,7 +93,6 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
   const [generatedUrl, setGeneratedUrl] = useState('')
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const handleGenerateUTM = () => {
     if (!formData.url_destino || !formData.utm_source || !formData.utm_medium || !formData.utm_campaign) {
@@ -148,15 +146,14 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
         url_gerada: generatedUrl,
       }
 
-      const { data, error } = await supabase
-        .from('cap_manager_utm_configs')
-        .insert(payload)
-        .select('*, campanha:cap_manager_campanhas(id, nome)')
-        .single()
+      const response = await fetch('/api/utms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao salvar UTM')
 
-      setUtmConfigs(prev => [data, ...prev])
       toast({ title: 'UTM salva com sucesso!' })
 
       // Limpar formulário
@@ -194,9 +191,11 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
     if (!confirm('Excluir esta UTM?')) return
 
     try {
-      const { error } = await supabase.from('cap_manager_utm_configs').delete().eq('id', id)
+      const response = await fetch(`/api/utms?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao excluir')
 
       setUtmConfigs(prev => prev.filter(u => u.id !== id))
       toast({ title: 'UTM excluída!' })

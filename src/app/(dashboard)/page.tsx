@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,33 +14,36 @@ import {
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-
   // Buscar estatísticas
   const [
-    { count: clientesCount },
-    { count: agenciasCount },
-    { count: campanhasCount },
-    { count: tarefasPendentesCount },
-    { data: campanhasRecentes },
-    { data: tarefasUrgentes },
+    clientesCount,
+    agenciasCount,
+    campanhasCount,
+    tarefasPendentesCount,
+    campanhasRecentes,
+    tarefasUrgentes,
   ] = await Promise.all([
-    supabase.from('cap_manager_clientes').select('*', { count: 'exact', head: true }),
-    supabase.from('cap_manager_agencias').select('*', { count: 'exact', head: true }),
-    supabase.from('cap_manager_campanhas').select('*', { count: 'exact', head: true }),
-    supabase.from('cap_manager_tarefas').select('*', { count: 'exact', head: true }).neq('status', 'done'),
-    supabase
-      .from('cap_manager_campanhas')
-      .select('*, cliente:cap_manager_clientes(nome)')
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('cap_manager_tarefas')
-      .select('*, cliente:cap_manager_clientes(nome), campanha:cap_manager_campanhas(nome)')
-      .in('prioridade', ['alta', 'urgente'])
-      .neq('status', 'done')
-      .order('created_at', { ascending: false })
-      .limit(5),
+    prisma.cliente.count(),
+    prisma.agencia.count(),
+    prisma.campanha.count(),
+    prisma.tarefa.count({ where: { status: { not: 'done' } } }),
+    prisma.campanha.findMany({
+      include: { cliente: { select: { nome: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
+    prisma.tarefa.findMany({
+      where: {
+        prioridade: { in: ['alta', 'urgente'] },
+        status: { not: 'done' },
+      },
+      include: {
+        cliente: { select: { nome: true } },
+        campanha: { select: { nome: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
   ])
 
   const stats = [
@@ -142,12 +145,7 @@ export default async function DashboardPage() {
             <CardContent>
               {campanhasRecentes && campanhasRecentes.length > 0 ? (
                 <div className="space-y-4">
-                  {campanhasRecentes.map((campanha: {
-                    id: string
-                    nome: string
-                    status: string
-                    cliente: { nome: string } | null
-                  }) => (
+                  {campanhasRecentes.map((campanha) => (
                     <div
                       key={campanha.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
@@ -199,14 +197,7 @@ export default async function DashboardPage() {
             <CardContent>
               {tarefasUrgentes && tarefasUrgentes.length > 0 ? (
                 <div className="space-y-4">
-                  {tarefasUrgentes.map((tarefa: {
-                    id: string
-                    titulo: string
-                    prioridade: string
-                    data_vencimento: string | null
-                    campanha: { nome: string } | null
-                    cliente: { nome: string } | null
-                  }) => (
+                  {tarefasUrgentes.map((tarefa) => (
                     <div
                       key={tarefa.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
@@ -218,10 +209,10 @@ export default async function DashboardPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {tarefa.data_vencimento && (
+                        {tarefa.dataVencimento && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {new Date(tarefa.data_vencimento).toLocaleDateString('pt-BR')}
+                            {new Date(tarefa.dataVencimento).toLocaleDateString('pt-BR')}
                           </div>
                         )}
                         <Badge variant={prioridadeColors[tarefa.prioridade] as 'default' | 'secondary' | 'destructive'}>

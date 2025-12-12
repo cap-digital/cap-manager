@@ -51,11 +51,28 @@ import {
   Search,
   Loader2,
 } from 'lucide-react'
-import type { Cliente, Agencia } from '@/types'
+import type { Agencia } from '@/types'
 import { formatCNPJ, formatPhone } from '@/lib/utils'
 
+interface SimplifiedCliente {
+  id: string
+  nome: string
+  agencia_id: string | null
+  agencia: Agencia | null
+  link_drive: string | null
+  contato: string
+  cnpj: string | null
+  email: string
+  dia_cobranca: number
+  forma_pagamento: 'pix' | 'boleto' | 'cartao' | 'transferencia'
+  whatsapp: string | null
+  ativo: boolean
+  created_at: string
+  updated_at: string
+}
+
 interface ClientesClientProps {
-  clientes: (Cliente & { agencia: Agencia | null })[]
+  clientes: SimplifiedCliente[]
   agencias: Agencia[]
 }
 
@@ -73,7 +90,7 @@ export function ClientesClient({
   const [clientes, setClientes] = useState(initialClientes)
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null)
+  const [editingCliente, setEditingCliente] = useState<SimplifiedCliente | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
@@ -111,7 +128,7 @@ export function ClientesClient({
     setEditingCliente(null)
   }
 
-  const openEditDialog = (cliente: Cliente) => {
+  const openEditDialog = (cliente: SimplifiedCliente) => {
     setEditingCliente(cliente)
     setFormData({
       nome: cliente.nome,

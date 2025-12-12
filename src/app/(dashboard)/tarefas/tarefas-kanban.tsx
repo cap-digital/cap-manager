@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   DndContext,
   DragOverlay,
@@ -60,16 +59,30 @@ import {
   Loader2,
   GripVertical,
 } from 'lucide-react'
-import type { Tarefa, TarefaStatus, TarefaPrioridade } from '@/types'
+import type { TarefaStatus, TarefaPrioridade } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
+interface SimplifiedTarefa {
+  id: string
+  titulo: string
+  descricao: string | null
+  status: TarefaStatus
+  prioridade: TarefaPrioridade
+  campanha_id: string | null
+  campanha: { id: string; nome: string } | null
+  cliente_id: string | null
+  cliente: { id: string; nome: string } | null
+  responsavel_id: string | null
+  responsavel: { id: string; nome: string } | null
+  data_vencimento: string | null
+  ordem: number
+  created_at: string
+  updated_at: string
+}
+
 interface TarefasKanbanProps {
-  tarefas: (Tarefa & {
-    campanha: { id: string; nome: string } | null
-    cliente: { id: string; nome: string } | null
-    responsavel: { id: string; nome: string } | null
-  })[]
+  tarefas: SimplifiedTarefa[]
   campanhas: { id: string; nome: string }[]
   clientes: { id: string; nome: string }[]
   usuarios: { id: string; nome: string }[]
@@ -95,7 +108,7 @@ function TarefaCard({
   onEdit,
   onDelete,
 }: {
-  tarefa: TarefasKanbanProps['tarefas'][0]
+  tarefa: SimplifiedTarefa
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -192,9 +205,9 @@ export function TarefasKanban({
 }: TarefasKanbanProps) {
   const [tarefas, setTarefas] = useState(initialTarefas)
   const [isOpen, setIsOpen] = useState(false)
-  const [editingTarefa, setEditingTarefa] = useState<TarefasKanbanProps['tarefas'][0] | null>(null)
+  const [editingTarefa, setEditingTarefa] = useState<SimplifiedTarefa | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTarefa, setActiveTarefa] = useState<TarefasKanbanProps['tarefas'][0] | null>(null)
+  const [activeTarefa, setActiveTarefa] = useState<SimplifiedTarefa | null>(null)
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -207,7 +220,6 @@ export function TarefasKanban({
   })
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -250,7 +262,7 @@ export function TarefasKanban({
     setEditingTarefa(null)
   }
 
-  const openEditDialog = (tarefa: TarefasKanbanProps['tarefas'][0]) => {
+  const openEditDialog = (tarefa: SimplifiedTarefa) => {
     setEditingTarefa(tarefa)
     setFormData({
       titulo: tarefa.titulo,
@@ -302,14 +314,15 @@ export function TarefasKanban({
       prev.map(t => (t.id === activeId ? { ...t, status: newStatus } : t))
     )
 
-    // Atualizar no banco
+    // Atualizar no banco via API
     try {
-      const { error } = await supabase
-        .from('cap_manager_tarefas')
-        .update({ status: newStatus })
-        .eq('id', activeId)
+      const response = await fetch('/api/tarefas', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: activeId, status: newStatus }),
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao mover tarefa')
     } catch (error) {
       // Reverter em caso de erro
       setTarefas(prev =>
@@ -340,31 +353,24 @@ export function TarefasKanban({
 
     try {
       if (editingTarefa) {
-        const { data, error } = await supabase
-          .from('cap_manager_tarefas')
-          .update(payload)
-          .eq('id', editingTarefa.id)
-          .select(
-            '*, campanha:cap_manager_campanhas(id, nome), cliente:cap_manager_clientes(id, nome), responsavel:cap_manager_usuarios(id, nome)'
-          )
-          .single()
+        const response = await fetch('/api/tarefas', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingTarefa.id, ...payload }),
+        })
 
-        if (error) throw error
+        if (!response.ok) throw new Error('Erro ao atualizar tarefa')
 
-        setTarefas(prev => prev.map(t => (t.id === editingTarefa.id ? data : t)))
         toast({ title: 'Tarefa atualizada com sucesso!' })
       } else {
-        const { data, error } = await supabase
-          .from('cap_manager_tarefas')
-          .insert(payload)
-          .select(
-            '*, campanha:cap_manager_campanhas(id, nome), cliente:cap_manager_clientes(id, nome), responsavel:cap_manager_usuarios(id, nome)'
-          )
-          .single()
+        const response = await fetch('/api/tarefas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
 
-        if (error) throw error
+        if (!response.ok) throw new Error('Erro ao criar tarefa')
 
-        setTarefas(prev => [...prev, data])
         toast({ title: 'Tarefa criada com sucesso!' })
       }
 
@@ -387,9 +393,11 @@ export function TarefasKanban({
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return
 
     try {
-      const { error } = await supabase.from('cap_manager_tarefas').delete().eq('id', id)
+      const response = await fetch(`/api/tarefas?id=${id}`, {
+        method: 'DELETE',
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('Erro ao excluir tarefa')
 
       setTarefas(prev => prev.filter(t => t.id !== id))
       toast({ title: 'Tarefa excluída com sucesso!' })

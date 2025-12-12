@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { prisma } from '@/lib/prisma'
 import { sendWhatsAppMessage, messageTemplates } from '@/lib/whatsapp'
-
-// Função para criar cliente Supabase com service role
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,28 +28,26 @@ export async function POST(request: NextRequest) {
 // Endpoint para verificar e enviar lembretes de cobrança diários
 export async function GET() {
   try {
-    const supabase = getSupabase()
     const today = new Date()
     const diaHoje = today.getDate()
 
     // Buscar clientes com cobrança para hoje
-    const { data: clientes, error } = await supabase
-      .from('cap_manager_clientes')
-      .select('*')
-      .eq('dia_cobranca', diaHoje)
-      .eq('ativo', true)
-      .not('whatsapp', 'is', null)
-
-    if (error) throw error
+    const clientes = await prisma.cliente.findMany({
+      where: {
+        diaCobranca: diaHoje,
+        ativo: true,
+        whatsapp: { not: null },
+      },
+    })
 
     const results = []
 
-    for (const cliente of clientes || []) {
+    for (const cliente of clientes) {
       if (cliente.whatsapp) {
         const message = messageTemplates.cobranca(
           cliente.nome,
           'Valor a confirmar',
-          cliente.dia_cobranca
+          cliente.diaCobranca || 0
         )
 
         const result = await sendWhatsAppMessage({
@@ -66,13 +56,15 @@ export async function GET() {
         })
 
         // Registrar alerta no banco
-        await supabase.from('cap_manager_alertas').insert({
-          tipo: 'cobranca',
-          titulo: `Cobrança - ${cliente.nome}`,
-          mensagem: message,
-          destinatario_id: cliente.id,
-          enviado_whatsapp: result.success,
-          data_envio_whatsapp: result.success ? new Date().toISOString() : null,
+        await prisma.alerta.create({
+          data: {
+            tipo: 'cobranca',
+            titulo: `Cobrança - ${cliente.nome}`,
+            mensagem: message,
+            destinatarioId: cliente.id,
+            enviadoWhatsapp: result.success,
+            dataEnvioWhatsapp: result.success ? new Date() : null,
+          },
         })
 
         results.push({
@@ -97,12 +89,9 @@ async function handleBillingReminder(data: {
   cliente_id: string
   valor?: string
 }) {
-  const supabase = getSupabase()
-  const { data: cliente } = await supabase
-    .from('cap_manager_clientes')
-    .select('*')
-    .eq('id', data.cliente_id)
-    .single()
+  const cliente = await prisma.cliente.findUnique({
+    where: { id: data.cliente_id },
+  })
 
   if (!cliente || !cliente.whatsapp) {
     return NextResponse.json({ error: 'Cliente não encontrado ou sem WhatsApp' }, { status: 404 })
@@ -111,7 +100,7 @@ async function handleBillingReminder(data: {
   const message = messageTemplates.cobranca(
     cliente.nome,
     data.valor || 'Valor a confirmar',
-    cliente.dia_cobranca
+    cliente.diaCobranca || 0
   )
 
   const result = await sendWhatsAppMessage({
@@ -126,10 +115,9 @@ async function handleTaskAssigned(data: {
   tarefa_id: string
   responsavel_id: string
 }) {
-  const supabase = getSupabase()
-  const [{ data: tarefa }, { data: responsavel }] = await Promise.all([
-    supabase.from('cap_manager_tarefas').select('*').eq('id', data.tarefa_id).single(),
-    supabase.from('cap_manager_usuarios').select('*').eq('id', data.responsavel_id).single(),
+  const [tarefa, responsavel] = await Promise.all([
+    prisma.tarefa.findUnique({ where: { id: data.tarefa_id } }),
+    prisma.usuario.findUnique({ where: { id: data.responsavel_id } }),
   ])
 
   if (!tarefa || !responsavel || !responsavel.whatsapp) {
@@ -138,8 +126,8 @@ async function handleTaskAssigned(data: {
 
   const message = messageTemplates.tarefaAtribuida(
     tarefa.titulo,
-    tarefa.data_vencimento
-      ? new Date(tarefa.data_vencimento).toLocaleDateString('pt-BR')
+    tarefa.dataVencimento
+      ? tarefa.dataVencimento.toLocaleDateString('pt-BR')
       : undefined
   )
 
@@ -149,25 +137,28 @@ async function handleTaskAssigned(data: {
   })
 
   // Registrar alerta
-  await supabase.from('cap_manager_alertas').insert({
-    tipo: 'tarefa',
-    titulo: `Tarefa atribuída: ${tarefa.titulo}`,
-    mensagem: message,
-    destinatario_id: responsavel.id,
-    enviado_whatsapp: result.success,
-    data_envio_whatsapp: result.success ? new Date().toISOString() : null,
+  await prisma.alerta.create({
+    data: {
+      tipo: 'tarefa',
+      titulo: `Tarefa atribuída: ${tarefa.titulo}`,
+      mensagem: message,
+      destinatarioId: responsavel.id,
+      enviadoWhatsapp: result.success,
+      dataEnvioWhatsapp: result.success ? new Date() : null,
+    },
   })
 
   return NextResponse.json(result)
 }
 
 async function handleCampaignActivated(data: { campanha_id: string }) {
-  const supabase = getSupabase()
-  const { data: campanha } = await supabase
-    .from('cap_manager_campanhas')
-    .select('*, cliente:cap_manager_clientes(*), trader:cap_manager_usuarios(*)')
-    .eq('id', data.campanha_id)
-    .single()
+  const campanha = await prisma.campanha.findUnique({
+    where: { id: data.campanha_id },
+    include: {
+      cliente: true,
+      trader: true,
+    },
+  })
 
   if (!campanha) {
     return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
@@ -198,12 +189,9 @@ async function handleCustomAlert(data: {
   titulo: string
   mensagem: string
 }) {
-  const supabase = getSupabase()
-  const { data: destinatario } = await supabase
-    .from('cap_manager_usuarios')
-    .select('*')
-    .eq('id', data.destinatario_id)
-    .single()
+  const destinatario = await prisma.usuario.findUnique({
+    where: { id: data.destinatario_id },
+  })
 
   if (!destinatario || !destinatario.whatsapp) {
     return NextResponse.json({ error: 'Destinatário não encontrado' }, { status: 404 })
@@ -217,13 +205,15 @@ async function handleCustomAlert(data: {
   })
 
   // Registrar alerta
-  await supabase.from('cap_manager_alertas').insert({
-    tipo: 'sistema',
-    titulo: data.titulo,
-    mensagem: data.mensagem,
-    destinatario_id: destinatario.id,
-    enviado_whatsapp: result.success,
-    data_envio_whatsapp: result.success ? new Date().toISOString() : null,
+  await prisma.alerta.create({
+    data: {
+      tipo: 'sistema',
+      titulo: data.titulo,
+      mensagem: data.mensagem,
+      destinatarioId: destinatario.id,
+      enviadoWhatsapp: result.success,
+      dataEnvioWhatsapp: result.success ? new Date() : null,
+    },
   })
 
   return NextResponse.json(result)

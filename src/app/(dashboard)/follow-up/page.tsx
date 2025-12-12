@@ -1,53 +1,81 @@
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
 import { FollowUpClient } from './follow-up-client'
 
 export default async function FollowUpPage() {
-  const supabase = await createClient()
+  const session = await getServerSession(authOptions)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const currentUser = session?.user?.email
+    ? await prisma.usuario.findUnique({
+        where: { email: session.user.email },
+      })
+    : null
 
-  const { data: currentUser } = await supabase
-    .from('cap_manager_usuarios')
-    .select('*')
-    .eq('auth_id', user?.id)
-    .single()
-
-  const [{ data: campanhasData }, { data: followUpsData }, { data: tradersData }] = await Promise.all([
-    supabase
-      .from('cap_manager_campanhas')
-      .select('id, nome, status, cliente:cap_manager_clientes(nome), trader:cap_manager_usuarios(id, nome)')
-      .in('status', ['ativa', 'pausada'])
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('cap_manager_follow_ups')
-      .select('*, campanha:cap_manager_campanhas(id, nome, cliente:cap_manager_clientes(nome)), trader:cap_manager_usuarios(id, nome)')
-      .order('created_at', { ascending: false })
-      .limit(50),
-    supabase.from('cap_manager_usuarios').select('id, nome').eq('ativo', true).order('nome'),
+  const [campanhas, followUps, traders] = await Promise.all([
+    prisma.campanha.findMany({
+      where: { status: { in: ['ativa', 'pausada'] } },
+      include: {
+        cliente: { select: { nome: true } },
+        trader: { select: { id: true, nome: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.followUp.findMany({
+      include: {
+        campanha: {
+          include: { cliente: { select: { nome: true } } },
+        },
+        trader: { select: { id: true, nome: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    prisma.usuario.findMany({
+      where: { ativo: true },
+      select: { id: true, nome: true },
+      orderBy: { nome: 'asc' },
+    }),
   ])
 
   // Transform data to match expected types
-  const campanhas = (campanhasData || []).map((c: Record<string, unknown>) => ({
-    id: c.id as string,
-    nome: c.nome as string,
-    status: c.status as string,
-    cliente: Array.isArray(c.cliente) ? (c.cliente[0] as { nome: string } | null) : (c.cliente as { nome: string } | null),
-    trader: Array.isArray(c.trader) ? (c.trader[0] as { id: string; nome: string } | null) : (c.trader as { id: string; nome: string } | null),
+  const campanhasFormatted = campanhas.map(c => ({
+    id: c.id,
+    nome: c.nome,
+    status: c.status,
+    cliente: c.cliente,
+    trader: c.trader,
   }))
 
-  const followUps = (followUpsData || []).map((f: Record<string, unknown>) => ({
-    id: f.id as string,
-    conteudo: f.conteudo as string,
-    tipo: f.tipo as string,
-    created_at: f.created_at as string,
-    campanha: Array.isArray(f.campanha) ? (f.campanha[0] as { id: string; nome: string; cliente: { nome: string } | null } | null) : (f.campanha as { id: string; nome: string; cliente: { nome: string } | null } | null),
-    trader: Array.isArray(f.trader) ? (f.trader[0] as { id: string; nome: string } | null) : (f.trader as { id: string; nome: string } | null),
+  const followUpsFormatted = followUps.map(f => ({
+    id: f.id,
+    conteudo: f.conteudo,
+    tipo: f.tipo,
+    created_at: f.createdAt.toISOString(),
+    campanha: f.campanha
+      ? {
+          id: f.campanha.id,
+          nome: f.campanha.nome,
+          cliente: f.campanha.cliente,
+        }
+      : null,
+    trader: f.trader,
   }))
 
-  const traders = (tradersData || []) as { id: string; nome: string }[]
+  const currentUserFormatted = currentUser
+    ? {
+        id: currentUser.id,
+        email: currentUser.email,
+        nome: currentUser.nome,
+        avatar_url: currentUser.avatarUrl,
+        role: currentUser.role as 'admin' | 'trader' | 'gestor' | 'cliente',
+        whatsapp: currentUser.whatsapp,
+        ativo: currentUser.ativo,
+        created_at: currentUser.createdAt.toISOString(),
+        updated_at: currentUser.updatedAt.toISOString(),
+      }
+    : null
 
   return (
     <div>
@@ -57,10 +85,10 @@ export default async function FollowUpPage() {
       />
       <div className="p-4 lg:p-8">
         <FollowUpClient
-          campanhas={campanhas || []}
-          followUps={followUps || []}
-          traders={traders || []}
-          currentUser={currentUser}
+          campanhas={campanhasFormatted}
+          followUps={followUpsFormatted}
+          traders={traders}
+          currentUser={currentUserFormatted}
         />
       </div>
     </div>

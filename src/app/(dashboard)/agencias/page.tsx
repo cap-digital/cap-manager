@@ -1,20 +1,27 @@
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/layout/header'
 import { AgenciasClient } from './agencias-client'
 
 export default async function AgenciasPage() {
-  const supabase = await createClient()
+  const agencias = await prisma.agencia.findMany({
+    orderBy: { nome: 'asc' },
+  })
 
-  const { data: agencias } = await supabase
-    .from('cap_manager_agencias')
-    .select('*')
-    .order('nome', { ascending: true })
+  // Transform data to match expected types
+  const agenciasFormatted = agencias.map(agencia => ({
+    id: agencia.id,
+    nome: agencia.nome,
+    porcentagem: Number(agencia.porcentagem),
+    local: agencia.local,
+    created_at: agencia.createdAt.toISOString(),
+    updated_at: agencia.updatedAt.toISOString(),
+  }))
 
   return (
     <div>
       <Header title="Agências" subtitle="Gerencie as agências parceiras" />
       <div className="p-4 lg:p-8">
-        <AgenciasClient agencias={agencias || []} />
+        <AgenciasClient agencias={agenciasFormatted} />
       </div>
     </div>
   )
