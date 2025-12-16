@@ -56,6 +56,39 @@ export function formatPhone(phone: string): string {
   return cleaned.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3')
 }
 
+// Máscara de telefone enquanto digita
+export function maskPhone(value: string): string {
+  const cleaned = value.replace(/\D/g, '').slice(0, 11)
+  if (cleaned.length <= 2) {
+    return cleaned
+  }
+  if (cleaned.length <= 7) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`
+  }
+  if (cleaned.length <= 10) {
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`
+  }
+  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
+}
+
+// Máscara de CNPJ enquanto digita
+export function maskCNPJ(value: string): string {
+  const cleaned = value.replace(/\D/g, '').slice(0, 14)
+  if (cleaned.length <= 2) {
+    return cleaned
+  }
+  if (cleaned.length <= 5) {
+    return `${cleaned.slice(0, 2)}.${cleaned.slice(2)}`
+  }
+  if (cleaned.length <= 8) {
+    return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5)}`
+  }
+  if (cleaned.length <= 12) {
+    return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}/${cleaned.slice(8)}`
+  }
+  return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}/${cleaned.slice(8, 12)}-${cleaned.slice(12)}`
+}
+
 export function generateUTM(params: {
   url: string
   source: string

@@ -32,8 +32,8 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Agências', href: '/agencias', icon: Building2 },
+  { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'PIs', href: '/pi', icon: FileText },
   { name: 'Projetos', href: '/projetos', icon: Megaphone },
   { name: 'Tarefas', href: '/tarefas', icon: CheckSquare },

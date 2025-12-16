@@ -52,12 +52,12 @@ import {
   Loader2,
 } from 'lucide-react'
 import type { Agencia } from '@/types'
-import { formatCNPJ, formatPhone } from '@/lib/utils'
+import { formatCNPJ, formatPhone, maskPhone, maskCNPJ } from '@/lib/utils'
 
 interface SimplifiedCliente {
-  id: string
+  id: number
   nome: string
-  agencia_id: string | null
+  agencia_id: number | null
   agencia: Agencia | null
   link_drive: string | null
   contato: string
@@ -94,7 +94,7 @@ export function ClientesClient({
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
-    agencia_id: '',
+    agencia_id: null as number | null,
     link_drive: '',
     contato: '',
     cnpj: '',
@@ -116,7 +116,7 @@ export function ClientesClient({
   const resetForm = () => {
     setFormData({
       nome: '',
-      agencia_id: '',
+      agencia_id: null,
       link_drive: '',
       contato: '',
       cnpj: '',
@@ -132,14 +132,14 @@ export function ClientesClient({
     setEditingCliente(cliente)
     setFormData({
       nome: cliente.nome,
-      agencia_id: cliente.agencia_id || '',
+      agencia_id: cliente.agencia_id,
       link_drive: cliente.link_drive || '',
       contato: cliente.contato,
-      cnpj: cliente.cnpj || '',
+      cnpj: cliente.cnpj ? maskCNPJ(cliente.cnpj) : '',
       email: cliente.email,
       dia_cobranca: cliente.dia_cobranca,
       forma_pagamento: cliente.forma_pagamento,
-      whatsapp: cliente.whatsapp || '',
+      whatsapp: cliente.whatsapp ? maskPhone(cliente.whatsapp) : '',
     })
     setIsOpen(true)
   }
@@ -148,26 +148,26 @@ export function ClientesClient({
     e.preventDefault()
     setIsLoading(true)
 
+    // Limpar máscaras antes de enviar
+    const payload = {
+      ...formData,
+      cnpj: formData.cnpj ? formData.cnpj.replace(/\D/g, '') : null,
+      whatsapp: formData.whatsapp ? formData.whatsapp.replace(/\D/g, '') : null,
+    }
+
     try {
-      const response = await fetch('/api/clientes', {
-        method: 'POST',
+      const url = editingCliente ? `/api/clientes?id=${editingCliente.id}` : '/api/clientes'
+      const method = editingCliente ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) throw new Error('Erro ao salvar cliente')
 
-      const data = await response.json()
-
-      if (editingCliente) {
-        setClientes(prev =>
-          prev.map(c => (c.id === editingCliente.id ? data : c))
-        )
-        toast({ title: 'Cliente atualizado com sucesso!' })
-      } else {
-        setClientes(prev => [...prev, data])
-        toast({ title: 'Cliente criado com sucesso!' })
-      }
+      toast({ title: editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente criado com sucesso!' })
 
       setIsOpen(false)
       resetForm()
@@ -184,7 +184,7 @@ export function ClientesClient({
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir este cliente?')) return
 
     try {
@@ -264,9 +264,9 @@ export function ClientesClient({
                 <div className="space-y-2">
                   <Label htmlFor="agencia_id">Agência</Label>
                   <Select
-                    value={formData.agencia_id}
+                    value={formData.agencia_id?.toString() || ''}
                     onValueChange={value =>
-                      setFormData(prev => ({ ...prev, agencia_id: value }))
+                      setFormData(prev => ({ ...prev, agencia_id: value ? parseInt(value) : null }))
                     }
                   >
                     <SelectTrigger>
@@ -274,7 +274,7 @@ export function ClientesClient({
                     </SelectTrigger>
                     <SelectContent>
                       {agencias.map(agencia => (
-                        <SelectItem key={agencia.id} value={agencia.id}>
+                        <SelectItem key={agencia.id} value={agencia.id.toString()}>
                           {agencia.nome}
                         </SelectItem>
                       ))}
@@ -316,7 +316,7 @@ export function ClientesClient({
                     placeholder="(11) 99999-9999"
                     value={formData.whatsapp}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, whatsapp: e.target.value }))
+                      setFormData(prev => ({ ...prev, whatsapp: maskPhone(e.target.value) }))
                     }
                   />
                 </div>
@@ -328,7 +328,7 @@ export function ClientesClient({
                     placeholder="00.000.000/0000-00"
                     value={formData.cnpj}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, cnpj: e.target.value }))
+                      setFormData(prev => ({ ...prev, cnpj: maskCNPJ(e.target.value) }))
                     }
                   />
                 </div>
