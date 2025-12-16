@@ -20,6 +20,20 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date))
 }
 
+export function formatDateInput(date: string): string {
+  // Converte de yyyy-mm-dd para dd/mm/yyyy para exibição
+  if (!date) return ''
+  const [year, month, day] = date.split('-')
+  return `${day}/${month}/${year}`
+}
+
+export function parseDateInput(date: string): string {
+  // Converte de dd/mm/yyyy para yyyy-mm-dd para o input
+  if (!date) return ''
+  const [day, month, year] = date.split('/')
+  return `${year}-${month}-${day}`
+}
+
 export function formatDateTime(date: string | Date): string {
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',

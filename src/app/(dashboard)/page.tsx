@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Users,
   Building2,
-  Megaphone,
+  FolderKanban,
   CheckSquare,
   TrendingUp,
   AlertCircle,
@@ -18,16 +18,16 @@ export default async function DashboardPage() {
   const [
     clientesCount,
     agenciasCount,
-    campanhasCount,
+    projetosCount,
     tarefasPendentesCount,
-    campanhasRecentes,
+    projetosRecentes,
     tarefasUrgentes,
   ] = await Promise.all([
     prisma.cliente.count(),
     prisma.agencia.count(),
-    prisma.campanha.count(),
+    prisma.projeto.count(),
     prisma.tarefa.count({ where: { status: { not: 'done' } } }),
-    prisma.campanha.findMany({
+    prisma.projeto.findMany({
       include: { cliente: { select: { nome: true } } },
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
       },
       include: {
         cliente: { select: { nome: true } },
-        campanha: { select: { nome: true } },
+        projeto: { select: { nome: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -64,10 +64,10 @@ export default async function DashboardPage() {
       bgColor: 'bg-purple-100',
     },
     {
-      name: 'Campanhas',
-      value: campanhasCount || 0,
-      icon: Megaphone,
-      href: '/campanhas',
+      name: 'Projetos',
+      value: projetosCount || 0,
+      icon: FolderKanban,
+      href: '/projetos',
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
@@ -83,10 +83,10 @@ export default async function DashboardPage() {
 
   const statusColors: Record<string, string> = {
     rascunho: 'secondary',
-    ativa: 'success',
-    pausada: 'warning',
-    finalizada: 'default',
-    cancelada: 'destructive',
+    ativo: 'success',
+    pausado: 'warning',
+    finalizado: 'default',
+    cancelado: 'destructive',
   }
 
   const prioridadeColors: Record<string, string> = {
@@ -125,52 +125,52 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Campanhas Recentes */}
+          {/* Projetos Recentes */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Campanhas Recentes
+                  Projetos Recentes
                 </CardTitle>
-                <CardDescription>Últimas campanhas criadas</CardDescription>
+                <CardDescription>Últimos projetos criados</CardDescription>
               </div>
               <Link
-                href="/campanhas"
+                href="/projetos"
                 className="text-sm text-primary hover:underline"
               >
-                Ver todas
+                Ver todos
               </Link>
             </CardHeader>
             <CardContent>
-              {campanhasRecentes && campanhasRecentes.length > 0 ? (
+              {projetosRecentes && projetosRecentes.length > 0 ? (
                 <div className="space-y-4">
-                  {campanhasRecentes.map((campanha) => (
+                  {projetosRecentes.map((projeto) => (
                     <div
-                      key={campanha.id}
+                      key={projeto.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                     >
                       <div>
-                        <p className="font-medium">{campanha.nome}</p>
+                        <p className="font-medium">{projeto.nome}</p>
                         <p className="text-sm text-muted-foreground">
-                          {campanha.cliente?.nome || 'Sem cliente'}
+                          {projeto.cliente?.nome || 'Sem cliente'}
                         </p>
                       </div>
-                      <Badge variant={statusColors[campanha.status] as 'default' | 'secondary' | 'destructive'}>
-                        {campanha.status}
+                      <Badge variant={statusColors[projeto.status] as 'default' | 'secondary' | 'destructive'}>
+                        {projeto.status}
                       </Badge>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhuma campanha encontrada</p>
+                  <FolderKanban className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum projeto encontrado</p>
                   <Link
-                    href="/campanhas"
+                    href="/projetos"
                     className="text-primary hover:underline text-sm"
                   >
-                    Criar primeira campanha
+                    Criar primeiro projeto
                   </Link>
                 </div>
               )}
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                       <div className="flex-1">
                         <p className="font-medium">{tarefa.titulo}</p>
                         <p className="text-sm text-muted-foreground">
-                          {tarefa.campanha?.nome || tarefa.cliente?.nome || 'Sem vínculo'}
+                          {tarefa.projeto?.nome || tarefa.cliente?.nome || 'Sem vínculo'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

@@ -14,7 +14,7 @@ export async function GET() {
       include: {
         agencia: true,
         _count: {
-          select: { campanhas: true },
+          select: { projetos: true },
         },
       },
       orderBy: { createdAt: 'desc' },

@@ -13,9 +13,9 @@ export default async function FollowUpPage() {
       })
     : null
 
-  const [campanhas, followUps, traders] = await Promise.all([
-    prisma.campanha.findMany({
-      where: { status: { in: ['ativa', 'pausada'] } },
+  const [projetos, followUps, traders] = await Promise.all([
+    prisma.projeto.findMany({
+      where: { status: { in: ['ativo', 'pausado'] } },
       include: {
         cliente: { select: { nome: true } },
         trader: { select: { id: true, nome: true } },
@@ -24,7 +24,7 @@ export default async function FollowUpPage() {
     }),
     prisma.followUp.findMany({
       include: {
-        campanha: {
+        projeto: {
           include: { cliente: { select: { nome: true } } },
         },
         trader: { select: { id: true, nome: true } },
@@ -40,12 +40,12 @@ export default async function FollowUpPage() {
   ])
 
   // Transform data to match expected types
-  const campanhasFormatted = campanhas.map(c => ({
-    id: c.id,
-    nome: c.nome,
-    status: c.status,
-    cliente: c.cliente,
-    trader: c.trader,
+  const projetosFormatted = projetos.map(p => ({
+    id: p.id,
+    nome: p.nome,
+    status: p.status,
+    cliente: p.cliente,
+    trader: p.trader,
   }))
 
   const followUpsFormatted = followUps.map(f => ({
@@ -53,11 +53,11 @@ export default async function FollowUpPage() {
     conteudo: f.conteudo,
     tipo: f.tipo,
     created_at: f.createdAt.toISOString(),
-    campanha: f.campanha
+    projeto: f.projeto
       ? {
-          id: f.campanha.id,
-          nome: f.campanha.nome,
-          cliente: f.campanha.cliente,
+          id: f.projeto.id,
+          nome: f.projeto.nome,
+          cliente: f.projeto.cliente,
         }
       : null,
     trader: f.trader,
@@ -80,12 +80,12 @@ export default async function FollowUpPage() {
   return (
     <div>
       <Header
-        title="Follow-up de Campanhas"
-        subtitle="Acompanhe o progresso das campanhas por trader"
+        title="Follow-up de Projetos"
+        subtitle="Acompanhe o progresso dos projetos por trader"
       />
       <div className="p-4 lg:p-8">
         <FollowUpClient
-          campanhas={campanhasFormatted}
+          projetos={projetosFormatted}
           followUps={followUpsFormatted}
           traders={traders}
           currentUser={currentUserFormatted}

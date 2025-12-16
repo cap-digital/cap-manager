@@ -43,13 +43,13 @@ import {
   Search,
   Loader2,
   User,
-  Megaphone,
+  FolderKanban,
 } from 'lucide-react'
 import { formatDateTime, getInitials } from '@/lib/utils'
 import type { Usuario } from '@/types'
 
 interface FollowUpClientProps {
-  campanhas: {
+  projetos: {
     id: string
     nome: string
     status: string
@@ -61,7 +61,7 @@ interface FollowUpClientProps {
     conteudo: string
     tipo: string
     created_at: string
-    campanha: {
+    projeto: {
       id: string
       nome: string
       cliente: { nome: string } | null
@@ -80,7 +80,7 @@ const tipoOptions = [
 ]
 
 export function FollowUpClient({
-  campanhas,
+  projetos,
   followUps: initialFollowUps,
   traders,
   currentUser,
@@ -91,7 +91,7 @@ export function FollowUpClient({
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    campanha_id: '',
+    projeto_id: '',
     conteudo: '',
     tipo: 'nota',
   })
@@ -101,8 +101,8 @@ export function FollowUpClient({
   const filteredFollowUps = followUps.filter(followUp => {
     const matchesSearch =
       followUp.conteudo.toLowerCase().includes(search.toLowerCase()) ||
-      followUp.campanha?.nome.toLowerCase().includes(search.toLowerCase()) ||
-      followUp.campanha?.cliente?.nome.toLowerCase().includes(search.toLowerCase())
+      followUp.projeto?.nome.toLowerCase().includes(search.toLowerCase()) ||
+      followUp.projeto?.cliente?.nome.toLowerCase().includes(search.toLowerCase())
 
     const matchesTrader =
       traderFilter === 'all' || followUp.trader?.id === traderFilter
@@ -110,14 +110,14 @@ export function FollowUpClient({
     return matchesSearch && matchesTrader
   })
 
-  const campanhasDoTrader =
+  const projetosDoTrader =
     traderFilter === 'all'
-      ? campanhas
-      : campanhas.filter(c => c.trader?.id === traderFilter)
+      ? projetos
+      : projetos.filter(p => p.trader?.id === traderFilter)
 
   const resetForm = () => {
     setFormData({
-      campanha_id: '',
+      projeto_id: '',
       conteudo: '',
       tipo: 'nota',
     })
@@ -141,7 +141,7 @@ export function FollowUpClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          campanha_id: formData.campanha_id,
+          projeto_id: formData.projeto_id,
           trader_id: currentUser.id,
           conteudo: formData.conteudo,
           tipo: formData.tipo,
@@ -217,29 +217,29 @@ export function FollowUpClient({
               <DialogHeader>
                 <DialogTitle>Novo Follow-up</DialogTitle>
                 <DialogDescription>
-                  Adicione uma atualização sobre a campanha
+                  Adicione uma atualização sobre o projeto
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="campanha_id">Campanha *</Label>
+                  <Label htmlFor="projeto_id">Projeto *</Label>
                   <Select
-                    value={formData.campanha_id}
+                    value={formData.projeto_id}
                     onValueChange={value =>
-                      setFormData(prev => ({ ...prev, campanha_id: value }))
+                      setFormData(prev => ({ ...prev, projeto_id: value }))
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a campanha" />
+                      <SelectValue placeholder="Selecione o projeto" />
                     </SelectTrigger>
                     <SelectContent>
-                      {campanhasDoTrader.map(campanha => (
-                        <SelectItem key={campanha.id} value={campanha.id}>
-                          {campanha.nome}
-                          {campanha.cliente && (
+                      {projetosDoTrader.map(projeto => (
+                        <SelectItem key={projeto.id} value={projeto.id}>
+                          {projeto.nome}
+                          {projeto.cliente && (
                             <span className="text-muted-foreground ml-2">
-                              ({campanha.cliente.nome})
+                              ({projeto.cliente.nome})
                             </span>
                           )}
                         </SelectItem>
@@ -311,7 +311,7 @@ export function FollowUpClient({
       <Tabs defaultValue="timeline" className="space-y-4">
         <TabsList>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="campanhas">Por Campanha</TabsTrigger>
+          <TabsTrigger value="projetos">Por Projeto</TabsTrigger>
         </TabsList>
 
         <TabsContent value="timeline">
@@ -345,14 +345,14 @@ export function FollowUpClient({
                             </span>
                           </div>
 
-                          {followUp.campanha && (
+                          {followUp.projeto && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                              <Megaphone className="h-3 w-3" />
+                              <FolderKanban className="h-3 w-3" />
                               <span className="font-medium">
-                                {followUp.campanha.nome}
+                                {followUp.projeto.nome}
                               </span>
-                              {followUp.campanha.cliente && (
-                                <span>• {followUp.campanha.cliente.nome}</span>
+                              {followUp.projeto.cliente && (
+                                <span>• {followUp.projeto.cliente.nome}</span>
                               )}
                             </div>
                           )}
@@ -377,7 +377,7 @@ export function FollowUpClient({
                 <p className="text-muted-foreground mt-2">
                   {search || traderFilter !== 'all'
                     ? 'Tente ajustar os filtros'
-                    : 'Comece adicionando atualizações das campanhas'}
+                    : 'Comece adicionando atualizações dos projetos'}
                 </p>
                 {!search && traderFilter === 'all' && (
                   <Button className="mt-4" onClick={() => setIsOpen(true)}>
@@ -390,40 +390,40 @@ export function FollowUpClient({
           )}
         </TabsContent>
 
-        <TabsContent value="campanhas">
+        <TabsContent value="projetos">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {campanhasDoTrader.map(campanha => {
-              const campanhaFollowUps = filteredFollowUps.filter(
-                f => f.campanha?.id === campanha.id
+            {projetosDoTrader.map(projeto => {
+              const projetoFollowUps = filteredFollowUps.filter(
+                f => f.projeto?.id === projeto.id
               )
 
               return (
-                <Card key={campanha.id}>
+                <Card key={projeto.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-base">{campanha.nome}</CardTitle>
+                        <CardTitle className="text-base">{projeto.nome}</CardTitle>
                         <CardDescription>
-                          {campanha.cliente?.nome || 'Sem cliente'}
+                          {projeto.cliente?.nome || 'Sem cliente'}
                         </CardDescription>
                       </div>
                       <Badge
-                        variant={campanha.status === 'ativa' ? 'default' : 'secondary'}
+                        variant={projeto.status === 'ativo' ? 'default' : 'secondary'}
                       >
-                        {campanha.status}
+                        {projeto.status}
                       </Badge>
                     </div>
-                    {campanha.trader && (
+                    {projeto.trader && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
                         <User className="h-3 w-3" />
-                        {campanha.trader.nome}
+                        {projeto.trader.nome}
                       </div>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {campanhaFollowUps.length > 0 ? (
+                    {projetoFollowUps.length > 0 ? (
                       <>
-                        {campanhaFollowUps.slice(0, 3).map(followUp => {
+                        {projetoFollowUps.slice(0, 3).map(followUp => {
                           const tipoConfig = getTipoConfig(followUp.tipo)
                           return (
                             <div
@@ -444,9 +444,9 @@ export function FollowUpClient({
                             </div>
                           )
                         })}
-                        {campanhaFollowUps.length > 3 && (
+                        {projetoFollowUps.length > 3 && (
                           <p className="text-xs text-muted-foreground text-center">
-                            +{campanhaFollowUps.length - 3} mais atualizações
+                            +{projetoFollowUps.length - 3} mais atualizações
                           </p>
                         )}
                       </>
@@ -460,7 +460,7 @@ export function FollowUpClient({
                       variant="outline"
                       className="w-full mt-2"
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, campanha_id: campanha.id }))
+                        setFormData(prev => ({ ...prev, projeto_id: projeto.id }))
                         setIsOpen(true)
                       }}
                     >
@@ -472,17 +472,17 @@ export function FollowUpClient({
               )
             })}
 
-            {campanhasDoTrader.length === 0 && (
+            {projetosDoTrader.length === 0 && (
               <Card className="col-span-full p-12">
                 <div className="text-center">
-                  <Megaphone className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">
-                    Nenhuma campanha ativa
+                    Nenhum projeto ativo
                   </h3>
                   <p className="text-muted-foreground mt-2">
                     {traderFilter !== 'all'
-                      ? 'Este trader não possui campanhas ativas'
-                      : 'Não há campanhas ativas no momento'}
+                      ? 'Este trader não possui projetos ativos'
+                      : 'Não há projetos ativos no momento'}
                   </p>
                 </div>
               </Card>

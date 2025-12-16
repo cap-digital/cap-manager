@@ -32,15 +32,15 @@ import {
 import { generateUTM } from '@/lib/utils'
 
 interface UTMGeneratorProps {
-  campanhas: {
+  projetos: {
     id: string
     nome: string
     cliente: { nome: string } | null
   }[]
   utmConfigs: {
     id: string
-    campanha_id: string
-    campanha: { id: string; nome: string } | null
+    projeto_id: string
+    projeto: { id: string; nome: string } | null
     utm_source: string
     utm_medium: string
     utm_campaign: string
@@ -77,12 +77,12 @@ const mediumOptions = [
   { value: 'organic', label: 'Orgânico' },
 ]
 
-export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGeneratorProps) {
+export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGeneratorProps) {
   const [utmConfigs, setUtmConfigs] = useState(initialConfigs)
   const [isLoading, setIsLoading] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    campanha_id: '',
+    projeto_id: '',
     url_destino: '',
     utm_source: '',
     utm_medium: '',
@@ -136,7 +136,7 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
 
     try {
       const payload = {
-        campanha_id: formData.campanha_id || null,
+        projeto_id: formData.projeto_id || null,
         url_destino: formData.url_destino,
         utm_source: formData.utm_source,
         utm_medium: formData.utm_medium,
@@ -158,7 +158,7 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
 
       // Limpar formulário
       setFormData({
-        campanha_id: '',
+        projeto_id: '',
         url_destino: '',
         utm_source: '',
         utm_medium: '',
@@ -208,13 +208,13 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
     }
   }
 
-  const handleCampaignSelect = (campanhaId: string) => {
-    const campanha = campanhas.find(c => c.id === campanhaId)
-    if (campanha) {
+  const handleProjetoSelect = (projetoId: string) => {
+    const projeto = projetos.find(p => p.id === projetoId)
+    if (projeto) {
       setFormData(prev => ({
         ...prev,
-        campanha_id: campanhaId,
-        utm_campaign: campanha.nome.toLowerCase().replace(/\s+/g, '-'),
+        projeto_id: projetoId,
+        utm_campaign: projeto.nome.toLowerCase().replace(/\s+/g, '-'),
       }))
     }
   }
@@ -230,26 +230,26 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
               Gerador de UTM
             </CardTitle>
             <CardDescription>
-              Crie URLs com parâmetros UTM para rastrear suas campanhas
+              Crie URLs com parâmetros UTM para rastrear seus projetos
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="campanha">Campanha (opcional)</Label>
+              <Label htmlFor="projeto">Projeto (opcional)</Label>
               <Select
-                value={formData.campanha_id}
-                onValueChange={handleCampaignSelect}
+                value={formData.projeto_id}
+                onValueChange={handleProjetoSelect}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Vincular a uma campanha" />
+                  <SelectValue placeholder="Vincular a um projeto" />
                 </SelectTrigger>
                 <SelectContent>
-                  {campanhas.map(campanha => (
-                    <SelectItem key={campanha.id} value={campanha.id}>
-                      {campanha.nome}
-                      {campanha.cliente && (
+                  {projetos.map(projeto => (
+                    <SelectItem key={projeto.id} value={projeto.id}>
+                      {projeto.nome}
+                      {projeto.cliente && (
                         <span className="text-muted-foreground ml-2">
-                          ({campanha.cliente.nome})
+                          ({projeto.cliente.nome})
                         </span>
                       )}
                     </SelectItem>
@@ -319,7 +319,7 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
               <Label htmlFor="utm_campaign">Campaign *</Label>
               <Input
                 id="utm_campaign"
-                placeholder="nome-da-campanha"
+                placeholder="nome-do-projeto"
                 value={formData.utm_campaign}
                 onChange={e =>
                   setFormData(prev => ({ ...prev, utm_campaign: e.target.value }))
@@ -414,9 +414,9 @@ export function UTMGenerator({ campanhas, utmConfigs: initialConfigs }: UTMGener
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        {config.campanha && (
+                        {config.projeto && (
                           <p className="text-sm font-medium truncate">
-                            {config.campanha.nome}
+                            {config.projeto.nome}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground break-all line-clamp-1">

@@ -3,16 +3,16 @@ import { Header } from '@/components/layout/header'
 import { TarefasKanban } from './tarefas-kanban'
 
 export default async function TarefasPage() {
-  const [tarefas, campanhas, clientes, usuarios] = await Promise.all([
+  const [tarefas, projetos, clientes, usuarios] = await Promise.all([
     prisma.tarefa.findMany({
       include: {
-        campanha: { select: { id: true, nome: true } },
+        projeto: { select: { id: true, nome: true } },
         cliente: { select: { id: true, nome: true } },
         responsavel: { select: { id: true, nome: true } },
       },
       orderBy: { ordem: 'asc' },
     }),
-    prisma.campanha.findMany({
+    prisma.projeto.findMany({
       select: { id: true, nome: true },
       orderBy: { nome: 'asc' },
     }),
@@ -35,8 +35,8 @@ export default async function TarefasPage() {
     descricao: tarefa.descricao,
     status: tarefa.status as 'backlog' | 'todo' | 'doing' | 'review' | 'done',
     prioridade: tarefa.prioridade as 'baixa' | 'media' | 'alta' | 'urgente',
-    campanha_id: tarefa.campanhaId,
-    campanha: tarefa.campanha,
+    projeto_id: tarefa.projetoId,
+    projeto: tarefa.projeto,
     cliente_id: tarefa.clienteId,
     cliente: tarefa.cliente,
     responsavel_id: tarefa.responsavelId,
@@ -53,7 +53,7 @@ export default async function TarefasPage() {
       <div className="p-4 lg:p-8">
         <TarefasKanban
           tarefas={tarefasFormatted}
-          campanhas={campanhas}
+          projetos={projetos}
           clientes={clientes}
           usuarios={usuarios}
         />

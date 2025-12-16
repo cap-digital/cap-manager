@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
         return await handleBillingReminder(data)
       case 'task_assigned':
         return await handleTaskAssigned(data)
-      case 'campaign_activated':
-        return await handleCampaignActivated(data)
+      case 'project_activated':
+        return await handleProjectActivated(data)
       case 'custom_alert':
         return await handleCustomAlert(data)
       default:
@@ -151,34 +151,34 @@ async function handleTaskAssigned(data: {
   return NextResponse.json(result)
 }
 
-async function handleCampaignActivated(data: { campanha_id: string }) {
-  const campanha = await prisma.campanha.findUnique({
-    where: { id: data.campanha_id },
+async function handleProjectActivated(data: { projeto_id: string }) {
+  const projeto = await prisma.projeto.findUnique({
+    where: { id: data.projeto_id },
     include: {
       cliente: true,
       trader: true,
     },
   })
 
-  if (!campanha) {
-    return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
+  if (!projeto) {
+    return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
   }
 
   const results = []
 
   // Notificar trader
-  if (campanha.trader?.whatsapp) {
+  if (projeto.trader?.whatsapp) {
     const message = messageTemplates.campanhaAtiva(
-      campanha.nome,
-      campanha.cliente?.nome || 'Cliente'
+      projeto.nome,
+      projeto.cliente?.nome || 'Cliente'
     )
 
     const result = await sendWhatsAppMessage({
-      to: campanha.trader.whatsapp,
+      to: projeto.trader.whatsapp,
       message,
     })
 
-    results.push({ trader: campanha.trader.nome, ...result })
+    results.push({ trader: projeto.trader.nome, ...result })
   }
 
   return NextResponse.json({ results })

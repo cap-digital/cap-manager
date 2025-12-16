@@ -3,8 +3,8 @@ import { Header } from '@/components/layout/header'
 import { UTMGenerator } from './utm-generator'
 
 export default async function UTMPage() {
-  const [campanhas, utmConfigs] = await Promise.all([
-    prisma.campanha.findMany({
+  const [projetos, utmConfigs] = await Promise.all([
+    prisma.projeto.findMany({
       select: {
         id: true,
         nome: true,
@@ -14,7 +14,7 @@ export default async function UTMPage() {
     }),
     prisma.utmConfig.findMany({
       include: {
-        campanha: { select: { id: true, nome: true } },
+        projeto: { select: { id: true, nome: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 20,
@@ -22,16 +22,16 @@ export default async function UTMPage() {
   ])
 
   // Transform data to match expected types
-  const campanhasFormatted = campanhas.map(c => ({
-    id: c.id,
-    nome: c.nome,
-    cliente: c.cliente,
+  const projetosFormatted = projetos.map(p => ({
+    id: p.id,
+    nome: p.nome,
+    cliente: p.cliente,
   }))
 
   const utmConfigsFormatted = utmConfigs.map(u => ({
     id: u.id,
-    campanha_id: u.campanhaId || '',
-    campanha: u.campanha,
+    projeto_id: u.projetoId || '',
+    projeto: u.projeto,
     utm_source: u.utmSource,
     utm_medium: u.utmMedium,
     utm_campaign: u.utmCampaign,
@@ -44,9 +44,9 @@ export default async function UTMPage() {
 
   return (
     <div>
-      <Header title="Gerador de UTM" subtitle="Crie links rastreáveis para suas campanhas" />
+      <Header title="Gerador de UTM" subtitle="Crie links rastreáveis para seus projetos" />
       <div className="p-4 lg:p-8">
-        <UTMGenerator campanhas={campanhasFormatted} utmConfigs={utmConfigsFormatted} />
+        <UTMGenerator projetos={projetosFormatted} utmConfigs={utmConfigsFormatted} />
       </div>
     </div>
   )

@@ -12,7 +12,7 @@ export async function GET() {
 
     const utms = await prisma.utmConfig.findMany({
       include: {
-        campanha: true,
+        projeto: true,
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     const utm = await prisma.utmConfig.create({
       data: {
-        campanhaId: data.campanha_id || null,
+        projetoId: data.projeto_id || null,
         utmSource: data.utm_source,
         utmMedium: data.utm_medium,
         utmCampaign: data.utm_campaign,
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         urlGerada: data.url_gerada,
       },
       include: {
-        campanha: true,
+        projeto: true,
       },
     })
 

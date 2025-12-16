@@ -10,17 +10,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const campanhas = await prisma.campanha.findMany({
+    const pis = await prisma.pi.findMany({
       include: {
-        cliente: true,
-        trader: true,
+        _count: {
+          select: { projetos: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(campanhas)
+    return NextResponse.json(pis)
   } catch (error) {
-    console.error('Erro ao buscar campanhas:', error)
+    console.error('Erro ao buscar PIs:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -34,31 +35,28 @@ export async function POST(request: Request) {
 
     const data = await request.json()
 
-    const campanha = await prisma.campanha.create({
+    // Verificar se identificador já existe
+    const existing = await prisma.pi.findUnique({
+      where: { identificador: data.identificador },
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Este identificador de PI já existe' },
+        { status: 400 }
+      )
+    }
+
+    const pi = await prisma.pi.create({
       data: {
-        clienteId: data.cliente_id,
-        nome: data.nome,
-        pi: data.pi || null,
-        porcentagemPlataforma: data.porcentagem_plataforma || 0,
-        porcentagemAgencia: data.porcentagem_agencia || 0,
-        traderId: data.trader_id || null,
-        objetivo: data.objetivo,
-        status: data.status || 'rascunho',
-        idCampanhaPlataforma: data.id_campanha_plataforma,
-        dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
-        dataFim: data.data_fim ? new Date(data.data_fim) : null,
-        orcamento: data.orcamento || null,
-        nomenclaturaPadrao: data.nomenclatura_padrao || null,
-      },
-      include: {
-        cliente: true,
-        trader: true,
+        identificador: data.identificador,
+        valorBruto: data.valor_bruto,
       },
     })
 
-    return NextResponse.json(campanha)
+    return NextResponse.json(pi)
   } catch (error) {
-    console.error('Erro ao criar campanha:', error)
+    console.error('Erro ao criar PI:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -79,32 +77,32 @@ export async function PUT(request: Request) {
 
     const data = await request.json()
 
-    const campanha = await prisma.campanha.update({
-      where: { id },
-      data: {
-        clienteId: data.cliente_id,
-        nome: data.nome,
-        pi: data.pi || null,
-        porcentagemPlataforma: data.porcentagem_plataforma || 0,
-        porcentagemAgencia: data.porcentagem_agencia || 0,
-        traderId: data.trader_id || null,
-        objetivo: data.objetivo,
-        status: data.status,
-        idCampanhaPlataforma: data.id_campanha_plataforma,
-        dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
-        dataFim: data.data_fim ? new Date(data.data_fim) : null,
-        orcamento: data.orcamento || null,
-        nomenclaturaPadrao: data.nomenclatura_padrao || null,
-      },
-      include: {
-        cliente: true,
-        trader: true,
+    // Verificar se identificador já existe em outro PI
+    const existing = await prisma.pi.findFirst({
+      where: {
+        identificador: data.identificador,
+        id: { not: id },
       },
     })
 
-    return NextResponse.json(campanha)
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Este identificador de PI já existe' },
+        { status: 400 }
+      )
+    }
+
+    const pi = await prisma.pi.update({
+      where: { id },
+      data: {
+        identificador: data.identificador,
+        valorBruto: data.valor_bruto,
+      },
+    })
+
+    return NextResponse.json(pi)
   } catch (error) {
-    console.error('Erro ao atualizar campanha:', error)
+    console.error('Erro ao atualizar PI:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -123,13 +121,25 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
-    await prisma.campanha.delete({
+    // Verificar se há projetos usando este PI
+    const projetosUsando = await prisma.projeto.count({
+      where: { piId: id },
+    })
+
+    if (projetosUsando > 0) {
+      return NextResponse.json(
+        { error: `Este PI está sendo usado por ${projetosUsando} projeto(s)` },
+        { status: 400 }
+      )
+    }
+
+    await prisma.pi.delete({
       where: { id },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Erro ao excluir campanha:', error)
+    console.error('Erro ao excluir PI:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

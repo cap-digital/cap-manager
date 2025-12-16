@@ -12,7 +12,7 @@ export async function GET() {
 
     const tarefas = await prisma.tarefa.findMany({
       include: {
-        campanha: {
+        projeto: {
           include: {
             cliente: true,
           },
@@ -45,14 +45,14 @@ export async function POST(request: Request) {
         descricao: data.descricao || null,
         status: data.status || 'backlog',
         prioridade: data.prioridade || 'media',
-        campanhaId: data.campanha_id || null,
+        projetoId: data.projeto_id || null,
         clienteId: data.cliente_id || null,
         responsavelId: data.responsavel_id || null,
         dataVencimento: data.data_vencimento ? new Date(data.data_vencimento) : null,
         ordem: data.ordem || 0,
       },
       include: {
-        campanha: {
+        projeto: {
           include: {
             cliente: true,
           },
@@ -90,7 +90,7 @@ export async function PATCH(request: Request) {
         ...(updateData.responsavel_id !== undefined && { responsavelId: updateData.responsavel_id }),
       },
       include: {
-        campanha: {
+        projeto: {
           include: {
             cliente: true,
           },

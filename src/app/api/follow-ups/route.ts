@@ -12,7 +12,7 @@ export async function GET() {
 
     const followUps = await prisma.followUp.findMany({
       include: {
-        campanha: {
+        projeto: {
           include: {
             cliente: true,
           },
@@ -40,13 +40,13 @@ export async function POST(request: Request) {
 
     const followUp = await prisma.followUp.create({
       data: {
-        campanhaId: data.campanha_id,
+        projetoId: data.projeto_id,
         traderId: data.trader_id,
         conteudo: data.conteudo,
         tipo: data.tipo || 'nota',
       },
       include: {
-        campanha: {
+        projeto: {
           include: {
             cliente: true,
           },

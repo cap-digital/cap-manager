@@ -69,8 +69,8 @@ interface SimplifiedTarefa {
   descricao: string | null
   status: TarefaStatus
   prioridade: TarefaPrioridade
-  campanha_id: string | null
-  campanha: { id: string; nome: string } | null
+  projeto_id: string | null
+  projeto: { id: string; nome: string } | null
   cliente_id: string | null
   cliente: { id: string; nome: string } | null
   responsavel_id: string | null
@@ -83,7 +83,7 @@ interface SimplifiedTarefa {
 
 interface TarefasKanbanProps {
   tarefas: SimplifiedTarefa[]
-  campanhas: { id: string; nome: string }[]
+  projetos: { id: string; nome: string }[]
   clientes: { id: string; nome: string }[]
   usuarios: { id: string; nome: string }[]
 }
@@ -168,9 +168,9 @@ function TarefaCard({
                   {prioridade?.label}
                 </Badge>
 
-                {tarefa.campanha && (
+                {tarefa.projeto && (
                   <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                    {tarefa.campanha.nome}
+                    {tarefa.projeto.nome}
                   </span>
                 )}
               </div>
@@ -199,7 +199,7 @@ function TarefaCard({
 
 export function TarefasKanban({
   tarefas: initialTarefas,
-  campanhas,
+  projetos,
   clientes,
   usuarios,
 }: TarefasKanbanProps) {
@@ -213,7 +213,7 @@ export function TarefasKanban({
     descricao: '',
     status: 'todo' as TarefaStatus,
     prioridade: 'media' as TarefaPrioridade,
-    campanha_id: '',
+    projeto_id: '',
     cliente_id: '',
     responsavel_id: '',
     data_vencimento: '',
@@ -254,7 +254,7 @@ export function TarefasKanban({
       descricao: '',
       status: 'todo',
       prioridade: 'media',
-      campanha_id: '',
+      projeto_id: '',
       cliente_id: '',
       responsavel_id: '',
       data_vencimento: '',
@@ -269,7 +269,7 @@ export function TarefasKanban({
       descricao: tarefa.descricao || '',
       status: tarefa.status,
       prioridade: tarefa.prioridade,
-      campanha_id: tarefa.campanha_id || '',
+      projeto_id: tarefa.projeto_id || '',
       cliente_id: tarefa.cliente_id || '',
       responsavel_id: tarefa.responsavel_id || '',
       data_vencimento: tarefa.data_vencimento || '',
@@ -344,7 +344,7 @@ export function TarefasKanban({
       descricao: formData.descricao || null,
       status: formData.status,
       prioridade: formData.prioridade,
-      campanha_id: formData.campanha_id || null,
+      projeto_id: formData.projeto_id || null,
       cliente_id: formData.cliente_id || null,
       responsavel_id: formData.responsavel_id || null,
       data_vencimento: formData.data_vencimento || null,
@@ -536,20 +536,20 @@ export function TarefasKanban({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="campanha_id">Campanha (opcional)</Label>
+                  <Label htmlFor="projeto_id">Projeto (opcional)</Label>
                   <Select
-                    value={formData.campanha_id}
+                    value={formData.projeto_id}
                     onValueChange={value =>
-                      setFormData(prev => ({ ...prev, campanha_id: value }))
+                      setFormData(prev => ({ ...prev, projeto_id: value }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {campanhas.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.nome}
+                      {projetos.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>

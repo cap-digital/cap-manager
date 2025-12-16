@@ -44,44 +44,103 @@ export interface ClienteFormData {
   whatsapp: string | null
 }
 
-// ==================== CAMPANHA ====================
-export type CampanhaStatus = 'rascunho' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
-export type CampanhaObjetivo = 'awareness' | 'consideracao' | 'conversao' | 'leads' | 'vendas' | 'trafego' | 'engajamento'
-
-export interface Campanha {
+// ==================== PI ====================
+export interface Pi {
   id: string
-  cliente_id: string
-  cliente?: Cliente
-  nome: string
-  pi: string | null
-  porcentagem_plataforma: number
-  porcentagem_agencia: number
-  trader_id: string | null
-  trader?: Usuario
-  objetivo: CampanhaObjetivo
-  status: CampanhaStatus
-  id_campanha_plataforma: string
-  data_inicio: string | null
-  data_fim: string | null
-  orcamento: number | null
-  nomenclatura_padrao: string | null
+  identificador: string
+  valor_bruto: number
+  projetos_count: number
   created_at: string
   updated_at: string
 }
 
-export interface CampanhaFormData {
+export interface PiFormData {
+  identificador: string
+  valor_bruto: number
+}
+
+// ==================== PROJETO ====================
+export type ProjetoStatus = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
+export type TipoCobranca = 'td' | 'fee'
+export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
+
+export interface Projeto {
+  id: string
   cliente_id: string
+  cliente?: Cliente
   nome: string
-  pi: string | null
-  porcentagem_plataforma: number
-  porcentagem_agencia: number
+  pi_id: string | null
+  pi?: Pi
+  tipo_cobranca: TipoCobranca
+  agencia_id: string | null
+  agencia?: Agencia
   trader_id: string | null
-  objetivo: CampanhaObjetivo
-  status: CampanhaStatus
-  id_campanha_plataforma: string
+  trader?: Usuario
+  status: ProjetoStatus
   data_inicio: string | null
   data_fim: string | null
-  orcamento: number | null
+  link_proposta: string | null
+  praca: string | null
+  publico: string | null
+  url_destino: string | null
+  created_at: string
+  updated_at: string
+  estrategias?: Estrategia[]
+}
+
+export interface ProjetoFormData {
+  cliente_id: string
+  nome: string
+  pi_id: string | null
+  tipo_cobranca: TipoCobranca
+  agencia_id: string | null
+  trader_id: string | null
+  status: ProjetoStatus
+  data_inicio: string | null
+  data_fim: string | null
+  link_proposta: string | null
+  praca: string | null
+  publico: string | null
+  url_destino: string | null
+}
+
+// ==================== ESTRATEGIA ====================
+export type EstrategiaStatus = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
+
+export interface Estrategia {
+  id: string
+  projeto_id: string
+  projeto?: Projeto
+  plataforma: Plataforma
+  nome_conta: string | null
+  estrategia: string | null
+  kpi: string | null
+  status: EstrategiaStatus
+  valor_bruto: number
+  porcentagem_agencia: number
+  porcentagem_plataforma: number
+  entrega_contratada: number | null
+  gasto_ate_momento: number | null
+  entregue_ate_momento: number | null
+  data_atualizacao: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EstrategiaFormData {
+  projeto_id: string
+  plataforma: Plataforma
+  nome_conta: string | null
+  estrategia: string | null
+  kpi: string | null
+  status: EstrategiaStatus
+  valor_bruto: number
+  porcentagem_agencia: number
+  porcentagem_plataforma: number
+  entrega_contratada: number | null
+  gasto_ate_momento: number | null
+  entregue_ate_momento: number | null
+  data_atualizacao: string | null
 }
 
 // ==================== TAREFA (KANBAN) ====================
@@ -94,8 +153,8 @@ export interface Tarefa {
   descricao: string | null
   status: TarefaStatus
   prioridade: TarefaPrioridade
-  campanha_id: string | null
-  campanha?: Campanha
+  projeto_id: string | null
+  projeto?: Projeto
   cliente_id: string | null
   cliente?: Cliente
   responsavel_id: string | null
@@ -111,7 +170,7 @@ export interface TarefaFormData {
   descricao: string | null
   status: TarefaStatus
   prioridade: TarefaPrioridade
-  campanha_id: string | null
+  projeto_id: string | null
   cliente_id: string | null
   responsavel_id: string | null
   data_vencimento: string | null
@@ -120,8 +179,8 @@ export interface TarefaFormData {
 // ==================== FOLLOW UP ====================
 export interface FollowUp {
   id: string
-  campanha_id: string
-  campanha?: Campanha
+  projeto_id: string
+  projeto?: Projeto
   trader_id: string
   trader?: Usuario
   conteudo: string
@@ -130,7 +189,7 @@ export interface FollowUp {
 }
 
 export interface FollowUpFormData {
-  campanha_id: string
+  projeto_id: string
   conteudo: string
   tipo: 'nota' | 'alerta' | 'atualizacao' | 'reuniao'
 }
@@ -153,8 +212,8 @@ export interface Usuario {
 // ==================== UTM ====================
 export interface UTMConfig {
   id: string
-  campanha_id: string
-  campanha?: Campanha
+  projeto_id: string
+  projeto?: Projeto
   utm_source: string
   utm_medium: string
   utm_campaign: string
@@ -166,7 +225,7 @@ export interface UTMConfig {
 }
 
 export interface UTMFormData {
-  campanha_id: string
+  projeto_id: string
   utm_source: string
   utm_medium: string
   utm_campaign: string
