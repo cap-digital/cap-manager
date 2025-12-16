@@ -16,8 +16,9 @@ export default async function DashboardLayout({
   }
 
   // Buscar dados do usuário
+  const userId = parseInt(session.user.id)
   const userData = await prisma.usuario.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
   })
 
   return (
