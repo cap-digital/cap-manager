@@ -12,7 +12,7 @@ datasource db {
 // =============================================
 
 model Usuario {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   email     String   @unique
   senha     String
   nome      String
@@ -40,7 +40,7 @@ enum Role {
 }
 
 model Agencia {
-  id          String   @id @default(uuid())
+  id          Int      @id @default(autoincrement())
   nome        String
   porcentagem Decimal  @default(0) @db.Decimal(5, 2)
   local       String
@@ -55,9 +55,9 @@ model Agencia {
 }
 
 model Cliente {
-  id             String         @id @default(uuid())
+  id             Int            @id @default(autoincrement())
   nome           String
-  agenciaId      String?        @map("agencia_id")
+  agenciaId      Int?           @map("agencia_id")
   linkDrive      String?        @map("link_drive")
   contato        String
   cnpj           String?
@@ -86,13 +86,13 @@ enum FormaPagamento {
 
 // Projeto = antiga Campanha (container principal)
 model Projeto {
-  id             String         @id @default(uuid())
-  clienteId      String         @map("cliente_id")
+  id             Int            @id @default(autoincrement())
+  clienteId      Int            @map("cliente_id")
   nome           String
-  piId           String?        @map("pi_id")
+  piId           Int?           @map("pi_id")
   tipoCobranca   TipoCobranca   @default(td) @map("tipo_cobranca")
-  agenciaId      String?        @map("agencia_id")
-  traderId       String?        @map("trader_id")
+  agenciaId      Int?           @map("agencia_id")
+  traderId       Int?           @map("trader_id")
   status         StatusProjeto  @default(rascunho)
   dataInicio     DateTime?      @map("data_inicio") @db.Date
   dataFim        DateTime?      @map("data_fim") @db.Date
@@ -118,8 +118,8 @@ model Projeto {
 
 // Estrategia = linha de midia dentro de um Projeto
 model Estrategia {
-  id                    String           @id @default(uuid())
-  projetoId             String           @map("projeto_id")
+  id                    Int              @id @default(autoincrement())
+  projetoId             Int              @map("projeto_id")
   plataforma            Plataforma
   nomeConta             String?          @map("nome_conta")
   idConta               String?          @map("id_conta")
@@ -176,14 +176,14 @@ enum StatusEstrategia {
 }
 
 model Tarefa {
-  id             String           @id @default(uuid())
+  id             Int              @id @default(autoincrement())
   titulo         String
   descricao      String?          @db.Text
   status         StatusTarefa     @default(backlog)
   prioridade     PrioridadeTarefa @default(media)
-  projetoId      String?          @map("projeto_id")
-  clienteId      String?          @map("cliente_id")
-  responsavelId  String?          @map("responsavel_id")
+  projetoId      Int?             @map("projeto_id")
+  clienteId      Int?             @map("cliente_id")
+  responsavelId  Int?             @map("responsavel_id")
   dataVencimento DateTime?        @map("data_vencimento") @db.Date
   ordem          Int              @default(0)
   createdAt      DateTime         @default(now()) @map("created_at")
@@ -213,9 +213,9 @@ enum PrioridadeTarefa {
 }
 
 model FollowUp {
-  id        String       @id @default(uuid())
-  projetoId String       @map("projeto_id")
-  traderId  String       @map("trader_id")
+  id        Int          @id @default(autoincrement())
+  projetoId Int          @map("projeto_id")
+  traderId  Int          @map("trader_id")
   conteudo  String       @db.Text
   tipo      TipoFollowUp @default(nota)
   createdAt DateTime     @default(now()) @map("created_at")
@@ -235,8 +235,8 @@ enum TipoFollowUp {
 }
 
 model UtmConfig {
-  id          String   @id @default(uuid())
-  projetoId   String?  @map("projeto_id")
+  id          Int      @id @default(autoincrement())
+  projetoId   Int?     @map("projeto_id")
   utmSource   String   @map("utm_source")
   utmMedium   String   @map("utm_medium")
   utmCampaign String   @map("utm_campaign")
@@ -253,11 +253,11 @@ model UtmConfig {
 }
 
 model Alerta {
-  id                String      @id @default(uuid())
+  id                Int         @id @default(autoincrement())
   tipo              TipoAlerta
   titulo            String
   mensagem          String      @db.Text
-  destinatarioId    String      @map("destinatario_id")
+  destinatarioId    Int         @map("destinatario_id")
   lido              Boolean     @default(false)
   enviadoWhatsapp   Boolean     @default(false) @map("enviado_whatsapp")
   dataEnvioWhatsapp DateTime?   @map("data_envio_whatsapp")
@@ -277,7 +277,7 @@ enum TipoAlerta {
 }
 
 model Pi {
-  id            String   @id @default(uuid())
+  id            Int      @id @default(autoincrement())
   identificador String   @unique
   valorBruto    Decimal  @map("valor_bruto") @db.Decimal(12, 2)
   createdAt     DateTime @default(now()) @map("created_at")

@@ -70,20 +70,20 @@ type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'canc
 type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
 
 interface SimplifiedPi {
-  id: string
+  id: number
   identificador: string
   valor_bruto: number
 }
 
 interface SimplifiedAgencia {
-  id: string
+  id: number
   nome: string
   porcentagem: number
 }
 
 interface SimplifiedEstrategia {
-  id: string
-  projeto_id: string
+  id: number
+  projeto_id: number
   plataforma: Plataforma
   nome_conta: string | null
   id_conta: string | null
@@ -102,15 +102,15 @@ interface SimplifiedEstrategia {
 }
 
 interface SimplifiedProjeto {
-  id: string
-  cliente_id: string
+  id: number
+  cliente_id: number
   nome: string
-  pi_id: string | null
+  pi_id: number | null
   pi: SimplifiedPi | null
   tipo_cobranca: TipoCobranca
-  agencia_id: string | null
+  agencia_id: number | null
   agencia: SimplifiedAgencia | null
-  trader_id: string | null
+  trader_id: number | null
   status: StatusProjeto
   data_inicio: string | null
   data_fim: string | null
@@ -122,14 +122,14 @@ interface SimplifiedProjeto {
   estrategias: SimplifiedEstrategia[]
   created_at: string
   updated_at: string
-  cliente: { id: string; nome: string } | null
-  trader: { id: string; nome: string } | null
+  cliente: { id: number; nome: string } | null
+  trader: { id: number; nome: string } | null
 }
 
 interface ProjetosClientProps {
   projetos: SimplifiedProjeto[]
-  clientes: { id: string; nome: string }[]
-  traders: { id: string; nome: string }[]
+  clientes: { id: number; nome: string }[]
+  traders: { id: number; nome: string }[]
   pis: SimplifiedPi[]
   agencias: SimplifiedAgencia[]
 }
@@ -270,19 +270,19 @@ export function ProjetosClient({
   const [editingProjeto, setEditingProjeto] = useState<SimplifiedProjeto | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<1 | 2>(1)
-  const [currentProjetoId, setCurrentProjetoId] = useState<string | null>(null)
+  const [currentProjetoId, setCurrentProjetoId] = useState<number | null>(null)
 
   // Estrategia form state
   const [isEstrategiaOpen, setIsEstrategiaOpen] = useState(false)
   const [editingEstrategia, setEditingEstrategia] = useState<SimplifiedEstrategia | null>(null)
 
   const [formData, setFormData] = useState({
-    cliente_id: '',
+    cliente_id: null as number | null,
     nome: '',
-    pi_id: '',
+    pi_id: null as number | null,
     tipo_cobranca: 'td' as TipoCobranca,
-    agencia_id: '',
-    trader_id: '',
+    agencia_id: null as number | null,
+    trader_id: null as number | null,
     status: 'rascunho' as StatusProjeto,
     data_inicio: '',
     data_fim: '',
@@ -334,9 +334,9 @@ export function ProjetosClient({
       projeto.cliente?.nome.toLowerCase().includes(search.toLowerCase())
 
     const matchesStatus = statusFilter === 'all' || projeto.status === statusFilter
-    const matchesTrader = traderFilter === 'all' || projeto.trader_id === traderFilter
-    const matchesAgencia = agenciaFilter === 'all' || projeto.agencia_id === agenciaFilter
-    const matchesPi = piFilter === 'all' || projeto.pi_id === piFilter
+    const matchesTrader = traderFilter === 'all' || projeto.trader_id === parseInt(traderFilter)
+    const matchesAgencia = agenciaFilter === 'all' || projeto.agencia_id === parseInt(agenciaFilter)
+    const matchesPi = piFilter === 'all' || projeto.pi_id === parseInt(piFilter)
 
     const matchesDataInicio = !dataInicioFilter || (projeto.data_inicio && projeto.data_inicio >= dataInicioFilter)
     const matchesDataFim = !dataFimFilter || (projeto.data_fim && projeto.data_fim <= dataFimFilter)
@@ -346,12 +346,12 @@ export function ProjetosClient({
 
   const resetForm = () => {
     setFormData({
-      cliente_id: '',
+      cliente_id: null,
       nome: '',
-      pi_id: '',
+      pi_id: null,
       tipo_cobranca: 'td',
-      agencia_id: '',
-      trader_id: '',
+      agencia_id: null,
+      trader_id: null,
       status: 'rascunho',
       data_inicio: '',
       data_fim: '',
@@ -388,10 +388,10 @@ export function ProjetosClient({
     setFormData({
       cliente_id: projeto.cliente_id,
       nome: projeto.nome,
-      pi_id: projeto.pi_id || '',
+      pi_id: projeto.pi_id,
       tipo_cobranca: projeto.tipo_cobranca || 'td',
-      agencia_id: projeto.agencia_id || '',
-      trader_id: projeto.trader_id || '',
+      agencia_id: projeto.agencia_id,
+      trader_id: projeto.trader_id,
       status: projeto.status,
       data_inicio: projeto.data_inicio || '',
       data_fim: projeto.data_fim || '',
@@ -611,7 +611,7 @@ export function ProjetosClient({
             <SelectContent>
               <SelectItem value="all">Todos traders</SelectItem>
               {traders.map(t => (
-                <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -623,7 +623,7 @@ export function ProjetosClient({
             <SelectContent>
               <SelectItem value="all">Todas agências</SelectItem>
               {agencias.map(a => (
-                <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
+                <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -635,7 +635,7 @@ export function ProjetosClient({
             <SelectContent>
               <SelectItem value="all">Todos PIs</SelectItem>
               {pis.map(p => (
-                <SelectItem key={p.id} value={p.id}>{p.identificador}</SelectItem>
+                <SelectItem key={p.id} value={p.id.toString()}>{p.identificador}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -705,10 +705,10 @@ export function ProjetosClient({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
                   <div className="space-y-2">
                     <Label>Nome do Cliente *</Label>
-                    <Select value={formData.cliente_id} onValueChange={v => setFormData(p => ({ ...p, cliente_id: v }))}>
+                    <Select value={formData.cliente_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, cliente_id: v ? parseInt(v) : null }))}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {clientes.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                        {clientes.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -725,10 +725,10 @@ export function ProjetosClient({
 
                   <div className="space-y-2">
                     <Label>PI - Autorizacao</Label>
-                    <Select value={formData.pi_id} onValueChange={v => setFormData(p => ({ ...p, pi_id: v }))}>
+                    <Select value={formData.pi_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {pis.map(pi => <SelectItem key={pi.id} value={pi.id}>{pi.identificador} - {formatCurrency(pi.valor_bruto)}</SelectItem>)}
+                        {pis.map(pi => <SelectItem key={pi.id} value={pi.id.toString()}>{pi.identificador} - {formatCurrency(pi.valor_bruto)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -784,10 +784,10 @@ export function ProjetosClient({
 
                   <div className="space-y-2">
                     <Label>Agencia</Label>
-                    <Select value={formData.agencia_id} onValueChange={v => setFormData(p => ({ ...p, agencia_id: v }))}>
+                    <Select value={formData.agencia_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, agencia_id: v ? parseInt(v) : null }))}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {agencias.map(a => <SelectItem key={a.id} value={a.id}>{a.nome} ({a.porcentagem}%)</SelectItem>)}
+                        {agencias.map(a => <SelectItem key={a.id} value={a.id.toString()}>{a.nome} ({a.porcentagem}%)</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -824,10 +824,10 @@ export function ProjetosClient({
 
                   <div className="space-y-2">
                     <Label>Trader</Label>
-                    <Select value={formData.trader_id} onValueChange={v => setFormData(p => ({ ...p, trader_id: v }))}>
+                    <Select value={formData.trader_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, trader_id: v ? parseInt(v) : null }))}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
-                        {traders.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}
+                        {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

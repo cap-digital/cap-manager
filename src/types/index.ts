@@ -1,6 +1,6 @@
 // ==================== AGÊNCIA ====================
 export interface Agencia {
-  id: string
+  id: number
   nome: string
   porcentagem: number
   local: string
@@ -16,9 +16,9 @@ export interface AgenciaFormData {
 
 // ==================== CLIENTE ====================
 export interface Cliente {
-  id: string
+  id: number
   nome: string
-  agencia_id: string | null
+  agencia_id: number | null
   agencia?: Agencia
   link_drive: string | null
   contato: string
@@ -34,7 +34,7 @@ export interface Cliente {
 
 export interface ClienteFormData {
   nome: string
-  agencia_id: string | null
+  agencia_id: number | null
   link_drive: string | null
   contato: string
   cnpj: string | null
@@ -46,7 +46,7 @@ export interface ClienteFormData {
 
 // ==================== PI ====================
 export interface Pi {
-  id: string
+  id: number
   identificador: string
   valor_bruto: number
   projetos_count: number
@@ -65,16 +65,16 @@ export type TipoCobranca = 'td' | 'fee'
 export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
 
 export interface Projeto {
-  id: string
-  cliente_id: string
+  id: number
+  cliente_id: number
   cliente?: Cliente
   nome: string
-  pi_id: string | null
+  pi_id: number | null
   pi?: Pi
   tipo_cobranca: TipoCobranca
-  agencia_id: string | null
+  agencia_id: number | null
   agencia?: Agencia
-  trader_id: string | null
+  trader_id: number | null
   trader?: Usuario
   status: ProjetoStatus
   data_inicio: string | null
@@ -89,12 +89,12 @@ export interface Projeto {
 }
 
 export interface ProjetoFormData {
-  cliente_id: string
+  cliente_id: number | null
   nome: string
-  pi_id: string | null
+  pi_id: number | null
   tipo_cobranca: TipoCobranca
-  agencia_id: string | null
-  trader_id: string | null
+  agencia_id: number | null
+  trader_id: number | null
   status: ProjetoStatus
   data_inicio: string | null
   data_fim: string | null
@@ -108,11 +108,12 @@ export interface ProjetoFormData {
 export type EstrategiaStatus = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
 
 export interface Estrategia {
-  id: string
-  projeto_id: string
+  id: number
+  projeto_id: number
   projeto?: Projeto
   plataforma: Plataforma
   nome_conta: string | null
+  id_conta: string | null
   estrategia: string | null
   kpi: string | null
   status: EstrategiaStatus
@@ -128,9 +129,10 @@ export interface Estrategia {
 }
 
 export interface EstrategiaFormData {
-  projeto_id: string
+  projeto_id: number
   plataforma: Plataforma
   nome_conta: string | null
+  id_conta: string | null
   estrategia: string | null
   kpi: string | null
   status: EstrategiaStatus
@@ -148,16 +150,16 @@ export type TarefaStatus = 'backlog' | 'todo' | 'doing' | 'review' | 'done'
 export type TarefaPrioridade = 'baixa' | 'media' | 'alta' | 'urgente'
 
 export interface Tarefa {
-  id: string
+  id: number
   titulo: string
   descricao: string | null
   status: TarefaStatus
   prioridade: TarefaPrioridade
-  projeto_id: string | null
+  projeto_id: number | null
   projeto?: Projeto
-  cliente_id: string | null
+  cliente_id: number | null
   cliente?: Cliente
-  responsavel_id: string | null
+  responsavel_id: number | null
   responsavel?: Usuario
   data_vencimento: string | null
   ordem: number
@@ -170,18 +172,18 @@ export interface TarefaFormData {
   descricao: string | null
   status: TarefaStatus
   prioridade: TarefaPrioridade
-  projeto_id: string | null
-  cliente_id: string | null
-  responsavel_id: string | null
+  projeto_id: number | null
+  cliente_id: number | null
+  responsavel_id: number | null
   data_vencimento: string | null
 }
 
 // ==================== FOLLOW UP ====================
 export interface FollowUp {
-  id: string
-  projeto_id: string
+  id: number
+  projeto_id: number
   projeto?: Projeto
-  trader_id: string
+  trader_id: number
   trader?: Usuario
   conteudo: string
   tipo: 'nota' | 'alerta' | 'atualizacao' | 'reuniao'
@@ -189,7 +191,7 @@ export interface FollowUp {
 }
 
 export interface FollowUpFormData {
-  projeto_id: string
+  projeto_id: number
   conteudo: string
   tipo: 'nota' | 'alerta' | 'atualizacao' | 'reuniao'
 }
@@ -198,7 +200,7 @@ export interface FollowUpFormData {
 export type UsuarioRole = 'admin' | 'trader' | 'gestor' | 'cliente'
 
 export interface Usuario {
-  id: string
+  id: number
   email: string
   nome: string
   avatar_url: string | null
@@ -211,8 +213,8 @@ export interface Usuario {
 
 // ==================== UTM ====================
 export interface UTMConfig {
-  id: string
-  projeto_id: string
+  id: number
+  projeto_id: number
   projeto?: Projeto
   utm_source: string
   utm_medium: string
@@ -225,7 +227,7 @@ export interface UTMConfig {
 }
 
 export interface UTMFormData {
-  projeto_id: string
+  projeto_id: number
   utm_source: string
   utm_medium: string
   utm_campaign: string
@@ -238,11 +240,11 @@ export interface UTMFormData {
 export type AlertaTipo = 'cobranca' | 'campanha' | 'tarefa' | 'sistema'
 
 export interface Alerta {
-  id: string
+  id: number
   tipo: AlertaTipo
   titulo: string
   mensagem: string
-  destinatario_id: string
+  destinatario_id: number
   destinatario?: Usuario
   lido: boolean
   enviado_whatsapp: boolean
