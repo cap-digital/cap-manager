@@ -61,6 +61,9 @@ import {
   ChevronRight,
   ArrowLeft,
   Layers,
+  X,
+  Eye,
+  ExternalLink,
 } from 'lucide-react'
 import { formatCurrency, formatDate, formatDateInput } from '@/lib/utils'
 
@@ -78,7 +81,6 @@ interface SimplifiedPi {
 interface SimplifiedAgencia {
   id: number
   nome: string
-  porcentagem: number
 }
 
 interface SimplifiedEstrategia {
@@ -87,6 +89,7 @@ interface SimplifiedEstrategia {
   plataforma: Plataforma
   nome_conta: string | null
   id_conta: string | null
+  campaign_id: string | null
   estrategia: string | null
   kpi: string | null
   status: StatusEstrategia
@@ -94,6 +97,8 @@ interface SimplifiedEstrategia {
   porcentagem_agencia: number
   porcentagem_plataforma: number
   entrega_contratada: number | null
+  estimativa_resultado: number | null
+  estimativa_sucesso: number | null
   gasto_ate_momento: number | null
   entregue_ate_momento: number | null
   data_atualizacao: string | null
@@ -111,12 +116,11 @@ interface SimplifiedProjeto {
   agencia_id: number | null
   agencia: SimplifiedAgencia | null
   trader_id: number | null
+  colaborador_id: number | null
   status: StatusProjeto
   data_inicio: string | null
   data_fim: string | null
   link_proposta: string | null
-  praca: string | null
-  publico: string | null
   url_destino: string | null
   estrategias_count: number
   estrategias: SimplifiedEstrategia[]
@@ -124,6 +128,7 @@ interface SimplifiedProjeto {
   updated_at: string
   cliente: { id: number; nome: string } | null
   trader: { id: number; nome: string } | null
+  colaborador: { id: number; nome: string } | null
 }
 
 interface ProjetosClientProps {
@@ -165,72 +170,6 @@ const plataformaOptions: { value: Plataforma; label: string }[] = [
   { value: 'spotify', label: 'Spotify' },
   { value: 'programatica', label: 'Programatica' },
   { value: 'outro', label: 'Outro' },
-]
-
-const pracaOptions = [
-  'Nacional',
-  'São Paulo',
-  'Rio de Janeiro',
-  'Minas Gerais',
-  'Bahia',
-  'Paraná',
-  'Rio Grande do Sul',
-  'Pernambuco',
-  'Ceará',
-  'Santa Catarina',
-  'Goiás',
-  'Distrito Federal',
-  'Espírito Santo',
-  'Pará',
-  'Maranhão',
-  'Mato Grosso',
-  'Mato Grosso do Sul',
-  'Paraíba',
-  'Amazonas',
-  'Rio Grande do Norte',
-  'Piauí',
-  'Alagoas',
-  'Sergipe',
-  'Rondônia',
-  'Tocantins',
-  'Acre',
-  'Amapá',
-  'Roraima',
-  'Regional Sul',
-  'Regional Sudeste',
-  'Regional Nordeste',
-  'Regional Norte',
-  'Regional Centro-Oeste',
-]
-
-const publicoOptions = [
-  '18-24 anos',
-  '25-34 anos',
-  '35-44 anos',
-  '45-54 anos',
-  '55-64 anos',
-  '65+ anos',
-  '18-34 anos',
-  '25-44 anos',
-  '35-54 anos',
-  '18-44 anos',
-  '25-54 anos',
-  'Todas as idades',
-  'Masculino',
-  'Feminino',
-  'Todos os gêneros',
-  'Classe A',
-  'Classe B',
-  'Classe C',
-  'Classes A/B',
-  'Classes B/C',
-  'Classes A/B/C',
-  'Jovens adultos',
-  'Adultos',
-  'Famílias',
-  'Executivos',
-  'Empreendedores',
-  'Estudantes',
 ]
 
 const estrategiaOptions = [
@@ -276,6 +215,9 @@ export function ProjetosClient({
   const [isEstrategiaOpen, setIsEstrategiaOpen] = useState(false)
   const [editingEstrategia, setEditingEstrategia] = useState<SimplifiedEstrategia | null>(null)
 
+  // View project details state
+  const [viewingProjeto, setViewingProjeto] = useState<SimplifiedProjeto | null>(null)
+
   const [formData, setFormData] = useState({
     cliente_id: null as number | null,
     nome: '',
@@ -283,12 +225,11 @@ export function ProjetosClient({
     tipo_cobranca: 'td' as TipoCobranca,
     agencia_id: null as number | null,
     trader_id: null as number | null,
+    colaborador_id: null as number | null,
     status: 'rascunho' as StatusProjeto,
     data_inicio: '',
     data_fim: '',
     link_proposta: '',
-    praca: '',
-    publico: '',
     url_destino: '',
   })
 
@@ -296,6 +237,7 @@ export function ProjetosClient({
     plataforma: '' as Plataforma | '',
     nome_conta: '',
     id_conta: '',
+    campaign_id: '',
     estrategia: '',
     kpi: '',
     status: 'planejada' as StatusEstrategia,
@@ -303,8 +245,11 @@ export function ProjetosClient({
     porcentagem_agencia: 0,
     porcentagem_plataforma: 0,
     entrega_contratada: '',
+    estimativa_resultado: '',
+    estimativa_sucesso: '',
     gasto_ate_momento: '',
     entregue_ate_momento: '',
+    data_atualizacao: '',
   })
 
   const router = useRouter()
@@ -352,12 +297,11 @@ export function ProjetosClient({
       tipo_cobranca: 'td',
       agencia_id: null,
       trader_id: null,
+      colaborador_id: null,
       status: 'rascunho',
       data_inicio: '',
       data_fim: '',
       link_proposta: '',
-      praca: '',
-      publico: '',
       url_destino: '',
     })
     setEditingProjeto(null)
@@ -370,6 +314,7 @@ export function ProjetosClient({
       plataforma: '',
       nome_conta: '',
       id_conta: '',
+      campaign_id: '',
       estrategia: '',
       kpi: '',
       status: 'planejada',
@@ -377,8 +322,11 @@ export function ProjetosClient({
       porcentagem_agencia: 0,
       porcentagem_plataforma: 0,
       entrega_contratada: '',
+      estimativa_resultado: '',
+      estimativa_sucesso: '',
       gasto_ate_momento: '',
       entregue_ate_momento: '',
+      data_atualizacao: '',
     })
     setEditingEstrategia(null)
   }
@@ -392,12 +340,11 @@ export function ProjetosClient({
       tipo_cobranca: projeto.tipo_cobranca || 'td',
       agencia_id: projeto.agencia_id,
       trader_id: projeto.trader_id,
+      colaborador_id: projeto.colaborador_id,
       status: projeto.status,
       data_inicio: projeto.data_inicio || '',
       data_fim: projeto.data_fim || '',
       link_proposta: projeto.link_proposta || '',
-      praca: projeto.praca || '',
-      publico: projeto.publico || '',
       url_destino: projeto.url_destino || '',
     })
     setCurrentProjetoId(projeto.id)
@@ -409,19 +356,20 @@ export function ProjetosClient({
     e.preventDefault()
     setIsLoading(true)
 
+    // Se for FEE, não envia PI e Agência
+    const isFee = formData.tipo_cobranca === 'fee'
     const payload = {
       cliente_id: formData.cliente_id,
       nome: formData.nome,
-      pi_id: formData.pi_id || null,
+      pi_id: isFee ? null : (formData.pi_id || null),
       tipo_cobranca: formData.tipo_cobranca,
-      agencia_id: formData.agencia_id || null,
+      agencia_id: isFee ? null : (formData.agencia_id || null),
       trader_id: formData.trader_id || null,
+      colaborador_id: formData.colaborador_id || null,
       status: formData.status,
       data_inicio: formData.data_inicio || null,
       data_fim: formData.data_fim || null,
       link_proposta: formData.link_proposta || null,
-      praca: formData.praca || null,
-      publico: formData.publico || null,
       url_destino: formData.url_destino || null,
     }
 
@@ -470,6 +418,7 @@ export function ProjetosClient({
       plataforma: estrategiaForm.plataforma,
       nome_conta: estrategiaForm.nome_conta || null,
       id_conta: estrategiaForm.id_conta || null,
+      campaign_id: estrategiaForm.campaign_id || null,
       estrategia: estrategiaForm.estrategia || null,
       kpi: estrategiaForm.kpi || null,
       status: estrategiaForm.status,
@@ -477,8 +426,11 @@ export function ProjetosClient({
       porcentagem_agencia: estrategiaForm.porcentagem_agencia,
       porcentagem_plataforma: estrategiaForm.porcentagem_plataforma,
       entrega_contratada: estrategiaForm.entrega_contratada ? parseFloat(estrategiaForm.entrega_contratada) : null,
+      estimativa_resultado: estrategiaForm.estimativa_resultado ? parseFloat(estrategiaForm.estimativa_resultado) : null,
+      estimativa_sucesso: estrategiaForm.estimativa_sucesso ? parseFloat(estrategiaForm.estimativa_sucesso) : null,
       gasto_ate_momento: estrategiaForm.gasto_ate_momento ? parseFloat(estrategiaForm.gasto_ate_momento) : null,
       entregue_ate_momento: estrategiaForm.entregue_ate_momento ? parseFloat(estrategiaForm.entregue_ate_momento) : null,
+      data_atualizacao: estrategiaForm.data_atualizacao || null,
     }
 
     try {
@@ -517,7 +469,7 @@ export function ProjetosClient({
     try {
       const response = await fetch(`/api/projetos?id=${id}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Erro ao excluir projeto')
-      setProjetos(prev => prev.filter(p => p.id !== id))
+      setProjetos(prev => prev.filter(p => p.id !== parseInt(id)))
       toast({ title: 'Projeto excluido!' })
       router.refresh()
     } catch (error: unknown) {
@@ -554,9 +506,13 @@ export function ProjetosClient({
   }
 
   // Calculos para Estrategia
+  // Valor Líquido = Valor Bruto - (Valor Bruto * % Agência / 100)
+  // Valor Plataforma = Valor Líquido * % Plataforma / 100
+  // Valor Por Dia = Valor Plataforma / Dias Totais do Projeto
+  // Valor Restante = Valor Plataforma - Gasto Até o Momento
   const calcularValoresEstrategia = (e: SimplifiedEstrategia) => {
-    const valorLiquido = e.valor_bruto * (1 - e.porcentagem_agencia / 100)
-    const valorPlataforma = valorLiquido * (1 - e.porcentagem_plataforma / 100)
+    const valorLiquido = e.valor_bruto - (e.valor_bruto * e.porcentagem_agencia / 100)
+    const valorPlataforma = valorLiquido * (e.porcentagem_plataforma / 100)
 
     // Pegar o projeto atual
     const projeto = projetos.find(p => p.id === e.projeto_id)
@@ -568,12 +524,12 @@ export function ProjetosClient({
     const percentualEntrega = e.entrega_contratada && e.entregue_ate_momento
       ? (e.entregue_ate_momento / e.entrega_contratada) * 100
       : null
-    const valorRestante = e.gasto_ate_momento !== null ? valorPlataforma - e.gasto_ate_momento : null
+    const valorRestante = e.gasto_ate_momento !== null ? valorPlataforma - e.gasto_ate_momento : valorPlataforma
     const custoResultado = e.entregue_ate_momento && e.gasto_ate_momento
       ? e.gasto_ate_momento / e.entregue_ate_momento
       : null
 
-    return { valorLiquido, valorPlataforma, valorPorDia, percentualEntrega, valorRestante, custoResultado }
+    return { valorLiquido, valorPlataforma, valorPorDia, percentualEntrega, valorRestante, custoResultado, diasVeiculacao }
   }
 
   const currentProjeto = currentProjetoId ? projetos.find(p => p.id === currentProjetoId) : null
@@ -723,15 +679,18 @@ export function ProjetosClient({
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>PI - Autorizacao</Label>
-                    <Select value={formData.pi_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {pis.map(pi => <SelectItem key={pi.id} value={pi.id.toString()}>{pi.identificador} - {formatCurrency(pi.valor_bruto)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* PI - Apenas para TD */}
+                  {formData.tipo_cobranca === 'td' && (
+                    <div className="space-y-2">
+                      <Label>PI - Autorizacao</Label>
+                      <Select value={formData.pi_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {pis.map(pi => <SelectItem key={pi.id} value={pi.id.toString()}>{pi.identificador} - {formatCurrency(pi.valor_bruto)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2 md:col-span-2">
                     <Label>Nome do Projeto *</Label>
@@ -782,39 +741,22 @@ export function ProjetosClient({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Agencia</Label>
-                    <Select value={formData.agencia_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, agencia_id: v ? parseInt(v) : null }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {agencias.map(a => <SelectItem key={a.id} value={a.id.toString()}>{a.nome} ({a.porcentagem}%)</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Agência - Apenas para TD */}
+                  {formData.tipo_cobranca === 'td' && (
+                    <div className="space-y-2">
+                      <Label>Agencia</Label>
+                      <Select value={formData.agencia_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, agencia_id: v ? parseInt(v) : null }))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {agencias.map(a => <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label>Link Proposta</Label>
                     <Input value={formData.link_proposta} onChange={e => setFormData(p => ({ ...p, link_proposta: e.target.value }))} placeholder="https://..." />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Praça</Label>
-                    <Select value={formData.praca} onValueChange={v => setFormData(p => ({ ...p, praca: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {pracaOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Público</Label>
-                    <Select value={formData.publico} onValueChange={v => setFormData(p => ({ ...p, publico: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {publicoOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
@@ -823,8 +765,18 @@ export function ProjetosClient({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Trader</Label>
+                    <Label>Trader (Responsável)</Label>
                     <Select value={formData.trader_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, trader_id: v ? parseInt(v) : null }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Colaborador</Label>
+                    <Select value={formData.colaborador_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, colaborador_id: v ? parseInt(v) : null }))}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
@@ -937,6 +889,7 @@ export function ProjetosClient({
                                           plataforma: e.plataforma,
                                           nome_conta: e.nome_conta || '',
                                           id_conta: e.id_conta || '',
+                                          campaign_id: e.campaign_id || '',
                                           estrategia: e.estrategia || '',
                                           kpi: e.kpi || '',
                                           status: e.status,
@@ -944,14 +897,17 @@ export function ProjetosClient({
                                           porcentagem_agencia: e.porcentagem_agencia,
                                           porcentagem_plataforma: e.porcentagem_plataforma,
                                           entrega_contratada: e.entrega_contratada?.toString() || '',
+                                          estimativa_resultado: e.estimativa_resultado?.toString() || '',
+                                          estimativa_sucesso: e.estimativa_sucesso?.toString() || '',
                                           gasto_ate_momento: e.gasto_ate_momento?.toString() || '',
                                           entregue_ate_momento: e.entregue_ate_momento?.toString() || '',
+                                          data_atualizacao: e.data_atualizacao || '',
                                         })
                                         setIsEstrategiaOpen(true)
                                       }}>
                                         <Pencil className="h-4 w-4 mr-2" />Editar
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleDeleteEstrategia(e.id)} className="text-destructive">
+                                      <DropdownMenuItem onClick={() => handleDeleteEstrategia(e.id.toString())} className="text-destructive">
                                         <Trash2 className="h-4 w-4 mr-2" />Excluir
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -1020,6 +976,16 @@ export function ProjetosClient({
                         required
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Campaign ID *</Label>
+                      <Input
+                        value={estrategiaForm.campaign_id}
+                        onChange={e => setEstrategiaForm(p => ({ ...p, campaign_id: e.target.value }))}
+                        placeholder="ID da campanha na plataforma"
+                        required
+                      />
+                    </div>
                   </>
                 )}
 
@@ -1074,24 +1040,288 @@ export function ProjetosClient({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Gasto até o Momento</Label>
-                  <Input type="number" step="0.01" value={estrategiaForm.gasto_ate_momento} onChange={e => setEstrategiaForm(p => ({ ...p, gasto_ate_momento: e.target.value }))} />
+                  <Label>Estimativa de Resultado</Label>
+                  <Input type="number" step="0.01" value={estrategiaForm.estimativa_resultado} onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_resultado: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Entregue até o Momento</Label>
-                  <Input type="number" step="0.01" value={estrategiaForm.entregue_ate_momento} onChange={e => setEstrategiaForm(p => ({ ...p, entregue_ate_momento: e.target.value }))} />
+                  <Label>Estimativa de Sucesso (%)</Label>
+                  <Input type="number" step="0.01" max="100" value={estrategiaForm.estimativa_sucesso} onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_sucesso: e.target.value }))} />
+                </div>
+
+                {/* Campos de Acompanhamento em destaque */}
+                <div className="md:col-span-3 border-t pt-4 mt-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">Acompanhamento (atualizado pelo trader)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Gasto até o Momento (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={estrategiaForm.gasto_ate_momento}
+                        onChange={e => setEstrategiaForm(p => ({ ...p, gasto_ate_momento: e.target.value }))}
+                        className="border-amber-300 focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Entregue até o Momento</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={estrategiaForm.entregue_ate_momento}
+                        onChange={e => setEstrategiaForm(p => ({ ...p, entregue_ate_momento: e.target.value }))}
+                        className="border-amber-300 focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Data de Atualização</Label>
+                      <Input
+                        type="date"
+                        value={estrategiaForm.data_atualizacao}
+                        onChange={e => setEstrategiaForm(p => ({ ...p, data_atualizacao: e.target.value }))}
+                        className="border-amber-300 focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => { setIsEstrategiaOpen(false); resetEstrategiaForm() }}>Cancelar</Button>
-                <Button type="submit" disabled={isLoading || !estrategiaForm.plataforma || !estrategiaForm.nome_conta || !estrategiaForm.id_conta}>
+                <Button type="submit" disabled={isLoading || !estrategiaForm.plataforma || !estrategiaForm.nome_conta || !estrategiaForm.id_conta || !estrategiaForm.campaign_id}>
                   {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {editingEstrategia ? 'Salvar' : 'Adicionar'}
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Visualização do Projeto */}
+        <Dialog open={!!viewingProjeto} onOpenChange={open => { if (!open) setViewingProjeto(null) }}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            {viewingProjeto && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <DialogTitle className="text-xl">{viewingProjeto.nome}</DialogTitle>
+                      <DialogDescription className="flex items-center gap-2 mt-1">
+                        <span>{viewingProjeto.cliente?.nome || 'Sem cliente'}</span>
+                        <span className="text-muted-foreground">|</span>
+                        {getStatusBadge(viewingProjeto.status)}
+                      </DialogDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => { setViewingProjeto(null); openEditDialog(viewingProjeto) }}>
+                      <Pencil className="h-4 w-4 mr-2" />Editar Projeto
+                    </Button>
+                  </div>
+                </DialogHeader>
+
+                {/* Info do Projeto */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Tipo</p>
+                    <p className="font-medium">{viewingProjeto.tipo_cobranca?.toUpperCase() || 'TD'}</p>
+                  </div>
+                  {viewingProjeto.pi && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">PI</p>
+                      <p className="font-medium">{viewingProjeto.pi.identificador}</p>
+                    </div>
+                  )}
+                  {viewingProjeto.trader && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Trader</p>
+                      <p className="font-medium">{viewingProjeto.trader.nome}</p>
+                    </div>
+                  )}
+                  {viewingProjeto.agencia && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Agência</p>
+                      <p className="font-medium">{viewingProjeto.agencia.nome}</p>
+                    </div>
+                  )}
+                  {viewingProjeto.data_inicio && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Data Início</p>
+                      <p className="font-medium">{formatDate(viewingProjeto.data_inicio)}</p>
+                    </div>
+                  )}
+                  {viewingProjeto.data_fim && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Data Fim</p>
+                      <p className="font-medium">{formatDate(viewingProjeto.data_fim)}</p>
+                    </div>
+                  )}
+                  {viewingProjeto.colaborador && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Colaborador</p>
+                      <p className="font-medium">{viewingProjeto.colaborador.nome}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Resumo de Valores */}
+                <div className="p-4 bg-muted rounded-lg my-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Valor Total Bruto</p>
+                      <p className="text-lg font-semibold text-green-600">
+                        {formatCurrency(viewingProjeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Gasto Total</p>
+                      <p className="text-lg font-semibold">
+                        {formatCurrency(viewingProjeto.estrategias.reduce((acc, e) => acc + (e.gasto_ate_momento || 0), 0))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Estratégias</p>
+                      <p className="text-lg font-semibold">{viewingProjeto.estrategias.length}</p>
+                    </div>
+                    {viewingProjeto.data_fim && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Dias Restantes</p>
+                        {(() => {
+                          const dias = getDiasAteAcabar(viewingProjeto.data_fim)
+                          return (
+                            <p className={`text-lg font-semibold ${dias !== null && dias <= 7 && dias >= 0 ? 'text-red-600' : ''}`}>
+                              {dias !== null ? (dias < 0 ? 'Encerrado' : `${dias} dias`) : '-'}
+                            </p>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tabela de Estratégias */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Layers className="h-4 w-4" />
+                      Estratégias
+                    </h3>
+                    <Button size="sm" onClick={() => {
+                      setCurrentProjetoId(viewingProjeto.id)
+                      resetEstrategiaForm()
+                      setIsEstrategiaOpen(true)
+                    }}>
+                      <Plus className="h-4 w-4 mr-2" />Nova Estratégia
+                    </Button>
+                  </div>
+
+                  {viewingProjeto.estrategias.length > 0 ? (
+                    <div className="border rounded-lg overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Plataforma</TableHead>
+                            <TableHead>Conta</TableHead>
+                            <TableHead>Estratégia</TableHead>
+                            <TableHead>KPI</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Valor Bruto</TableHead>
+                            <TableHead className="text-right">% Ag.</TableHead>
+                            <TableHead className="text-right">% Plat.</TableHead>
+                            <TableHead className="text-right">Valor Líq.</TableHead>
+                            <TableHead className="text-right">Gasto</TableHead>
+                            <TableHead className="text-right">Entregue</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {viewingProjeto.estrategias.map(e => {
+                            const calc = calcularValoresEstrategia(e)
+                            return (
+                              <TableRow key={e.id}>
+                                <TableCell className="font-medium capitalize">{e.plataforma}</TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="text-sm truncate max-w-[120px]">{e.nome_conta || '-'}</p>
+                                    {e.id_conta && <p className="text-xs text-muted-foreground">ID: {e.id_conta}</p>}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{e.estrategia || '-'}</TableCell>
+                                <TableCell>{e.kpi || '-'}</TableCell>
+                                <TableCell>
+                                  <Badge variant={statusEstrategiaOptions.find(s => s.value === e.status)?.color as 'default'}>
+                                    {statusEstrategiaOptions.find(s => s.value === e.status)?.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(e.valor_bruto)}</TableCell>
+                                <TableCell className="text-right">{e.porcentagem_agencia}%</TableCell>
+                                <TableCell className="text-right">{e.porcentagem_plataforma}%</TableCell>
+                                <TableCell className="text-right">{formatCurrency(calc.valorLiquido)}</TableCell>
+                                <TableCell className="text-right">{e.gasto_ate_momento !== null ? formatCurrency(e.gasto_ate_momento) : '-'}</TableCell>
+                                <TableCell className="text-right">{e.entregue_ate_momento !== null ? e.entregue_ate_momento.toLocaleString('pt-BR') : '-'}</TableCell>
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => {
+                                        setCurrentProjetoId(viewingProjeto.id)
+                                        setEditingEstrategia(e)
+                                        setEstrategiaForm({
+                                          plataforma: e.plataforma,
+                                          nome_conta: e.nome_conta || '',
+                                          id_conta: e.id_conta || '',
+                                          campaign_id: e.campaign_id || '',
+                                          estrategia: e.estrategia || '',
+                                          kpi: e.kpi || '',
+                                          status: e.status,
+                                          valor_bruto: e.valor_bruto.toString(),
+                                          porcentagem_agencia: e.porcentagem_agencia,
+                                          porcentagem_plataforma: e.porcentagem_plataforma,
+                                          entrega_contratada: e.entrega_contratada?.toString() || '',
+                                          estimativa_resultado: e.estimativa_resultado?.toString() || '',
+                                          estimativa_sucesso: e.estimativa_sucesso?.toString() || '',
+                                          gasto_ate_momento: e.gasto_ate_momento?.toString() || '',
+                                          entregue_ate_momento: e.entregue_ate_momento?.toString() || '',
+                                          data_atualizacao: e.data_atualizacao || '',
+                                        })
+                                        setIsEstrategiaOpen(true)
+                                      }}>
+                                        <Pencil className="h-4 w-4 mr-2" />Editar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleDeleteEstrategia(e.id.toString())} className="text-destructive">
+                                        <Trash2 className="h-4 w-4 mr-2" />Excluir
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 border rounded-lg">
+                      <Layers className="h-10 w-10 mx-auto text-muted-foreground/50" />
+                      <p className="mt-2 text-muted-foreground">Nenhuma estratégia cadastrada</p>
+                      <Button className="mt-4" size="sm" onClick={() => {
+                        setCurrentProjetoId(viewingProjeto.id)
+                        resetEstrategiaForm()
+                        setIsEstrategiaOpen(true)
+                      }}>
+                        <Plus className="h-4 w-4 mr-2" />Adicionar Estratégia
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="mt-4">
+                  <Button variant="outline" onClick={() => setViewingProjeto(null)}>Fechar</Button>
+                </DialogFooter>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -1110,7 +1340,7 @@ export function ProjetosClient({
                 const diasAteAcabar = getDiasAteAcabar(projeto.data_fim)
                 const totalValorBruto = projeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0)
                 return (
-                  <Card key={projeto.id} className="group">
+                  <Card key={projeto.id} className="group cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewingProjeto(projeto)}>
                     <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -1124,15 +1354,18 @@ export function ProjetosClient({
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(projeto)}>
+                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setViewingProjeto(projeto) }}>
+                            <Eye className="h-4 w-4 mr-2" />Ver Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={e => { e.stopPropagation(); openEditDialog(projeto) }}>
                             <Pencil className="h-4 w-4 mr-2" />Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteProjeto(projeto.id)} className="text-destructive">
+                          <DropdownMenuItem onClick={e => { e.stopPropagation(); handleDeleteProjeto(projeto.id.toString()) }} className="text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" />Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -1246,10 +1479,13 @@ export function ProjetosClient({
                               <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setViewingProjeto(projeto)}>
+                                <Eye className="h-4 w-4 mr-2" />Ver Detalhes
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditDialog(projeto)}>
                                 <Pencil className="h-4 w-4 mr-2" />Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDeleteProjeto(projeto.id)} className="text-destructive">
+                              <DropdownMenuItem onClick={() => handleDeleteProjeto(projeto.id.toString())} className="text-destructive">
                                 <Trash2 className="h-4 w-4 mr-2" />Excluir
                               </DropdownMenuItem>
                             </DropdownMenuContent>

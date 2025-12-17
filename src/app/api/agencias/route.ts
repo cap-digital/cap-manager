@@ -38,8 +38,10 @@ export async function POST(request: Request) {
     const agencia = await prisma.agencia.create({
       data: {
         nome: data.nome,
-        porcentagem: data.porcentagem || 0,
-        local: data.local,
+        cnpj: data.cnpj || null,
+        telefone: data.telefone || null,
+        email: data.email || null,
+        contato: data.contato || null,
       },
     })
 
@@ -67,11 +69,13 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     const agencia = await prisma.agencia.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         nome: data.nome,
-        porcentagem: data.porcentagem || 0,
-        local: data.local,
+        cnpj: data.cnpj || null,
+        telefone: data.telefone || null,
+        email: data.email || null,
+        contato: data.contato || null,
       },
     })
 
@@ -97,7 +101,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.agencia.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })

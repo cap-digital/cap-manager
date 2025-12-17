@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +28,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -46,13 +53,31 @@ import {
   Loader2,
   DollarSign,
   Megaphone,
+  Building2,
+  Users,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import type { Agencia, Cliente } from '@/types'
+
+interface SimplifiedAgencia {
+  id: number
+  nome: string
+}
+
+interface SimplifiedCliente {
+  id: number
+  nome: string
+  agencia_id: number | null
+}
 
 interface Pi {
-  id: string
+  id: number
   identificador: string
   valor_bruto: number
+  agencia_id: number | null
+  agencia?: SimplifiedAgencia | null
+  cliente_id: number | null
+  cliente?: SimplifiedCliente | null
   projetos_count: number
   created_at: string
   updated_at: string
@@ -60,9 +85,11 @@ interface Pi {
 
 interface PiClientProps {
   pis: Pi[]
+  agencias: SimplifiedAgencia[]
+  clientes: SimplifiedCliente[]
 }
 
-export function PiClient({ pis: initialPis }: PiClientProps) {
+export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps) {
   const [pis, setPis] = useState<Pi[]>(initialPis)
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -71,37 +98,102 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
   const [formData, setFormData] = useState({
     identificador: '',
     valor_bruto: '',
+    agencia_id: null as number | null,
+    cliente_id: null as number | null,
   })
   const router = useRouter()
   const { toast } = useToast()
 
+  // Filtrar clientes pela agência selecionada
+  const filteredClientes = formData.agencia_id
+    ? clientes.filter(c => c.agencia_id === formData.agencia_id)
+    : clientes
+
   const filteredPis = pis.filter(pi =>
-    pi.identificador.toLowerCase().includes(search.toLowerCase())
+    pi.identificador.toLowerCase().includes(search.toLowerCase()) ||
+    (pi.agencia && pi.agencia.nome.toLowerCase().includes(search.toLowerCase())) ||
+    (pi.cliente && pi.cliente.nome.toLowerCase().includes(search.toLowerCase()))
   )
 
   const totalValor = pis.reduce((acc, pi) => acc + pi.valor_bruto, 0)
 
   const resetForm = () => {
-    setFormData({ identificador: '', valor_bruto: '' })
+    setFormData({ identificador: '', valor_bruto: '', agencia_id: null, cliente_id: null })
     setEditingPi(null)
   }
 
   const openEditDialog = (pi: Pi) => {
     setEditingPi(pi)
+    // Remove o prefixo "PI - " se existir para edição
+    const identificadorSemPrefixo = pi.identificador.replace(/^PI\s*-\s*/i, '')
     setFormData({
-      identificador: pi.identificador,
+      identificador: identificadorSemPrefixo,
       valor_bruto: pi.valor_bruto.toString(),
+      agencia_id: pi.agencia_id,
+      cliente_id: pi.cliente_id,
     })
     setIsOpen(true)
   }
 
+  // Reset cliente quando agência muda
+  useEffect(() => {
+    if (formData.agencia_id && formData.cliente_id) {
+      const clienteValido = clientes.find(
+        c => c.id === formData.cliente_id && c.agencia_id === formData.agencia_id
+      )
+      if (!clienteValido) {
+        setFormData(prev => ({ ...prev, cliente_id: null }))
+      }
+    }
+  }, [formData.agencia_id, formData.cliente_id, clientes])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validações
+    if (!formData.agencia_id) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Selecione uma agência',
+      })
+      return
+    }
+
+    if (!formData.cliente_id) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Selecione um cliente',
+      })
+      return
+    }
+
+    const valorBruto = parseFloat(formData.valor_bruto)
+    if (!formData.valor_bruto || isNaN(valorBruto) || valorBruto <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Informe um valor bruto válido maior que zero',
+      })
+      return
+    }
+
     setIsLoading(true)
 
+    // Adiciona o prefixo "PI - " se não existir
+    let identificador = formData.identificador.trim()
+    if (!identificador.toUpperCase().startsWith('PI')) {
+      identificador = `PI - ${identificador}`
+    } else if (!identificador.includes('-')) {
+      identificador = identificador.replace(/^PI\s*/i, 'PI - ')
+    }
+
     const payload = {
-      identificador: formData.identificador,
+      identificador,
       valor_bruto: parseFloat(formData.valor_bruto) || 0,
+      agencia_id: formData.agencia_id,
+      cliente_id: formData.cliente_id,
     }
 
     try {
@@ -118,10 +210,19 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
           throw new Error(data.error || 'Erro ao atualizar PI')
         }
 
+        // Atualizar estado local imediatamente
         setPis(prev =>
           prev.map(p =>
             p.id === editingPi.id
-              ? { ...p, identificador: payload.identificador, valor_bruto: payload.valor_bruto }
+              ? {
+                  ...p,
+                  identificador: data.identificador,
+                  valor_bruto: Number(data.valorBruto),
+                  agencia_id: data.agenciaId,
+                  agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome } : null,
+                  cliente_id: data.clienteId,
+                  cliente: data.cliente ? { id: data.cliente.id, nome: data.cliente.nome, agencia_id: data.cliente.agenciaId } : null,
+                }
               : p
           )
         )
@@ -139,23 +240,27 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
           throw new Error(data.error || 'Erro ao criar PI')
         }
 
+        // Adicionar novo PI ao estado local imediatamente
         setPis(prev => [
+          ...prev,
           {
             id: data.id,
             identificador: data.identificador,
             valor_bruto: Number(data.valorBruto),
+            agencia_id: data.agenciaId,
+            agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome } : null,
+            cliente_id: data.clienteId,
+            cliente: data.cliente ? { id: data.cliente.id, nome: data.cliente.nome, agencia_id: data.cliente.agenciaId } : null,
             projetos_count: 0,
             created_at: data.createdAt,
             updated_at: data.updatedAt,
           },
-          ...prev,
         ])
         toast({ title: 'PI criado com sucesso!' })
       }
 
       setIsOpen(false)
       resetForm()
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({
@@ -292,15 +397,19 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="identificador">Identificador do PI *</Label>
-                  <Input
-                    id="identificador"
-                    placeholder="Ex: PI-2024-001"
-                    value={formData.identificador}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, identificador: e.target.value }))
-                    }
-                    required
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground font-medium">PI - </span>
+                    <Input
+                      id="identificador"
+                      placeholder="Ex: 2024-001"
+                      value={formData.identificador}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, identificador: e.target.value }))
+                      }
+                      required
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -317,6 +426,54 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
                     }
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="agencia_id">Agência *</Label>
+                  <Select
+                    value={formData.agencia_id?.toString() || ''}
+                    onValueChange={value =>
+                      setFormData(prev => ({
+                        ...prev,
+                        agencia_id: value ? parseInt(value) : null,
+                        cliente_id: null // Reset cliente quando agência muda
+                      }))
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma agência" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agencias.map(agencia => (
+                        <SelectItem key={agencia.id} value={agencia.id.toString()}>
+                          {agencia.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cliente_id">Cliente *</Label>
+                  <Select
+                    value={formData.cliente_id?.toString() || ''}
+                    onValueChange={value =>
+                      setFormData(prev => ({ ...prev, cliente_id: value ? parseInt(value) : null }))
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredClientes.map(cliente => (
+                        <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -355,6 +512,8 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Identificador</TableHead>
+                  <TableHead>Agência</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Valor Bruto</TableHead>
                   <TableHead className="text-center">Projetos</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -364,6 +523,22 @@ export function PiClient({ pis: initialPis }: PiClientProps) {
                 {filteredPis.map(pi => (
                   <TableRow key={pi.id}>
                     <TableCell className="font-medium">{pi.identificador}</TableCell>
+                    <TableCell>
+                      {pi.agencia ? (
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {pi.agencia.nome}
+                        </span>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {pi.cliente ? (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {pi.cliente.nome}
+                        </span>
+                      ) : '-'}
+                    </TableCell>
                     <TableCell className="text-right font-semibold text-green-600">
                       {formatCurrency(pi.valor_bruto)}
                     </TableCell>

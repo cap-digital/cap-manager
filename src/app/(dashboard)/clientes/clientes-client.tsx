@@ -45,27 +45,22 @@ import {
   Mail,
   Phone,
   Building2,
-  Calendar,
-  CreditCard,
-  ExternalLink,
   Search,
   Loader2,
 } from 'lucide-react'
 import type { Agencia } from '@/types'
-import { formatCNPJ, formatPhone, maskPhone, maskCNPJ } from '@/lib/utils'
+import { formatPhone, maskPhone, maskCNPJ, formatCNPJ } from '@/lib/utils'
 
 interface SimplifiedCliente {
   id: number
   nome: string
   agencia_id: number | null
   agencia: Agencia | null
-  link_drive: string | null
-  contato: string
+  contato: string | null
   cnpj: string | null
-  email: string
-  dia_cobranca: number
-  forma_pagamento: 'pix' | 'boleto' | 'cartao' | 'transferencia'
+  email: string | null
   whatsapp: string | null
+  tipo_cobranca: 'td' | 'fee'
   ativo: boolean
   created_at: string
   updated_at: string
@@ -76,11 +71,9 @@ interface ClientesClientProps {
   agencias: Agencia[]
 }
 
-const formasPagamento = [
-  { value: 'pix', label: 'PIX' },
-  { value: 'boleto', label: 'Boleto' },
-  { value: 'cartao', label: 'Cartão' },
-  { value: 'transferencia', label: 'Transferência' },
+const tiposCobranca = [
+  { value: 'td', label: 'TD (Trading Desk)' },
+  { value: 'fee', label: 'FEE' },
 ]
 
 export function ClientesClient({
@@ -95,13 +88,11 @@ export function ClientesClient({
   const [formData, setFormData] = useState({
     nome: '',
     agencia_id: null as number | null,
-    link_drive: '',
     contato: '',
     cnpj: '',
     email: '',
-    dia_cobranca: 1,
-    forma_pagamento: 'pix' as 'pix' | 'boleto' | 'cartao' | 'transferencia',
     whatsapp: '',
+    tipo_cobranca: 'td' as 'td' | 'fee',
   })
   const router = useRouter()
   const { toast } = useToast()
@@ -109,21 +100,19 @@ export function ClientesClient({
   const filteredClientes = clientes.filter(
     cliente =>
       cliente.nome.toLowerCase().includes(search.toLowerCase()) ||
-      cliente.email.toLowerCase().includes(search.toLowerCase()) ||
-      cliente.agencia?.nome.toLowerCase().includes(search.toLowerCase())
+      (cliente.email && cliente.email.toLowerCase().includes(search.toLowerCase())) ||
+      (cliente.agencia && cliente.agencia.nome.toLowerCase().includes(search.toLowerCase()))
   )
 
   const resetForm = () => {
     setFormData({
       nome: '',
       agencia_id: null,
-      link_drive: '',
       contato: '',
       cnpj: '',
       email: '',
-      dia_cobranca: 1,
-      forma_pagamento: 'pix',
       whatsapp: '',
+      tipo_cobranca: 'td',
     })
     setEditingCliente(null)
   }
@@ -133,45 +122,106 @@ export function ClientesClient({
     setFormData({
       nome: cliente.nome,
       agencia_id: cliente.agencia_id,
-      link_drive: cliente.link_drive || '',
-      contato: cliente.contato,
+      contato: cliente.contato || '',
       cnpj: cliente.cnpj ? maskCNPJ(cliente.cnpj) : '',
-      email: cliente.email,
-      dia_cobranca: cliente.dia_cobranca,
-      forma_pagamento: cliente.forma_pagamento,
+      email: cliente.email || '',
       whatsapp: cliente.whatsapp ? maskPhone(cliente.whatsapp) : '',
+      tipo_cobranca: cliente.tipo_cobranca,
     })
     setIsOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validação: agência obrigatória apenas para TD
+    if (formData.tipo_cobranca === 'td' && !formData.agencia_id) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Selecione uma agência para clientes TD',
+      })
+      return
+    }
+
     setIsLoading(true)
 
     // Limpar máscaras antes de enviar
     const payload = {
-      ...formData,
+      nome: formData.nome,
+      agencia_id: formData.agencia_id,
+      contato: formData.contato || null,
       cnpj: formData.cnpj ? formData.cnpj.replace(/\D/g, '') : null,
+      email: formData.email || null,
       whatsapp: formData.whatsapp ? formData.whatsapp.replace(/\D/g, '') : null,
+      tipo_cobranca: formData.tipo_cobranca,
     }
 
     try {
-      const url = editingCliente ? `/api/clientes?id=${editingCliente.id}` : '/api/clientes'
-      const method = editingCliente ? 'PUT' : 'POST'
+      if (editingCliente) {
+        const response = await fetch(`/api/clientes?id=${editingCliente.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+        if (!response.ok) throw new Error('Erro ao atualizar cliente')
 
-      if (!response.ok) throw new Error('Erro ao salvar cliente')
+        const data = await response.json()
 
-      toast({ title: editingCliente ? 'Cliente atualizado com sucesso!' : 'Cliente criado com sucesso!' })
+        // Atualizar estado local imediatamente
+        setClientes(prev =>
+          prev.map(c =>
+            c.id === editingCliente.id
+              ? {
+                  ...c,
+                  nome: data.nome,
+                  agencia_id: data.agenciaId,
+                  agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome, cnpj: null, telefone: null, email: null, contato: null, created_at: '', updated_at: '' } : null,
+                  contato: data.contato,
+                  cnpj: data.cnpj,
+                  email: data.email,
+                  whatsapp: data.whatsapp,
+                  tipo_cobranca: data.tipoCobranca,
+                }
+              : c
+          )
+        )
+        toast({ title: 'Cliente atualizado com sucesso!' })
+      } else {
+        const response = await fetch('/api/clientes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) throw new Error('Erro ao criar cliente')
+
+        const data = await response.json()
+
+        // Adicionar novo cliente ao estado local imediatamente
+        setClientes(prev => [
+          ...prev,
+          {
+            id: data.id,
+            nome: data.nome,
+            agencia_id: data.agenciaId,
+            agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome, cnpj: null, telefone: null, email: null, contato: null, created_at: '', updated_at: '' } : null,
+            contato: data.contato,
+            cnpj: data.cnpj,
+            email: data.email,
+            whatsapp: data.whatsapp,
+            tipo_cobranca: data.tipoCobranca,
+            ativo: data.ativo,
+            created_at: data.createdAt,
+            updated_at: data.updatedAt,
+          },
+        ])
+        toast({ title: 'Cliente criado com sucesso!' })
+      }
 
       setIsOpen(false)
       resetForm()
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({
@@ -262,7 +312,33 @@ export function ClientesClient({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="agencia_id">Agência</Label>
+                  <Label htmlFor="tipo_cobranca">Tipo de Cobrança *</Label>
+                  <Select
+                    value={formData.tipo_cobranca}
+                    onValueChange={value =>
+                      setFormData(prev => ({
+                        ...prev,
+                        tipo_cobranca: value as 'td' | 'fee',
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposCobranca.map(tipo => (
+                        <SelectItem key={tipo.value} value={tipo.value}>
+                          {tipo.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="agencia_id">
+                    Agência {formData.tipo_cobranca === 'td' && '*'}
+                  </Label>
                   <Select
                     value={formData.agencia_id?.toString() || ''}
                     onValueChange={value =>
@@ -283,7 +359,7 @@ export function ClientesClient({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail *</Label>
+                  <Label htmlFor="email">E-mail</Label>
                   <Input
                     id="email"
                     type="email"
@@ -292,12 +368,11 @@ export function ClientesClient({
                     onChange={e =>
                       setFormData(prev => ({ ...prev, email: e.target.value }))
                     }
-                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="contato">Contato *</Label>
+                  <Label htmlFor="contato">Contato</Label>
                   <Input
                     id="contato"
                     placeholder="Nome do contato"
@@ -305,7 +380,6 @@ export function ClientesClient({
                     onChange={e =>
                       setFormData(prev => ({ ...prev, contato: e.target.value }))
                     }
-                    required
                   />
                 </div>
 
@@ -329,62 +403,6 @@ export function ClientesClient({
                     value={formData.cnpj}
                     onChange={e =>
                       setFormData(prev => ({ ...prev, cnpj: maskCNPJ(e.target.value) }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dia_cobranca">Dia da Cobrança *</Label>
-                  <Input
-                    id="dia_cobranca"
-                    type="number"
-                    min="1"
-                    max="31"
-                    placeholder="Dia do mês"
-                    value={formData.dia_cobranca}
-                    onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        dia_cobranca: parseInt(e.target.value) || 1,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="forma_pagamento">Forma de Pagamento *</Label>
-                  <Select
-                    value={formData.forma_pagamento}
-                    onValueChange={value =>
-                      setFormData(prev => ({
-                        ...prev,
-                        forma_pagamento: value as 'pix' | 'boleto' | 'cartao' | 'transferencia',
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formasPagamento.map(forma => (
-                        <SelectItem key={forma.value} value={forma.value}>
-                          {forma.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="link_drive">Link do Drive (Peças)</Label>
-                  <Input
-                    id="link_drive"
-                    type="url"
-                    placeholder="https://drive.google.com/..."
-                    value={formData.link_drive}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, link_drive: e.target.value }))
                     }
                   />
                 </div>
@@ -424,8 +442,11 @@ export function ClientesClient({
                   <div>
                     <CardTitle className="text-lg flex items-center gap-2">
                       {cliente.nome}
+                      <Badge variant={cliente.tipo_cobranca === 'td' ? 'default' : 'secondary'}>
+                        {cliente.tipo_cobranca.toUpperCase()}
+                      </Badge>
                       {!cliente.ativo && (
-                        <Badge variant="secondary">Inativo</Badge>
+                        <Badge variant="outline">Inativo</Badge>
                       )}
                     </CardTitle>
                     {cliente.agencia && (
@@ -463,42 +484,28 @@ export function ClientesClient({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    <span className="truncate">{cliente.email}</span>
-                  </div>
+                  {cliente.email && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <span className="truncate">{cliente.email}</span>
+                    </div>
+                  )}
                   {cliente.whatsapp && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Phone className="h-4 w-4" />
                       <span>{formatPhone(cliente.whatsapp)}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Dia {cliente.dia_cobranca}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CreditCard className="h-4 w-4" />
-                    <Badge variant="outline" className="text-xs">
-                      {formasPagamento.find(f => f.value === cliente.forma_pagamento)?.label}
-                    </Badge>
-                  </div>
                 </div>
                 {cliente.cnpj && (
                   <p className="text-sm text-muted-foreground">
                     CNPJ: {formatCNPJ(cliente.cnpj)}
                   </p>
                 )}
-                {cliente.link_drive && (
-                  <a
-                    href={cliente.link_drive}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Acessar Drive
-                  </a>
+                {cliente.contato && (
+                  <p className="text-sm text-muted-foreground">
+                    Contato: {cliente.contato}
+                  </p>
                 )}
               </CardContent>
             </Card>

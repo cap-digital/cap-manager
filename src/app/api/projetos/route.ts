@@ -14,8 +14,9 @@ export async function GET() {
       include: {
         cliente: { select: { id: true, nome: true } },
         trader: { select: { id: true, nome: true } },
+        colaborador: { select: { id: true, nome: true } },
         pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true, porcentagem: true } },
+        agencia: { select: { id: true, nome: true } },
         estrategias: true,
         _count: { select: { estrategias: true } },
       },
@@ -54,19 +55,19 @@ export async function POST(request: Request) {
         tipoCobranca: data.tipo_cobranca || 'td',
         agenciaId: data.agencia_id || null,
         traderId: data.trader_id || null,
+        colaboradorId: data.colaborador_id || null,
         status: data.status || 'rascunho',
         dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
         dataFim: data.data_fim ? new Date(data.data_fim) : null,
         linkProposta: data.link_proposta || null,
-        praca: data.praca || null,
-        publico: data.publico || null,
         urlDestino: data.url_destino || null,
       },
       include: {
         cliente: { select: { id: true, nome: true } },
         trader: { select: { id: true, nome: true } },
+        colaborador: { select: { id: true, nome: true } },
         pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true, porcentagem: true } },
+        agencia: { select: { id: true, nome: true } },
         estrategias: true,
       },
     })
@@ -95,7 +96,7 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     const projeto = await prisma.projeto.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         clienteId: data.cliente_id,
         nome: data.nome,
@@ -103,19 +104,19 @@ export async function PUT(request: Request) {
         tipoCobranca: data.tipo_cobranca || 'td',
         agenciaId: data.agencia_id || null,
         traderId: data.trader_id || null,
+        colaboradorId: data.colaborador_id || null,
         status: data.status,
         dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
         dataFim: data.data_fim ? new Date(data.data_fim) : null,
         linkProposta: data.link_proposta || null,
-        praca: data.praca || null,
-        publico: data.publico || null,
         urlDestino: data.url_destino || null,
       },
       include: {
         cliente: { select: { id: true, nome: true } },
         trader: { select: { id: true, nome: true } },
+        colaborador: { select: { id: true, nome: true } },
         pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true, porcentagem: true } },
+        agencia: { select: { id: true, nome: true } },
         estrategias: true,
       },
     })
@@ -142,7 +143,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.projeto.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })

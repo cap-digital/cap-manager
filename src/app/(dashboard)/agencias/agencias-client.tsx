@@ -34,12 +34,14 @@ import {
   Pencil,
   Trash2,
   Building2,
-  MapPin,
-  Percent,
+  Phone,
+  Mail,
+  User,
   Search,
   Loader2,
 } from 'lucide-react'
 import type { Agencia } from '@/types'
+import { maskPhone, maskCNPJ } from '@/lib/utils'
 
 interface AgenciasClientProps {
   agencias: Agencia[]
@@ -53,8 +55,10 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
-    porcentagem: 0,
-    local: '',
+    cnpj: '',
+    telefone: '',
+    email: '',
+    contato: '',
   })
   const router = useRouter()
   const { toast } = useToast()
@@ -62,11 +66,12 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
   const filteredAgencias = agencias.filter(
     agencia =>
       agencia.nome.toLowerCase().includes(search.toLowerCase()) ||
-      agencia.local.toLowerCase().includes(search.toLowerCase())
+      (agencia.email && agencia.email.toLowerCase().includes(search.toLowerCase())) ||
+      (agencia.contato && agencia.contato.toLowerCase().includes(search.toLowerCase()))
   )
 
   const resetForm = () => {
-    setFormData({ nome: '', porcentagem: 0, local: '' })
+    setFormData({ nome: '', cnpj: '', telefone: '', email: '', contato: '' })
     setEditingAgencia(null)
   }
 
@@ -74,8 +79,10 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
     setEditingAgencia(agencia)
     setFormData({
       nome: agencia.nome,
-      porcentagem: agencia.porcentagem,
-      local: agencia.local,
+      cnpj: agencia.cnpj ? maskCNPJ(agencia.cnpj) : '',
+      telefone: agencia.telefone ? maskPhone(agencia.telefone) : '',
+      email: agencia.email || '',
+      contato: agencia.contato || '',
     })
     setIsOpen(true)
   }
@@ -84,45 +91,73 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
     e.preventDefault()
     setIsLoading(true)
 
+    // Limpar máscaras antes de enviar
+    const payload = {
+      nome: formData.nome,
+      cnpj: formData.cnpj ? formData.cnpj.replace(/\D/g, '') : null,
+      telefone: formData.telefone ? formData.telefone.replace(/\D/g, '') : null,
+      email: formData.email || null,
+      contato: formData.contato || null,
+    }
+
     try {
       if (editingAgencia) {
         const response = await fetch(`/api/agencias?id=${editingAgencia.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         })
 
         if (!response.ok) throw new Error('Erro ao atualizar agência')
 
         const data = await response.json()
+
+        // Atualizar estado local imediatamente
         setAgencias(prev =>
-          prev.map(a => (a.id === editingAgencia.id ? { ...a, ...formData } : a))
+          prev.map(a =>
+            a.id === editingAgencia.id
+              ? {
+                  ...a,
+                  nome: data.nome,
+                  cnpj: data.cnpj,
+                  telefone: data.telefone,
+                  email: data.email,
+                  contato: data.contato,
+                }
+              : a
+          )
         )
         toast({ title: 'Agência atualizada com sucesso!' })
       } else {
         const response = await fetch('/api/agencias', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         })
 
         if (!response.ok) throw new Error('Erro ao criar agência')
 
         const data = await response.json()
-        setAgencias(prev => [...prev, {
-          id: data.id,
-          nome: data.nome,
-          porcentagem: Number(data.porcentagem),
-          local: data.local,
-          created_at: data.createdAt,
-          updated_at: data.updatedAt,
-        }])
+
+        // Adicionar nova agência ao estado local imediatamente
+        setAgencias(prev => [
+          ...prev,
+          {
+            id: data.id,
+            nome: data.nome,
+            cnpj: data.cnpj,
+            telefone: data.telefone,
+            email: data.email,
+            contato: data.contato,
+            created_at: data.createdAt,
+            updated_at: data.updatedAt,
+          },
+        ])
         toast({ title: 'Agência criada com sucesso!' })
       }
 
       setIsOpen(false)
       resetForm()
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({
@@ -135,7 +170,7 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir esta agência?')) return
 
     try {
@@ -197,7 +232,7 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
 
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nome">Nome da Agência</Label>
+                  <Label htmlFor="nome">Nome da Agência *</Label>
                   <Input
                     id="nome"
                     placeholder="Nome da agência"
@@ -210,35 +245,51 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="porcentagem">Porcentagem (%)</Label>
+                  <Label htmlFor="cnpj">CNPJ</Label>
                   <Input
-                    id="porcentagem"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    placeholder="Ex: 15"
-                    value={formData.porcentagem}
+                    id="cnpj"
+                    placeholder="00.000.000/0000-00"
+                    value={formData.cnpj}
                     onChange={e =>
-                      setFormData(prev => ({
-                        ...prev,
-                        porcentagem: parseFloat(e.target.value) || 0,
-                      }))
+                      setFormData(prev => ({ ...prev, cnpj: maskCNPJ(e.target.value) }))
                     }
-                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="local">Local</Label>
+                  <Label htmlFor="telefone">Telefone</Label>
                   <Input
-                    id="local"
-                    placeholder="Cidade/Estado"
-                    value={formData.local}
+                    id="telefone"
+                    placeholder="(11) 99999-9999"
+                    value={formData.telefone}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, local: e.target.value }))
+                      setFormData(prev => ({ ...prev, telefone: maskPhone(e.target.value) }))
                     }
-                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="contato@agencia.com"
+                    value={formData.email}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, email: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contato">Nome do Contato (opcional)</Label>
+                  <Input
+                    id="contato"
+                    placeholder="Nome da pessoa de contato"
+                    value={formData.contato}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, contato: e.target.value }))
+                    }
                   />
                 </div>
               </div>
@@ -276,10 +327,12 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
                   </div>
                   <div>
                     <CardTitle className="text-lg">{agencia.nome}</CardTitle>
-                    <CardDescription className="flex items-center gap-1 mt-1">
-                      <MapPin className="h-3 w-3" />
-                      {agencia.local}
-                    </CardDescription>
+                    {agencia.contato && (
+                      <CardDescription className="flex items-center gap-1 mt-1">
+                        <User className="h-3 w-3" />
+                        {agencia.contato}
+                      </CardDescription>
+                    )}
                   </div>
                 </div>
                 <DropdownMenu>
@@ -307,14 +360,24 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 text-2xl font-bold text-primary">
-                  <Percent className="h-5 w-5" />
-                  {agencia.porcentagem}%
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Porcentagem da agência
-                </p>
+              <CardContent className="space-y-2">
+                {agencia.email && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    {agencia.email}
+                  </div>
+                )}
+                {agencia.telefone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    {maskPhone(agencia.telefone)}
+                  </div>
+                )}
+                {agencia.cnpj && (
+                  <div className="text-sm text-muted-foreground">
+                    CNPJ: {maskCNPJ(agencia.cnpj)}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

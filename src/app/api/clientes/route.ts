@@ -40,13 +40,11 @@ export async function POST(request: Request) {
       data: {
         nome: data.nome,
         agenciaId: data.agencia_id || null,
-        linkDrive: data.link_drive || null,
-        contato: data.contato,
+        contato: data.contato || null,
         cnpj: data.cnpj || null,
-        email: data.email,
-        diaCobranca: data.dia_cobranca || 1,
-        formaPagamento: data.forma_pagamento || 'pix',
+        email: data.email || null,
         whatsapp: data.whatsapp || null,
+        tipoCobranca: data.tipo_cobranca || 'td',
         ativo: true,
       },
       include: {
@@ -81,13 +79,11 @@ export async function PUT(request: Request) {
       data: {
         nome: data.nome,
         agenciaId: data.agencia_id || null,
-        linkDrive: data.link_drive || null,
-        contato: data.contato,
+        contato: data.contato || null,
         cnpj: data.cnpj || null,
-        email: data.email,
-        diaCobranca: data.dia_cobranca || 1,
-        formaPagamento: data.forma_pagamento || 'pix',
+        email: data.email || null,
         whatsapp: data.whatsapp || null,
+        tipoCobranca: data.tipo_cobranca || 'td',
       },
       include: {
         agencia: true,

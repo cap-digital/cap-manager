@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const projetoId = searchParams.get('projeto_id')
 
     const estrategias = await prisma.estrategia.findMany({
-      where: projetoId ? { projetoId } : undefined,
+      where: projetoId ? { projetoId: parseInt(projetoId) } : undefined,
       include: {
         projeto: { select: { id: true, nome: true } },
       },
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
         plataforma: data.plataforma,
         nomeConta: data.nome_conta || null,
         idConta: data.id_conta || null,
+        campaignId: data.campaign_id || null,
         estrategia: data.estrategia || null,
         kpi: data.kpi || null,
         status: data.status || 'planejada',
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
         porcentagemAgencia: data.porcentagem_agencia || 0,
         porcentagemPlataforma: data.porcentagem_plataforma || 0,
         entregaContratada: data.entrega_contratada || null,
+        estimativaResultado: data.estimativa_resultado || null,
+        estimativaSucesso: data.estimativa_sucesso || null,
         gastoAteMomento: data.gasto_ate_momento || null,
         entregueAteMomento: data.entregue_ate_momento || null,
         dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao) : null,
@@ -83,11 +86,12 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     const estrategia = await prisma.estrategia.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         plataforma: data.plataforma,
         nomeConta: data.nome_conta || null,
         idConta: data.id_conta || null,
+        campaignId: data.campaign_id || null,
         estrategia: data.estrategia || null,
         kpi: data.kpi || null,
         status: data.status,
@@ -95,6 +99,8 @@ export async function PUT(request: Request) {
         porcentagemAgencia: data.porcentagem_agencia || 0,
         porcentagemPlataforma: data.porcentagem_plataforma || 0,
         entregaContratada: data.entrega_contratada || null,
+        estimativaResultado: data.estimativa_resultado || null,
+        estimativaSucesso: data.estimativa_sucesso || null,
         gastoAteMomento: data.gasto_ate_momento || null,
         entregueAteMomento: data.entregue_ate_momento || null,
         dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao) : null,
@@ -126,7 +132,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.estrategia.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })

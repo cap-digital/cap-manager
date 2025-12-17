@@ -8,8 +8,9 @@ export default async function ProjetosPage() {
       include: {
         cliente: { select: { id: true, nome: true } },
         trader: { select: { id: true, nome: true } },
+        colaborador: { select: { id: true, nome: true } },
         pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true, porcentagem: true } },
+        agencia: { select: { id: true, nome: true } },
         estrategias: true,
         _count: { select: { estrategias: true } },
       },
@@ -30,7 +31,7 @@ export default async function ProjetosPage() {
       orderBy: { identificador: 'asc' },
     }),
     prisma.agencia.findMany({
-      select: { id: true, nome: true, porcentagem: true },
+      select: { id: true, nome: true },
       orderBy: { nome: 'asc' },
     }),
   ])
@@ -52,16 +53,15 @@ export default async function ProjetosPage() {
     agencia: projeto.agencia ? {
       id: projeto.agencia.id,
       nome: projeto.agencia.nome,
-      porcentagem: Number(projeto.agencia.porcentagem),
     } : null,
     trader_id: projeto.traderId,
     trader: projeto.trader,
+    colaborador_id: projeto.colaboradorId,
+    colaborador: projeto.colaborador,
     status: projeto.status,
     data_inicio: projeto.dataInicio?.toISOString().split('T')[0] || null,
     data_fim: projeto.dataFim?.toISOString().split('T')[0] || null,
     link_proposta: projeto.linkProposta,
-    praca: projeto.praca,
-    publico: projeto.publico,
     url_destino: projeto.urlDestino,
     estrategias_count: projeto._count.estrategias,
     estrategias: projeto.estrategias.map(e => ({
@@ -70,6 +70,7 @@ export default async function ProjetosPage() {
       plataforma: e.plataforma,
       nome_conta: e.nomeConta,
       id_conta: e.idConta,
+      campaign_id: e.campaignId,
       estrategia: e.estrategia,
       kpi: e.kpi,
       status: e.status,
@@ -77,6 +78,8 @@ export default async function ProjetosPage() {
       porcentagem_agencia: Number(e.porcentagemAgencia),
       porcentagem_plataforma: Number(e.porcentagemPlataforma),
       entrega_contratada: e.entregaContratada ? Number(e.entregaContratada) : null,
+      estimativa_resultado: e.estimativaResultado ? Number(e.estimativaResultado) : null,
+      estimativa_sucesso: e.estimativaSucesso ? Number(e.estimativaSucesso) : null,
       gasto_ate_momento: e.gastoAteMomento ? Number(e.gastoAteMomento) : null,
       entregue_ate_momento: e.entregueAteMomento ? Number(e.entregueAteMomento) : null,
       data_atualizacao: e.dataAtualizacao?.toISOString() || null,
@@ -96,7 +99,6 @@ export default async function ProjetosPage() {
   const agenciasFormatted = agencias.map(agencia => ({
     id: agencia.id,
     nome: agencia.nome,
-    porcentagem: Number(agencia.porcentagem),
   }))
 
   return (

@@ -11,8 +11,10 @@ export default async function AgenciasPage() {
   const agenciasFormatted = agencias.map(agencia => ({
     id: agencia.id,
     nome: agencia.nome,
-    porcentagem: Number(agencia.porcentagem),
-    local: agencia.local,
+    cnpj: agencia.cnpj,
+    telefone: agencia.telefone,
+    email: agencia.email,
+    contato: agencia.contato,
     created_at: agencia.createdAt.toISOString(),
     updated_at: agencia.updatedAt.toISOString(),
   }))

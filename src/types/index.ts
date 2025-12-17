@@ -2,16 +2,20 @@
 export interface Agencia {
   id: number
   nome: string
-  porcentagem: number
-  local: string
+  cnpj: string | null
+  telefone: string | null
+  email: string | null
+  contato: string | null
   created_at: string
   updated_at: string
 }
 
 export interface AgenciaFormData {
   nome: string
-  porcentagem: number
-  local: string
+  cnpj: string | null
+  telefone: string | null
+  email: string | null
+  contato: string | null
 }
 
 // ==================== CLIENTE ====================
@@ -20,13 +24,11 @@ export interface Cliente {
   nome: string
   agencia_id: number | null
   agencia?: Agencia
-  link_drive: string | null
-  contato: string
+  contato: string | null
   cnpj: string | null
-  email: string
-  dia_cobranca: number
-  forma_pagamento: 'pix' | 'boleto' | 'cartao' | 'transferencia'
+  email: string | null
   whatsapp: string | null
+  tipo_cobranca: 'td' | 'fee'
   ativo: boolean
   created_at: string
   updated_at: string
@@ -35,13 +37,11 @@ export interface Cliente {
 export interface ClienteFormData {
   nome: string
   agencia_id: number | null
-  link_drive: string | null
-  contato: string
+  contato: string | null
   cnpj: string | null
-  email: string
-  dia_cobranca: number
-  forma_pagamento: 'pix' | 'boleto' | 'cartao' | 'transferencia'
+  email: string | null
   whatsapp: string | null
+  tipo_cobranca: 'td' | 'fee'
 }
 
 // ==================== PI ====================
@@ -49,6 +49,10 @@ export interface Pi {
   id: number
   identificador: string
   valor_bruto: number
+  agencia_id: number | null
+  agencia?: Agencia
+  cliente_id: number | null
+  cliente?: Cliente
   projetos_count: number
   created_at: string
   updated_at: string
@@ -57,6 +61,8 @@ export interface Pi {
 export interface PiFormData {
   identificador: string
   valor_bruto: number
+  agencia_id: number | null
+  cliente_id: number | null
 }
 
 // ==================== PROJETO ====================

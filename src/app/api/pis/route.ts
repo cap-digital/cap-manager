@@ -12,6 +12,8 @@ export async function GET() {
 
     const pis = await prisma.pi.findMany({
       include: {
+        agencia: true,
+        cliente: true,
         _count: {
           select: { projetos: true },
         },
@@ -51,6 +53,12 @@ export async function POST(request: Request) {
       data: {
         identificador: data.identificador,
         valorBruto: data.valor_bruto,
+        agenciaId: data.agencia_id || null,
+        clienteId: data.cliente_id || null,
+      },
+      include: {
+        agencia: true,
+        cliente: true,
       },
     })
 
@@ -81,7 +89,7 @@ export async function PUT(request: Request) {
     const existing = await prisma.pi.findFirst({
       where: {
         identificador: data.identificador,
-        id: { not: id },
+        id: { not: parseInt(id) },
       },
     })
 
@@ -93,10 +101,16 @@ export async function PUT(request: Request) {
     }
 
     const pi = await prisma.pi.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         identificador: data.identificador,
         valorBruto: data.valor_bruto,
+        agenciaId: data.agencia_id || null,
+        clienteId: data.cliente_id || null,
+      },
+      include: {
+        agencia: true,
+        cliente: true,
       },
     })
 
@@ -123,7 +137,7 @@ export async function DELETE(request: Request) {
 
     // Verificar se há projetos usando este PI
     const projetosUsando = await prisma.projeto.count({
-      where: { piId: id },
+      where: { piId: parseInt(id) },
     })
 
     if (projetosUsando > 0) {
@@ -134,7 +148,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.pi.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     })
 
     return NextResponse.json({ success: true })
