@@ -30,6 +30,7 @@ export default async function DashboardLayout({
                 nome: userData.nome,
                 email: userData.email,
                 avatar_url: userData.avatarUrl,
+                role: userData.role,
               }
             : null
         }

@@ -27,6 +27,7 @@ import {
   Tag,
   Globe,
   FolderKanban,
+  UserCog,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -88,7 +89,6 @@ const inteligenciaSubCategory: NavSubCategory = {
     { name: 'Dashboards', href: '/dashboards', icon: BarChart3 },
     { name: 'GTM', href: '/gtm', icon: Tag },
     { name: 'Sites/LP', href: '/sites-lp', icon: Globe },
-    { name: 'Projetos', href: '/projetos', icon: FolderKanban },
   ],
 }
 
@@ -103,6 +103,7 @@ interface SidebarProps {
     nome: string
     email: string
     avatar_url?: string | null
+    role?: 'admin' | 'trader' | 'gestor' | 'cliente'
   } | null
 }
 
@@ -334,6 +335,23 @@ export function Sidebar({ user }: SidebarProps) {
             {secondaryNavigation.map(item => (
               <NavLink key={item.name} item={item} />
             ))}
+
+            {/* Admin only - User Management */}
+            {user?.role === 'admin' && (
+              <Link
+                href="/usuarios"
+                onClick={() => setIsMobileOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mt-4 border-t pt-4',
+                  pathname === '/usuarios'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <UserCog className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span>Gerenciar Usuários</span>}
+              </Link>
+            )}
           </nav>
 
           {/* User menu */}
