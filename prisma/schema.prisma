@@ -338,6 +338,7 @@ model CardKanban {
   responsavelRevisaoId  Int?             @map("responsavel_revisao_id") // Quem revisa o relatório
   revisaoRelatorioOk    Boolean          @default(false) @map("revisao_relatorio_ok") // Check da revisão
   linkRelatorio         String?          @map("link_relatorio") // Link do relatório final
+  faturamentoCardId     Int?             @map("faturamento_card_id") // ID do card de faturamento relacionado (para projetos concluídos)
   dataVencimento        DateTime?        @map("data_vencimento") @db.Date
   ordem                 Int              @default(0)
   createdAt             DateTime         @default(now()) @map("created_at")
@@ -353,12 +354,12 @@ enum AreaKanban {
   dashboards
   gtm
   sites_lp
-  projetos_finalizados
+  projetos_concluidos
 }
 
 // Status para Gestão de Tráfego (fluxo completo):
 // backlog -> para_fazer -> em_execucao -> projeto_finalizado ->
-// relatorio_a_fazer -> relatorio_em_revisao -> relatorio_finalizado -> (vai para faturamento ou projetos_finalizados)
+// relatorio_a_fazer -> relatorio_em_revisao -> relatorio_finalizado -> (vai para faturamento + projetos_concluidos)
 
 // Status para Inteligência (dashboards, gtm, sites_lp):
 // backlog -> para_fazer -> em_execucao -> finalizado

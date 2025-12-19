@@ -61,6 +61,7 @@ export async function POST(request: Request) {
         responsavelRevisaoId: data.responsavel_revisao_id || null,
         revisaoRelatorioOk: data.revisao_relatorio_ok || false,
         linkRelatorio: data.link_relatorio || null,
+        faturamentoCardId: data.faturamento_card_id || null,
         dataVencimento: data.data_vencimento ? new Date(data.data_vencimento) : null,
         ordem: (maxOrdem._max.ordem || 0) + 1,
       },

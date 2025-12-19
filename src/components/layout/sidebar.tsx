@@ -74,10 +74,10 @@ const campanhaSubCategory: NavSubCategory = {
   ],
 }
 
-// Item especial para Projetos Finalizados (fora das subcategorias, dentro de Gestão de Projetos)
-const projetosFinalizadosItem: NavItem = {
-  name: 'Projetos Finalizados',
-  href: '/projetos-finalizados',
+// Item especial para Projetos Concluídos (fora das subcategorias, dentro de Gestão de Projetos)
+const projetosConcluidosItem: NavItem = {
+  name: 'Projetos Concluídos',
+  href: '/projetos-concluidos',
   icon: ClipboardCheck,
 }
 
@@ -122,7 +122,7 @@ export function Sidebar({ user }: SidebarProps) {
 
   // Verifica se algum item dentro de Gestão de Projetos está ativo
   const isGestaoprojetosActive = () => {
-    const allItems = [...campanhaSubCategory.items, ...inteligenciaSubCategory.items, projetosFinalizadosItem]
+    const allItems = [...campanhaSubCategory.items, ...inteligenciaSubCategory.items, projetosConcluidosItem]
     return allItems.some(item => pathname === item.href)
   }
 
@@ -313,19 +313,19 @@ export function Sidebar({ user }: SidebarProps) {
                   onToggle={() => setInteligenciaOpen(!inteligenciaOpen)}
                 />
 
-                {/* Projetos Finalizados - Item direto com cor diferente */}
+                {/* Projetos Concluídos - Item direto com cor diferente */}
                 <Link
-                  href={projetosFinalizadosItem.href}
+                  href={projetosConcluidosItem.href}
                   onClick={() => setIsMobileOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ml-4',
-                    pathname === projetosFinalizadosItem.href
+                    pathname === projetosConcluidosItem.href
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                   )}
                 >
-                  <projetosFinalizadosItem.icon className="h-4 w-4 shrink-0" />
-                  {!isCollapsed && <span>{projetosFinalizadosItem.name}</span>}
+                  <projetosConcluidosItem.icon className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && <span>{projetosConcluidosItem.name}</span>}
                 </Link>
               </CollapsibleContent>
             </Collapsible>

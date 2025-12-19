@@ -118,16 +118,14 @@ function SortableCard({
   usuarios,
   onEdit,
   onDelete,
-  onMoveToFaturamento,
-  onMoveToProjetosFinalizados,
+  onConcluirProjeto,
 }: {
   card: CardKanban
   projetos: Projeto[]
   usuarios: { id: number; nome: string }[]
   onEdit: (card: CardKanban) => void
   onDelete: (id: number) => void
-  onMoveToFaturamento: (card: CardKanban) => void
-  onMoveToProjetosFinalizados: (card: CardKanban) => void
+  onConcluirProjeto: (card: CardKanban) => void
 }) {
   const {
     attributes,
@@ -149,7 +147,6 @@ function SortableCard({
   const responsavelRevisao = usuarios.find(u => u.id === card.responsavel_revisao_id)
 
   const isRelatorioFinalizado = card.status === 'relatorio_finalizado'
-  const isFee = projeto?.tipo_cobranca === 'fee'
 
   return (
     <div
@@ -254,34 +251,21 @@ function SortableCard({
         )}
       </div>
 
-      {/* Botões de ação para relatório finalizado */}
+      {/* Botão de ação para relatório finalizado */}
       {isRelatorioFinalizado && card.link_relatorio && card.revisao_relatorio_ok && (
         <div className="flex gap-2 mt-3 pt-2 border-t">
-          {isFee ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs"
-              onClick={(e) => {
-                e.stopPropagation()
-                onMoveToProjetosFinalizados(card)
-              }}
-            >
-              Projetos Finalizados
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs"
-              onClick={(e) => {
-                e.stopPropagation()
-                onMoveToFaturamento(card)
-              }}
-            >
-              Enviar p/ Faturamento
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="default"
+            className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
+            onClick={(e) => {
+              e.stopPropagation()
+              onConcluirProjeto(card)
+            }}
+          >
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Concluir Projeto
+          </Button>
         </div>
       )}
     </div>
@@ -478,54 +462,54 @@ export function GestaoTrafegoKanban({
     setCards(cards.filter(c => c.id !== id))
   }
 
-  const handleMoveToFaturamento = async (card: CardKanban) => {
-    // Criar card no faturamento
-    await fetch('/api/cards-kanban', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo: card.titulo,
-        descricao: card.descricao,
-        area: 'faturamento',
-        status: 'backlog',
-        prioridade: card.prioridade,
-        projeto_id: card.projeto_id,
-        cliente_id: card.cliente_id,
-        trader_id: card.trader_id,
-      }),
-    })
+  const handleConcluirProjeto = async (card: CardKanban) => {
+    try {
+      // 1. Criar card no faturamento
+      const faturamentoResponse = await fetch('/api/cards-kanban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: card.titulo,
+          descricao: card.descricao,
+          area: 'faturamento',
+          status: 'backlog',
+          prioridade: card.prioridade,
+          projeto_id: card.projeto_id,
+          cliente_id: card.cliente_id,
+          trader_id: card.trader_id,
+          link_relatorio: card.link_relatorio,
+        }),
+      })
+      const faturamentoCard = await faturamentoResponse.json()
 
-    // Remover do gestão de tráfego
-    await fetch(`/api/cards-kanban?id=${card.id}`, { method: 'DELETE' })
-    setCards(cards.filter(c => c.id !== card.id))
+      // 2. Criar card em projetos concluídos com link para o card de faturamento
+      await fetch('/api/cards-kanban', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: card.titulo,
+          descricao: card.descricao,
+          area: 'projetos_concluidos',
+          status: 'aguardando_faturamento',
+          prioridade: card.prioridade,
+          projeto_id: card.projeto_id,
+          cliente_id: card.cliente_id,
+          trader_id: card.trader_id,
+          link_relatorio: card.link_relatorio,
+          faturamento_card_id: faturamentoCard.id,
+        }),
+      })
 
-    alert('Card enviado para Faturamento!')
-    router.refresh()
-  }
+      // 3. Remover do gestão de tráfego
+      await fetch(`/api/cards-kanban?id=${card.id}`, { method: 'DELETE' })
+      setCards(cards.filter(c => c.id !== card.id))
 
-  const handleMoveToProjetosFinalizados = async (card: CardKanban) => {
-    // Criar card nos projetos finalizados
-    await fetch('/api/cards-kanban', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo: card.titulo,
-        descricao: card.descricao,
-        area: 'projetos_finalizados',
-        status: 'backlog',
-        prioridade: card.prioridade,
-        projeto_id: card.projeto_id,
-        cliente_id: card.cliente_id,
-        trader_id: card.trader_id,
-      }),
-    })
-
-    // Remover do gestão de tráfego
-    await fetch(`/api/cards-kanban?id=${card.id}`, { method: 'DELETE' })
-    setCards(cards.filter(c => c.id !== card.id))
-
-    alert('Card enviado para Projetos Finalizados!')
-    router.refresh()
+      alert('Projeto concluído! Card enviado para Faturamento e adicionado aos Projetos Concluídos.')
+      router.refresh()
+    } catch (error) {
+      console.error('Erro ao concluir projeto:', error)
+      alert('Erro ao concluir projeto. Tente novamente.')
+    }
   }
 
   const resetForm = () => {
@@ -867,8 +851,7 @@ export function GestaoTrafegoKanban({
                           usuarios={usuarios}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
-                          onMoveToFaturamento={handleMoveToFaturamento}
-                          onMoveToProjetosFinalizados={handleMoveToProjetosFinalizados}
+                          onConcluirProjeto={handleConcluirProjeto}
                         />
                       ))}
                     </SortableContext>
