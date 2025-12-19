@@ -39,6 +39,9 @@ import {
 } from '@/components/ui/dialog'
 import { Plus, GripVertical, Calendar, User, Folder, Trash2, Edit } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ViewToggle, ViewMode } from './view-toggle'
+import { ListView } from './list-view'
+import { TableView } from './table-view'
 
 interface CardKanban {
   id: number
@@ -209,6 +212,7 @@ export function SimpleKanban({
   const [activeCard, setActiveCard] = useState<CardKanban | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<CardKanban | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -355,13 +359,45 @@ export function SimpleKanban({
     return cards.filter(c => c.status === columnId).sort((a, b) => a.ordem - b.ordem)
   }
 
+  // Handler para mudanca de status via lista/tabela
+  const handleStatusChange = async (cardId: number, newStatus: string) => {
+    const card = cards.find(c => c.id === cardId)
+    if (!card || card.status === newStatus) return
+
+    const updatedCards = cards.map(c =>
+      c.id === cardId ? { ...c, status: newStatus } : c
+    )
+    setCards(updatedCards)
+
+    await fetch(`/api/cards-kanban?id=${cardId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+  }
+
+  // Cards formatados para visualizacao lista/tabela
+  const cardsForView = cards.map(c => ({
+    id: c.id,
+    titulo: c.titulo,
+    descricao: c.descricao,
+    status: c.status,
+    prioridade: c.prioridade,
+    projeto_id: c.projeto_id,
+    cliente_id: c.cliente_id,
+    trader_id: c.trader_id,
+    data_vencimento: c.data_vencimento,
+  }))
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <p className="text-sm text-muted-foreground">
           Fluxo: Backlog → Para Fazer → Em Execucao → Finalizado
         </p>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex items-center gap-3">
+          <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => resetForm()}>
               <Plus className="h-4 w-4 mr-2" />
@@ -483,62 +519,99 @@ export function SimpleKanban({
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {columns.map((column) => (
-            <Card key={column.id} className="min-h-[500px]">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                  <div className={cn('w-3 h-3 rounded-full', column.color)} />
-                  {column.label}
-                  <Badge variant="secondary" className="ml-auto">
-                    {getColumnCards(column.id).length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <SortableContext
-                  items={getColumnCards(column.id).map(c => c.id)}
-                  strategy={verticalListSortingStrategy}
-                  id={column.id}
-                >
-                  {getColumnCards(column.id).map((card) => (
-                    <SortableCard
-                      key={card.id}
-                      card={card}
-                      projetos={projetos}
-                      clientes={clientes}
-                      usuarios={usuarios}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </SortableContext>
-                {getColumnCards(column.id).length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    Arraste cards aqui
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {/* Visualizacao em Lista */}
+      {viewMode === 'list' && (
+        <ListView
+          cards={cardsForView}
+          columns={columns}
+          projetos={projetos}
+          usuarios={usuarios}
+          onEdit={(card) => {
+            const fullCard = cards.find(c => c.id === card.id)
+            if (fullCard) handleEdit(fullCard)
+          }}
+          onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
+        />
+      )}
 
-        <DragOverlay>
-          {activeCard && (
-            <div className="bg-card border rounded-lg p-3 shadow-lg">
-              <h4 className="font-medium text-sm">{activeCard.titulo}</h4>
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+      {/* Visualizacao em Tabela */}
+      {viewMode === 'table' && (
+        <TableView
+          cards={cardsForView}
+          columns={columns}
+          projetos={projetos}
+          clientes={clientes}
+          usuarios={usuarios}
+          onEdit={(card) => {
+            const fullCard = cards.find(c => c.id === card.id)
+            if (fullCard) handleEdit(fullCard)
+          }}
+          onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
+        />
+      )}
+
+      {/* Visualizacao Kanban */}
+      {viewMode === 'kanban' && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {columns.map((column) => (
+              <Card key={column.id} className="min-h-[500px]">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                    <div className={cn('w-3 h-3 rounded-full', column.color)} />
+                    {column.label}
+                    <Badge variant="secondary" className="ml-auto">
+                      {getColumnCards(column.id).length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <SortableContext
+                    items={getColumnCards(column.id).map(c => c.id)}
+                    strategy={verticalListSortingStrategy}
+                    id={column.id}
+                  >
+                    {getColumnCards(column.id).map((card) => (
+                      <SortableCard
+                        key={card.id}
+                        card={card}
+                        projetos={projetos}
+                        clientes={clientes}
+                        usuarios={usuarios}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </SortableContext>
+                  {getColumnCards(column.id).length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      Arraste cards aqui
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <DragOverlay>
+            {activeCard && (
+              <div className="bg-card border rounded-lg p-3 shadow-lg">
+                <h4 className="font-medium text-sm">{activeCard.titulo}</h4>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   )
 }
