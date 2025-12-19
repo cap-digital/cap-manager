@@ -71,8 +71,14 @@ const campanhaSubCategory: NavSubCategory = {
   items: [
     { name: 'Gestão de Tráfego', href: '/gestao-trafego', icon: TrendingUp },
     { name: 'Faturamento', href: '/faturamento', icon: DollarSign },
-    { name: 'Projetos Finalizados', href: '/projetos-finalizados', icon: ClipboardCheck },
   ],
+}
+
+// Item especial para Projetos Finalizados (fora das subcategorias, dentro de Gestão de Projetos)
+const projetosFinalizadosItem: NavItem = {
+  name: 'Projetos Finalizados',
+  href: '/projetos-finalizados',
+  icon: ClipboardCheck,
 }
 
 const inteligenciaSubCategory: NavSubCategory = {
@@ -116,7 +122,7 @@ export function Sidebar({ user }: SidebarProps) {
 
   // Verifica se algum item dentro de Gestão de Projetos está ativo
   const isGestaoprojetosActive = () => {
-    const allItems = [...campanhaSubCategory.items, ...inteligenciaSubCategory.items]
+    const allItems = [...campanhaSubCategory.items, ...inteligenciaSubCategory.items, projetosFinalizadosItem]
     return allItems.some(item => pathname === item.href)
   }
 
@@ -306,6 +312,21 @@ export function Sidebar({ user }: SidebarProps) {
                   isOpen={inteligenciaOpen}
                   onToggle={() => setInteligenciaOpen(!inteligenciaOpen)}
                 />
+
+                {/* Projetos Finalizados - Item direto com cor diferente */}
+                <Link
+                  href={projetosFinalizadosItem.href}
+                  onClick={() => setIsMobileOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ml-4',
+                    pathname === projetosFinalizadosItem.href
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                  )}
+                >
+                  <projetosFinalizadosItem.icon className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && <span>{projetosFinalizadosItem.name}</span>}
+                </Link>
               </CollapsibleContent>
             </Collapsible>
 
