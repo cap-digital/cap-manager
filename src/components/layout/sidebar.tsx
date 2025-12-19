@@ -273,7 +273,7 @@ export function Sidebar({ user }: SidebarProps) {
             {isCollapsed && mounted && (
               <Link href="/" className="flex items-center justify-center w-full">
                 <Image
-                  src="/images/CAP_ORANGE.png"
+                  src={resolvedTheme === 'dark' ? '/images/CAP_ORANGE.png' : '/images/CAP_GREY.png'}
                   alt="CAP"
                   width={32}
                   height={32}
