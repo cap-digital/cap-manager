@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -225,9 +226,9 @@ export default function LoginPage() {
 
               <div className="text-center text-sm text-muted-foreground">
                 Não tem uma conta?{' '}
-                <a href="/registro" className="text-primary hover:underline font-medium">
+                <Link href="/registro" className="text-primary hover:underline font-medium">
                   Criar conta
-                </a>
+                </Link>
               </div>
             </form>
           </CardContent>
