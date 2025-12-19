@@ -4,17 +4,21 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const admin = await prisma.usuario.findFirst({
+    const adminCount = await prisma.usuario.count({
       where: { role: 'admin' },
     })
 
     return NextResponse.json({
-      hasAdmin: !!admin,
+      hasAdmin: adminCount > 0,
     })
-  } catch {
-    return NextResponse.json({
-      hasAdmin: false,
-    })
+  } catch (error) {
+    console.error('Erro ao verificar admin:', error)
+    // Em caso de erro de conexão, assumir que pode ter admin
+    // para não redirecionar erroneamente para setup
+    return NextResponse.json(
+      { error: 'Erro ao verificar configuração', hasAdmin: true },
+      { status: 500 }
+    )
   }
 }
 

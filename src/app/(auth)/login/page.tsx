@@ -25,16 +25,27 @@ export default function LoginPage() {
 
   const checkSetup = async () => {
     try {
-      const response = await fetch('/api/setup')
+      const response = await fetch('/api/setup', {
+        cache: 'no-store',
+      })
+
+      // Se der erro de conexão, mostrar login mesmo assim
+      if (!response.ok) {
+        console.error('Erro ao verificar setup:', response.status)
+        setIsChecking(false)
+        return
+      }
+
       const data = await response.json()
 
-      if (!data.hasAdmin) {
+      // Só redirecionar para setup se explicitamente não tiver admin
+      if (data.hasAdmin === false) {
         router.push('/setup')
         return
       }
-    } catch {
-      router.push('/setup')
-      return
+    } catch (error) {
+      // Em caso de erro de rede, mostrar login
+      console.error('Erro de rede ao verificar setup:', error)
     }
     setIsChecking(false)
   }

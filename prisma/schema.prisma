@@ -30,6 +30,8 @@ model Usuario {
   followUps               FollowUp[]
   alertas                 Alerta[]
 
+  @@index([role])
+  @@index([ativo])
   @@map("usuarios")
 }
 
@@ -77,6 +79,8 @@ model Cliente {
   tarefas  Tarefa[]
   pis      Pi[]
 
+  @@index([ativo])
+  @@index([agenciaId])
   @@map("clientes")
 }
 
@@ -113,6 +117,10 @@ model Projeto {
   followUps   FollowUp[]
   utmConfigs  UtmConfig[]
 
+  @@index([status])
+  @@index([clienteId])
+  @@index([traderId])
+  @@index([status, clienteId])
   @@map("projetos")
 }
 
@@ -209,6 +217,9 @@ model Tarefa {
   cliente     Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   responsavel Usuario?  @relation("ResponsavelTarefas", fields: [responsavelId], references: [id], onDelete: SetNull)
 
+  @@index([status])
+  @@index([responsavelId])
+  @@index([status, ordem])
   @@map("tarefas")
 }
 
