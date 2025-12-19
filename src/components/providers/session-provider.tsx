@@ -3,6 +3,7 @@
 import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from 'next-themes'
 import { ReactNode } from 'react'
+import { SidebarProvider } from '@/contexts/sidebar-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <SidebarProvider>
+          {children}
+        </SidebarProvider>
       </ThemeProvider>
     </SessionProvider>
   )

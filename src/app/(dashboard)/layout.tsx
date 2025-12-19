@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Sidebar } from '@/components/layout/sidebar'
+import { MainContent } from '@/components/layout/main-content'
 
 export default async function DashboardLayout({
   children,
@@ -35,9 +36,7 @@ export default async function DashboardLayout({
             : null
         }
       />
-      <div className="lg:pl-64 transition-all duration-300">
-        <main className="min-h-screen">{children}</main>
-      </div>
+      <MainContent>{children}</MainContent>
     </div>
   )
 }

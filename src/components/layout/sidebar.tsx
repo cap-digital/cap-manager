@@ -48,6 +48,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { useSidebar } from '@/contexts/sidebar-context'
 
 interface NavItem {
   name: string
@@ -114,8 +115,8 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { theme, setTheme, resolvedTheme } = useTheme()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { setTheme, resolvedTheme } = useTheme()
+  const { isCollapsed, setIsCollapsed } = useSidebar()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [gestaoprojetosOpen, setGestaoprojetosOpen] = useState(true)
   const [campanhaOpen, setCampanhaOpen] = useState(true)
@@ -276,7 +277,7 @@ export function Sidebar({ user }: SidebarProps) {
                   alt="CAP"
                   width={32}
                   height={32}
-                  className="h-8 w-8"
+                  className="h-8 w-8 object-contain"
                   priority
                 />
               </Link>
