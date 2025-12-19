@@ -1,10 +1,15 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -43,10 +48,55 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // Para login com Google, criar ou atualizar usuário no banco
+      if (account?.provider === 'google' && user.email) {
+        const existingUser = await prisma.usuario.findUnique({
+          where: { email: user.email },
+        })
+
+        if (!existingUser) {
+          // Criar novo usuário com dados do Google
+          await prisma.usuario.create({
+            data: {
+              email: user.email,
+              nome: user.name || user.email.split('@')[0],
+              senha: '', // Sem senha para usuários Google
+              role: 'trader',
+              ativo: true,
+              avatarUrl: user.image || null,
+            },
+          })
+        } else if (!existingUser.ativo) {
+          // Usuário existe mas está inativo
+          return false
+        } else {
+          // Atualizar avatar se mudou
+          if (user.image && user.image !== existingUser.avatarUrl) {
+            await prisma.usuario.update({
+              where: { id: existingUser.id },
+              data: { avatarUrl: user.image },
+            })
+          }
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
+        // Para login com Google, buscar dados do banco
+        if (account?.provider === 'google' && user.email) {
+          const dbUser = await prisma.usuario.findUnique({
+            where: { email: user.email },
+          })
+          if (dbUser) {
+            token.id = dbUser.id.toString()
+            token.role = dbUser.role
+          }
+        } else {
+          token.id = user.id
+          token.role = user.role
+        }
       }
       return token
     },
