@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import { useTheme } from 'next-themes'
 import {
   LayoutDashboard,
   Users,
@@ -28,6 +30,8 @@ import {
   Globe,
   FolderKanban,
   UserCog,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -110,11 +114,18 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [gestaoprojetosOpen, setGestaoprojetosOpen] = useState(true)
   const [campanhaOpen, setCampanhaOpen] = useState(true)
   const [inteligenciaOpen, setInteligenciaOpen] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -246,10 +257,28 @@ export function Sidebar({ user }: SidebarProps) {
           <div className="flex items-center justify-between h-16 px-4 border-b">
             {!isCollapsed && (
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">C</span>
-                </div>
-                <span className="font-bold text-xl">CAP Manager</span>
+                {mounted && (
+                  <Image
+                    src={resolvedTheme === 'dark' ? '/images/CAPCO_ORANGE.png' : '/images/CAPCO_OFFBLACK.png'}
+                    alt="CAP Manager"
+                    width={140}
+                    height={40}
+                    className="h-8 w-auto"
+                    priority
+                  />
+                )}
+              </Link>
+            )}
+            {isCollapsed && mounted && (
+              <Link href="/" className="flex items-center justify-center w-full">
+                <Image
+                  src="/images/CAP_ORANGE.png"
+                  alt="CAP"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8"
+                  priority
+                />
               </Link>
             )}
             <Button
@@ -389,6 +418,17 @@ export function Sidebar({ user }: SidebarProps) {
                     <Settings className="mr-2 h-4 w-4" />
                     Configurações
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                  className="cursor-pointer"
+                >
+                  {resolvedTheme === 'dark' ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  {resolvedTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

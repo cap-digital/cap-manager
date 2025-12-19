@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'CAP Manager - Gestão de Campanhas e Clientes',
   description: 'Sistema completo para gestão de campanhas de mídia digital, clientes e agências',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

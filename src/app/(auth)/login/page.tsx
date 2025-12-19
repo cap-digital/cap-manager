@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,8 +43,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const { resolvedTheme } = useTheme()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true)
@@ -137,12 +145,16 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-              <span className="text-primary-foreground font-bold text-2xl">C</span>
-            </div>
-            <span className="font-bold text-3xl">CAP Manager</span>
-          </div>
+          {mounted && (
+            <Image
+              src={resolvedTheme === 'dark' ? '/images/CAPCO_ORANGE.png' : '/images/CAPCO_OFFBLACK.png'}
+              alt="CAP Manager"
+              width={200}
+              height={60}
+              className="h-12 w-auto"
+              priority
+            />
+          )}
         </div>
 
         <Card className="shadow-xl">
