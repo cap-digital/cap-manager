@@ -71,7 +71,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.utmConfig.delete({
-      where: { id },
+      where: { id: Number(id) },
     })
 
     return NextResponse.json({ success: true })

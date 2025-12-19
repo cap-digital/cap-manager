@@ -30,7 +30,7 @@ export default async function UTMPage() {
 
   const utmConfigsFormatted = utmConfigs.map(u => ({
     id: u.id,
-    projeto_id: u.projetoId || '',
+    projeto_id: u.projetoId,
     projeto: u.projeto,
     utm_source: u.utmSource,
     utm_medium: u.utmMedium,

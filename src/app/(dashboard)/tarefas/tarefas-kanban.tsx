@@ -64,17 +64,17 @@ import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 interface SimplifiedTarefa {
-  id: string
+  id: number
   titulo: string
   descricao: string | null
   status: TarefaStatus
   prioridade: TarefaPrioridade
-  projeto_id: string | null
-  projeto: { id: string; nome: string } | null
-  cliente_id: string | null
-  cliente: { id: string; nome: string } | null
-  responsavel_id: string | null
-  responsavel: { id: string; nome: string } | null
+  projeto_id: number | null
+  projeto: { id: number; nome: string } | null
+  cliente_id: number | null
+  cliente: { id: number; nome: string } | null
+  responsavel_id: number | null
+  responsavel: { id: number; nome: string } | null
   data_vencimento: string | null
   ordem: number
   created_at: string
@@ -83,9 +83,9 @@ interface SimplifiedTarefa {
 
 interface TarefasKanbanProps {
   tarefas: SimplifiedTarefa[]
-  projetos: { id: string; nome: string }[]
-  clientes: { id: string; nome: string }[]
-  usuarios: { id: string; nome: string }[]
+  projetos: { id: number; nome: string }[]
+  clientes: { id: number; nome: string }[]
+  usuarios: { id: number; nome: string }[]
 }
 
 const columns: { id: TarefaStatus; title: string; color: string }[] = [
@@ -113,7 +113,7 @@ function TarefaCard({
   onDelete: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: tarefa.id })
+    useSortable({ id: String(tarefa.id) })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -269,9 +269,9 @@ export function TarefasKanban({
       descricao: tarefa.descricao || '',
       status: tarefa.status,
       prioridade: tarefa.prioridade,
-      projeto_id: tarefa.projeto_id || '',
-      cliente_id: tarefa.cliente_id || '',
-      responsavel_id: tarefa.responsavel_id || '',
+      projeto_id: tarefa.projeto_id ? String(tarefa.projeto_id) : '',
+      cliente_id: tarefa.cliente_id ? String(tarefa.cliente_id) : '',
+      responsavel_id: tarefa.responsavel_id ? String(tarefa.responsavel_id) : '',
       data_vencimento: tarefa.data_vencimento || '',
     })
     setIsOpen(true)
@@ -285,7 +285,7 @@ export function TarefasKanban({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
-    const tarefa = tarefas.find(t => t.id === active.id)
+    const tarefa = tarefas.find(t => String(t.id) === active.id)
     setActiveTarefa(tarefa || null)
   }
 
@@ -302,16 +302,16 @@ export function TarefasKanban({
     const isColumn = columns.some(col => col.id === overId)
     const newStatus = isColumn
       ? (overId as TarefaStatus)
-      : tarefas.find(t => t.id === overId)?.status
+      : tarefas.find(t => String(t.id) === overId)?.status
 
     if (!newStatus) return
 
-    const tarefa = tarefas.find(t => t.id === activeId)
+    const tarefa = tarefas.find(t => String(t.id) === activeId)
     if (!tarefa || tarefa.status === newStatus) return
 
     // Atualizar localmente primeiro
     setTarefas(prev =>
-      prev.map(t => (t.id === activeId ? { ...t, status: newStatus } : t))
+      prev.map(t => (String(t.id) === activeId ? { ...t, status: newStatus } : t))
     )
 
     // Atualizar no banco via API
@@ -319,14 +319,14 @@ export function TarefasKanban({
       const response = await fetch('/api/tarefas', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: activeId, status: newStatus }),
+        body: JSON.stringify({ id: tarefa.id, status: newStatus }),
       })
 
       if (!response.ok) throw new Error('Erro ao mover tarefa')
     } catch (error) {
       // Reverter em caso de erro
       setTarefas(prev =>
-        prev.map(t => (t.id === activeId ? tarefa : t))
+        prev.map(t => (String(t.id) === activeId ? tarefa : t))
       )
       toast({
         variant: 'destructive',
@@ -389,7 +389,7 @@ export function TarefasKanban({
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return
 
     try {
@@ -527,7 +527,7 @@ export function TarefasKanban({
                     </SelectTrigger>
                     <SelectContent>
                       {usuarios.map(u => (
-                        <SelectItem key={u.id} value={u.id}>
+                        <SelectItem key={u.id} value={String(u.id)}>
                           {u.nome}
                         </SelectItem>
                       ))}
@@ -548,7 +548,7 @@ export function TarefasKanban({
                     </SelectTrigger>
                     <SelectContent>
                       {projetos.map(p => (
-                        <SelectItem key={p.id} value={p.id}>
+                        <SelectItem key={p.id} value={String(p.id)}>
                           {p.nome}
                         </SelectItem>
                       ))}
@@ -613,7 +613,7 @@ export function TarefasKanban({
                 </CardHeader>
                 <CardContent className="p-2 space-y-2 min-h-[200px]">
                   <SortableContext
-                    items={tarefasByStatus[column.id].map(t => t.id)}
+                    items={tarefasByStatus[column.id].map(t => String(t.id))}
                     strategy={verticalListSortingStrategy}
                   >
                     {tarefasByStatus[column.id].map(tarefa => (

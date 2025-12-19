@@ -50,25 +50,25 @@ import type { Usuario } from '@/types'
 
 interface FollowUpClientProps {
   projetos: {
-    id: string
+    id: number
     nome: string
     status: string
     cliente: { nome: string } | null
-    trader: { id: string; nome: string } | null
+    trader: { id: number; nome: string } | null
   }[]
   followUps: {
-    id: string
+    id: number
     conteudo: string
     tipo: string
     created_at: string
     projeto: {
-      id: string
+      id: number
       nome: string
       cliente: { nome: string } | null
     } | null
-    trader: { id: string; nome: string } | null
+    trader: { id: number; nome: string } | null
   }[]
-  traders: { id: string; nome: string }[]
+  traders: { id: number; nome: string }[]
   currentUser: Usuario | null
 }
 
@@ -105,7 +105,7 @@ export function FollowUpClient({
       followUp.projeto?.cliente?.nome.toLowerCase().includes(search.toLowerCase())
 
     const matchesTrader =
-      traderFilter === 'all' || followUp.trader?.id === traderFilter
+      traderFilter === 'all' || followUp.trader?.id === Number(traderFilter)
 
     return matchesSearch && matchesTrader
   })
@@ -113,7 +113,7 @@ export function FollowUpClient({
   const projetosDoTrader =
     traderFilter === 'all'
       ? projetos
-      : projetos.filter(p => p.trader?.id === traderFilter)
+      : projetos.filter(p => p.trader?.id === Number(traderFilter))
 
   const resetForm = () => {
     setFormData({
@@ -191,7 +191,7 @@ export function FollowUpClient({
             <SelectContent>
               <SelectItem value="all">Todos os traders</SelectItem>
               {traders.map(trader => (
-                <SelectItem key={trader.id} value={trader.id}>
+                <SelectItem key={trader.id} value={String(trader.id)}>
                   {trader.nome}
                 </SelectItem>
               ))}
@@ -235,7 +235,7 @@ export function FollowUpClient({
                     </SelectTrigger>
                     <SelectContent>
                       {projetosDoTrader.map(projeto => (
-                        <SelectItem key={projeto.id} value={projeto.id}>
+                        <SelectItem key={projeto.id} value={String(projeto.id)}>
                           {projeto.nome}
                           {projeto.cliente && (
                             <span className="text-muted-foreground ml-2">
@@ -460,7 +460,7 @@ export function FollowUpClient({
                       variant="outline"
                       className="w-full mt-2"
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, projeto_id: projeto.id }))
+                        setFormData(prev => ({ ...prev, projeto_id: String(projeto.id) }))
                         setIsOpen(true)
                       }}
                     >

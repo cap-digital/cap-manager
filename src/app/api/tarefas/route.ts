@@ -122,7 +122,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.tarefa.delete({
-      where: { id },
+      where: { id: Number(id) },
     })
 
     return NextResponse.json({ success: true })

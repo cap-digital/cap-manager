@@ -25,68 +25,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Endpoint para verificar e enviar lembretes de cobrança diários
+// Endpoint para verificar status
 export async function GET() {
-  try {
-    const today = new Date()
-    const diaHoje = today.getDate()
-
-    // Buscar clientes com cobrança para hoje
-    const clientes = await prisma.cliente.findMany({
-      where: {
-        diaCobranca: diaHoje,
-        ativo: true,
-        whatsapp: { not: null },
-      },
-    })
-
-    const results = []
-
-    for (const cliente of clientes) {
-      if (cliente.whatsapp) {
-        const message = messageTemplates.cobranca(
-          cliente.nome,
-          'Valor a confirmar',
-          cliente.diaCobranca || 0
-        )
-
-        const result = await sendWhatsAppMessage({
-          to: cliente.whatsapp,
-          message,
-        })
-
-        // Registrar alerta no banco
-        await prisma.alerta.create({
-          data: {
-            tipo: 'cobranca',
-            titulo: `Cobrança - ${cliente.nome}`,
-            mensagem: message,
-            destinatarioId: cliente.id,
-            enviadoWhatsapp: result.success,
-            dataEnvioWhatsapp: result.success ? new Date() : null,
-          },
-        })
-
-        results.push({
-          cliente: cliente.nome,
-          success: result.success,
-          error: result.error,
-        })
-      }
-    }
-
-    return NextResponse.json({
-      message: `${results.length} lembretes processados`,
-      results,
-    })
-  } catch (error) {
-    console.error('Erro ao processar lembretes:', error)
-    return NextResponse.json({ error: 'Erro ao processar' }, { status: 500 })
-  }
+  return NextResponse.json({
+    message: 'WhatsApp webhook ativo',
+    timestamp: new Date().toISOString(),
+  })
 }
 
 async function handleBillingReminder(data: {
-  cliente_id: string
+  cliente_id: number
   valor?: string
 }) {
   const cliente = await prisma.cliente.findUnique({
@@ -100,7 +48,7 @@ async function handleBillingReminder(data: {
   const message = messageTemplates.cobranca(
     cliente.nome,
     data.valor || 'Valor a confirmar',
-    cliente.diaCobranca || 0
+    0
   )
 
   const result = await sendWhatsAppMessage({
@@ -112,8 +60,8 @@ async function handleBillingReminder(data: {
 }
 
 async function handleTaskAssigned(data: {
-  tarefa_id: string
-  responsavel_id: string
+  tarefa_id: number
+  responsavel_id: number
 }) {
   const [tarefa, responsavel] = await Promise.all([
     prisma.tarefa.findUnique({ where: { id: data.tarefa_id } }),
@@ -151,7 +99,7 @@ async function handleTaskAssigned(data: {
   return NextResponse.json(result)
 }
 
-async function handleProjectActivated(data: { projeto_id: string }) {
+async function handleProjectActivated(data: { projeto_id: number }) {
   const projeto = await prisma.projeto.findUnique({
     where: { id: data.projeto_id },
     include: {
@@ -185,7 +133,7 @@ async function handleProjectActivated(data: { projeto_id: string }) {
 }
 
 async function handleCustomAlert(data: {
-  destinatario_id: string
+  destinatario_id: number
   titulo: string
   mensagem: string
 }) {

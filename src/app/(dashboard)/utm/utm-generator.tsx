@@ -33,14 +33,14 @@ import { generateUTM } from '@/lib/utils'
 
 interface UTMGeneratorProps {
   projetos: {
-    id: string
+    id: number
     nome: string
     cliente: { nome: string } | null
   }[]
   utmConfigs: {
-    id: string
-    projeto_id: string
-    projeto: { id: string; nome: string } | null
+    id: number
+    projeto_id: number | null
+    projeto: { id: number; nome: string } | null
     utm_source: string
     utm_medium: string
     utm_campaign: string
@@ -180,14 +180,14 @@ export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGenera
     }
   }
 
-  const handleCopy = async (text: string, id?: string) => {
+  const handleCopy = async (text: string, id?: number | string) => {
     await navigator.clipboard.writeText(text)
-    setCopied(id || 'main')
+    setCopied(id !== undefined ? String(id) : 'main')
     setTimeout(() => setCopied(null), 2000)
     toast({ title: 'Copiado!' })
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Excluir esta UTM?')) return
 
     try {
@@ -209,7 +209,7 @@ export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGenera
   }
 
   const handleProjetoSelect = (projetoId: string) => {
-    const projeto = projetos.find(p => p.id === projetoId)
+    const projeto = projetos.find(p => String(p.id) === projetoId)
     if (projeto) {
       setFormData(prev => ({
         ...prev,
@@ -245,7 +245,7 @@ export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGenera
                 </SelectTrigger>
                 <SelectContent>
                   {projetos.map(projeto => (
-                    <SelectItem key={projeto.id} value={projeto.id}>
+                    <SelectItem key={projeto.id} value={String(projeto.id)}>
                       {projeto.nome}
                       {projeto.cliente && (
                         <span className="text-muted-foreground ml-2">
@@ -430,7 +430,7 @@ export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGenera
                           className="h-7 w-7"
                           onClick={() => handleCopy(config.url_gerada, config.id)}
                         >
-                          {copied === config.id ? (
+                          {copied === String(config.id) ? (
                             <Check className="h-3 w-3 text-green-500" />
                           ) : (
                             <Copy className="h-3 w-3" />
