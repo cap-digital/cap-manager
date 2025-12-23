@@ -302,7 +302,7 @@ export function ProjetoDetalhesClient({
     return { valorLiquido, valorPlataforma, valorPorDia, percentualEntrega, valorRestante, custoResultado }
   }
 
-  const handleSubmitProjeto = async (e: React.FormEvent) => {
+  const handleSubmitProjeto = async (e: React.FormEvent, closeAfterSave = true) => {
     e.preventDefault()
     setIsLoading(true)
 
@@ -346,7 +346,9 @@ export function ProjetoDetalhesClient({
       }))
 
       toast({ title: 'Projeto atualizado!' })
-      setIsProjetoOpen(false)
+      if (closeAfterSave) {
+        setIsProjetoOpen(false)
+      }
       router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
@@ -957,9 +959,18 @@ export function ProjetoDetalhesClient({
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => { setIsProjetoOpen(false); resetProjetoForm() }}>Cancelar</Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isLoading}
+                onClick={(e) => handleSubmitProjeto(e as unknown as React.FormEvent, false)}
+              >
+                {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Salvar e Continuar
+              </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Salvar
+                Salvar e Fechar
               </Button>
             </DialogFooter>
           </form>

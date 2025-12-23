@@ -95,6 +95,7 @@ export async function PUT(request: Request) {
     }
 
     const data = await request.json()
+    console.log('PUT /api/projetos - Dados recebidos:', JSON.stringify(data, null, 2))
 
     const projeto = await prisma.projeto.update({
       where: { id: parseInt(id) },
@@ -123,6 +124,7 @@ export async function PUT(request: Request) {
       },
     })
 
+    console.log('PUT /api/projetos - Projeto atualizado:', projeto.id)
     return NextResponse.json(projeto)
   } catch (error) {
     console.error('Erro ao atualizar projeto:', error)
