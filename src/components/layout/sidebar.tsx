@@ -102,7 +102,7 @@ const inteligenciaSubCategory: NavSubCategory = {
 // Itens secundários (fora de categorias)
 const secondaryNavigation: NavItem[] = [
   { name: 'Gerador UTM', href: '/utm', icon: Link2 },
-  { name: 'Revisão Diária', href: '/follow-up', icon: MessageSquare },
+  { name: 'Follow-Ups', href: '/follow-up', icon: MessageSquare },
 ]
 
 interface SidebarProps {
@@ -120,9 +120,9 @@ export function Sidebar({ user }: SidebarProps) {
   const { setTheme, resolvedTheme } = useTheme()
   const { isCollapsed, setIsCollapsed } = useSidebar()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [gestaoprojetosOpen, setGestaoprojetosOpen] = useState(true)
-  const [campanhaOpen, setCampanhaOpen] = useState(true)
-  const [inteligenciaOpen, setInteligenciaOpen] = useState(true)
+  const [gestaoprojetosOpen, setGestaoprojetosOpen] = useState(false)
+  const [campanhaOpen, setCampanhaOpen] = useState(false)
+  const [inteligenciaOpen, setInteligenciaOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   // Prevent hydration mismatch

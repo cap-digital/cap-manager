@@ -509,17 +509,17 @@ export function ProjetoDetalhesClient({
         <Card>
           <CardContent className="p-4">
             <div className="flex justify-between items-start">
-              <div>
+              <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">Período</p>
                 <p className="font-medium text-sm">
                   {projeto.data_inicio ? formatDate(projeto.data_inicio) : '-'}
                 </p>
-                <p className="text-xs text-muted-foreground">até</p>
+                <p className="text-xs text-muted-foreground mt-2">até</p>
                 <p className="font-medium text-sm">
                   {projeto.data_fim ? formatDate(projeto.data_fim) : '-'}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right space-y-1">
                 <p className="text-xs text-muted-foreground">Duração</p>
                 <p className="font-bold text-lg">{diasVeiculacao || '-'}</p>
                 <p className="text-xs text-muted-foreground">dias</p>
