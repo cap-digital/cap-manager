@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         estrategia: data.estrategia || null,
         kpi: data.kpi || null,
         status: data.status || 'planejada',
-        dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
+        dataInicio: data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null,
         valorBruto: data.valor_bruto || 0,
         porcentagemAgencia: data.porcentagem_agencia || 0,
         porcentagemPlataforma: data.porcentagem_plataforma || 0,
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         estimativaSucesso: data.estimativa_sucesso || null,
         gastoAteMomento: data.gasto_ate_momento || null,
         entregueAteMomento: data.entregue_ate_momento || null,
-        dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao) : null,
+        dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00') : null,
       },
       include: {
         projeto: { select: { id: true, nome: true } },
@@ -85,37 +85,54 @@ export async function PUT(request: Request) {
     }
 
     const data = await request.json()
+    console.log('PUT /api/estrategias - Data recebida:', JSON.stringify(data, null, 2))
+
+    // Verificar se a estratégia existe
+    const existente = await prisma.estrategia.findUnique({
+      where: { id: parseInt(id) }
+    })
+
+    if (!existente) {
+      return NextResponse.json({ error: 'Estrategia nao encontrada' }, { status: 404 })
+    }
+
+    const updateData = {
+      plataforma: data.plataforma,
+      nomeConta: data.nome_conta || null,
+      idConta: data.id_conta || null,
+      campaignId: data.campaign_id || null,
+      estrategia: data.estrategia || null,
+      kpi: data.kpi || null,
+      status: data.status,
+      dataInicio: data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null,
+      valorBruto: data.valor_bruto || 0,
+      porcentagemAgencia: data.porcentagem_agencia || 0,
+      porcentagemPlataforma: data.porcentagem_plataforma || 0,
+      entregaContratada: data.entrega_contratada || null,
+      estimativaResultado: data.estimativa_resultado || null,
+      estimativaSucesso: data.estimativa_sucesso || null,
+      gastoAteMomento: data.gasto_ate_momento || null,
+      entregueAteMomento: data.entregue_ate_momento || null,
+      dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00') : null,
+    }
+
+    console.log('PUT /api/estrategias - Update data:', JSON.stringify(updateData, null, 2))
 
     const estrategia = await prisma.estrategia.update({
       where: { id: parseInt(id) },
-      data: {
-        plataforma: data.plataforma,
-        nomeConta: data.nome_conta || null,
-        idConta: data.id_conta || null,
-        campaignId: data.campaign_id || null,
-        estrategia: data.estrategia || null,
-        kpi: data.kpi || null,
-        status: data.status,
-        dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
-        valorBruto: data.valor_bruto || 0,
-        porcentagemAgencia: data.porcentagem_agencia || 0,
-        porcentagemPlataforma: data.porcentagem_plataforma || 0,
-        entregaContratada: data.entrega_contratada || null,
-        estimativaResultado: data.estimativa_resultado || null,
-        estimativaSucesso: data.estimativa_sucesso || null,
-        gastoAteMomento: data.gasto_ate_momento || null,
-        entregueAteMomento: data.entregue_ate_momento || null,
-        dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao) : null,
-      },
+      data: updateData,
       include: {
         projeto: { select: { id: true, nome: true } },
       },
     })
 
+    console.log('PUT /api/estrategias - Sucesso:', estrategia.id)
+
     return NextResponse.json(estrategia)
   } catch (error) {
     console.error('Erro ao atualizar estrategia:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    return NextResponse.json({ error: 'Erro interno', details: errorMessage }, { status: 500 })
   }
 }
 

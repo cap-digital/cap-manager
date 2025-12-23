@@ -1182,14 +1182,13 @@ export function ProjetoDetalhesClient({
               </div>
 
               <div className="space-y-2">
-                <Label>Data de Início *</Label>
+                <Label>Data de Início</Label>
                 <Input
                   type="date"
                   value={estrategiaForm.data_inicio}
                   onChange={e => setEstrategiaForm(p => ({ ...p, data_inicio: e.target.value }))}
                   min={projeto.data_inicio || undefined}
                   max={projeto.data_fim || undefined}
-                  required
                 />
                 {projeto.data_inicio && projeto.data_fim && (
                   <p className="text-xs text-muted-foreground">
