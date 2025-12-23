@@ -40,6 +40,8 @@ import {
   TrendingUp,
   Target,
   Settings,
+  AlertTriangle,
+  Calendar,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { SearchableSelect } from '@/components/ui/searchable-select'
@@ -71,6 +73,7 @@ interface SimplifiedEstrategia {
   estrategia: string | null
   kpi: string | null
   status: StatusEstrategia
+  data_inicio: string | null
   valor_bruto: number
   porcentagem_agencia: number
   porcentagem_plataforma: number
@@ -211,6 +214,7 @@ export function ProjetoDetalhesClient({
     estrategia: '',
     kpi: '',
     status: 'planejada' as StatusEstrategia,
+    data_inicio: '',
     valor_bruto: '',
     porcentagem_agencia: '',
     porcentagem_plataforma: '',
@@ -250,6 +254,7 @@ export function ProjetoDetalhesClient({
       estrategia: '',
       kpi: '',
       status: 'planejada',
+      data_inicio: '',
       valor_bruto: '',
       porcentagem_agencia: '',
       porcentagem_plataforma: '',
@@ -302,6 +307,45 @@ export function ProjetoDetalhesClient({
     return { valorLiquido, valorPlataforma, valorPorDia, percentualEntrega, valorRestante, custoResultado }
   }
 
+  // Verifica se a estratégia precisa de atualização baseada no grupo de revisão
+  const verificarAlertaAtualizacao = (estrategia: SimplifiedEstrategia) => {
+    if (!estrategia.data_inicio) return null
+    if (!projeto.grupo_revisao) return null
+
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    const dataInicio = new Date(estrategia.data_inicio)
+    const dataUltimaAtualizacao = estrategia.data_atualizacao ? new Date(estrategia.data_atualizacao) : null
+
+    // Se não tem atualização, verificar desde o início
+    const dataReferencia = dataUltimaAtualizacao || dataInicio
+
+    // Calcular dias desde a última atualização
+    const diffTime = hoje.getTime() - dataReferencia.getTime()
+    const diasDesdeAtualizacao = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    // Definir limite baseado no grupo
+    let diasLimite = 1 // Grupo A - todos os dias
+    if (projeto.grupo_revisao === 'B') {
+      diasLimite = 2 // Segunda, Quarta, Sexta (max 2 dias)
+    } else if (projeto.grupo_revisao === 'C') {
+      diasLimite = 3 // Terça, Quinta (max 3 dias)
+    }
+
+    if (diasDesdeAtualizacao > diasLimite) {
+      return {
+        diasAtraso: diasDesdeAtualizacao - diasLimite,
+        diasDesdeAtualizacao,
+        mensagem: dataUltimaAtualizacao
+          ? `Última atualização há ${diasDesdeAtualizacao} dias`
+          : `Sem atualização desde o início (${diasDesdeAtualizacao} dias)`
+      }
+    }
+
+    return null
+  }
+
   const handleSubmitProjeto = async (e: React.FormEvent, closeAfterSave = true) => {
     e.preventDefault()
     setIsLoading(true)
@@ -334,22 +378,38 @@ export function ProjetoDetalhesClient({
 
       const updatedProjeto = await response.json()
 
-      // Atualizar estado local
+      // Atualizar estado local com dados da API
       setProjeto(prev => ({
         ...prev,
-        ...payload,
-        cliente: clientes.find(c => c.id === payload.cliente_id) || null,
-        trader: traders.find(t => t.id === payload.trader_id) || null,
-        colaborador: traders.find(t => t.id === payload.colaborador_id) || null,
-        pi: pis.find(p => p.id === payload.pi_id) || null,
-        agencia: agencias.find(a => a.id === payload.agencia_id) || null,
+        cliente_id: updatedProjeto.clienteId,
+        nome: updatedProjeto.nome,
+        pi_id: updatedProjeto.piId,
+        tipo_cobranca: updatedProjeto.tipoCobranca,
+        agencia_id: updatedProjeto.agenciaId,
+        trader_id: updatedProjeto.traderId,
+        colaborador_id: updatedProjeto.colaboradorId,
+        status: updatedProjeto.status,
+        data_inicio: updatedProjeto.dataInicio ? updatedProjeto.dataInicio.split('T')[0] : null,
+        data_fim: updatedProjeto.dataFim ? updatedProjeto.dataFim.split('T')[0] : null,
+        link_proposta: updatedProjeto.linkProposta,
+        url_destino: updatedProjeto.urlDestino,
+        grupo_revisao: updatedProjeto.grupoRevisao,
+        cliente: updatedProjeto.cliente,
+        trader: updatedProjeto.trader,
+        colaborador: updatedProjeto.colaborador,
+        pi: updatedProjeto.pi ? {
+          id: updatedProjeto.pi.id,
+          identificador: updatedProjeto.pi.identificador,
+          valor_bruto: Number(updatedProjeto.pi.valorBruto),
+        } : null,
+        agencia: updatedProjeto.agencia,
+        estrategias: prev.estrategias,
       }))
 
       toast({ title: 'Projeto atualizado!' })
       if (closeAfterSave) {
         setIsProjetoOpen(false)
       }
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({ variant: 'destructive', title: 'Erro', description: errorMessage })
@@ -360,6 +420,36 @@ export function ProjetoDetalhesClient({
 
   const handleSubmitEstrategia = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validação da data de início da estratégia
+    if (estrategiaForm.data_inicio) {
+      const dataInicioEstrategia = new Date(estrategiaForm.data_inicio)
+
+      if (projeto.data_inicio) {
+        const dataInicioProjeto = new Date(projeto.data_inicio)
+        if (dataInicioEstrategia < dataInicioProjeto) {
+          toast({
+            variant: 'destructive',
+            title: 'Data inválida',
+            description: `A data de início da estratégia deve ser igual ou posterior à data de início do projeto (${formatDate(projeto.data_inicio)})`
+          })
+          return
+        }
+      }
+
+      if (projeto.data_fim) {
+        const dataFimProjeto = new Date(projeto.data_fim)
+        if (dataInicioEstrategia > dataFimProjeto) {
+          toast({
+            variant: 'destructive',
+            title: 'Data inválida',
+            description: `A data de início da estratégia deve ser anterior à data de fim do projeto (${formatDate(projeto.data_fim)})`
+          })
+          return
+        }
+      }
+    }
+
     setIsLoading(true)
 
     const payload = {
@@ -371,6 +461,7 @@ export function ProjetoDetalhesClient({
       estrategia: estrategiaForm.estrategia || null,
       kpi: estrategiaForm.kpi || null,
       status: estrategiaForm.status,
+      data_inicio: estrategiaForm.data_inicio || null,
       valor_bruto: estrategiaForm.valor_bruto ? parseFloat(estrategiaForm.valor_bruto) : 0,
       porcentagem_agencia: estrategiaForm.porcentagem_agencia ? parseFloat(estrategiaForm.porcentagem_agencia) : 0,
       porcentagem_plataforma: estrategiaForm.porcentagem_plataforma ? parseFloat(estrategiaForm.porcentagem_plataforma) : 0,
@@ -380,6 +471,31 @@ export function ProjetoDetalhesClient({
       data_atualizacao: estrategiaForm.data_atualizacao || null,
     }
 
+    // Função para converter resposta da API para formato do estado local
+    const formatEstrategiaFromApi = (apiData: Record<string, unknown>): SimplifiedEstrategia => ({
+      id: apiData.id as number,
+      projeto_id: apiData.projetoId as number,
+      plataforma: apiData.plataforma as Plataforma,
+      nome_conta: apiData.nomeConta as string | null,
+      id_conta: apiData.idConta as string | null,
+      campaign_id: apiData.campaignId as string | null,
+      estrategia: apiData.estrategia as string | null,
+      kpi: apiData.kpi as string | null,
+      status: apiData.status as StatusEstrategia,
+      data_inicio: apiData.dataInicio ? String(apiData.dataInicio).split('T')[0] : null,
+      valor_bruto: Number(apiData.valorBruto) || 0,
+      porcentagem_agencia: Number(apiData.porcentagemAgencia) || 0,
+      porcentagem_plataforma: Number(apiData.porcentagemPlataforma) || 0,
+      entrega_contratada: apiData.entregaContratada ? Number(apiData.entregaContratada) : null,
+      estimativa_resultado: apiData.estimativaResultado ? Number(apiData.estimativaResultado) : null,
+      estimativa_sucesso: apiData.estimativaSucesso ? Number(apiData.estimativaSucesso) : null,
+      gasto_ate_momento: apiData.gastoAteMomento ? Number(apiData.gastoAteMomento) : null,
+      entregue_ate_momento: apiData.entregueAteMomento ? Number(apiData.entregueAteMomento) : null,
+      data_atualizacao: apiData.dataAtualizacao ? String(apiData.dataAtualizacao).split('T')[0] : null,
+      created_at: String(apiData.createdAt),
+      updated_at: String(apiData.updatedAt),
+    })
+
     try {
       if (editingEstrategia) {
         const response = await fetch(`/api/estrategias?id=${editingEstrategia.id}`, {
@@ -388,12 +504,13 @@ export function ProjetoDetalhesClient({
           body: JSON.stringify(payload),
         })
         if (!response.ok) throw new Error('Erro ao atualizar estrategia')
-        const updatedEstrategia = await response.json()
+        const apiResponse = await response.json()
+        const updatedEstrategia = formatEstrategiaFromApi(apiResponse)
 
         setProjeto(prev => ({
           ...prev,
           estrategias: prev.estrategias.map(est =>
-            est.id === editingEstrategia.id ? { ...est, ...updatedEstrategia } : est
+            est.id === editingEstrategia.id ? updatedEstrategia : est
           )
         }))
 
@@ -405,7 +522,8 @@ export function ProjetoDetalhesClient({
           body: JSON.stringify(payload),
         })
         if (!response.ok) throw new Error('Erro ao criar estrategia')
-        const novaEstrategia = await response.json()
+        const apiResponse = await response.json()
+        const novaEstrategia = formatEstrategiaFromApi(apiResponse)
 
         setProjeto(prev => ({
           ...prev,
@@ -417,7 +535,6 @@ export function ProjetoDetalhesClient({
 
       setIsEstrategiaOpen(false)
       resetEstrategiaForm()
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({ variant: 'destructive', title: 'Erro', description: errorMessage })
@@ -439,7 +556,6 @@ export function ProjetoDetalhesClient({
       }))
 
       toast({ title: 'Estrategia excluida!' })
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({ variant: 'destructive', title: 'Erro', description: errorMessage })
@@ -653,15 +769,30 @@ export function ProjetoDetalhesClient({
               {projeto.estrategias.map(estrategia => {
                 const calc = calcularValoresEstrategia(estrategia)
                 const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label || estrategia.plataforma
+                const alertaAtualizacao = verificarAlertaAtualizacao(estrategia)
 
                 return (
-                  <Card key={estrategia.id} className="border-l-4 border-l-primary">
+                  <Card key={estrategia.id} className={`border-l-4 ${alertaAtualizacao ? 'border-l-destructive bg-red-50/50' : 'border-l-primary'}`}>
+                    {/* Alerta de atualização pendente */}
+                    {alertaAtualizacao && (
+                      <div className="bg-red-100 border-b border-red-200 px-4 py-2 flex items-center gap-2 text-red-700 text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span className="font-medium">Atualização pendente:</span>
+                        <span>{alertaAtualizacao.mensagem}</span>
+                      </div>
+                    )}
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <CardTitle className="text-base capitalize">{plataformaLabel}</CardTitle>
                             {getEstrategiaStatusBadge(estrategia.status)}
+                            {estrategia.data_inicio && (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(estrategia.data_inicio)}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {estrategia.estrategia && `${estrategia.estrategia} • `}
@@ -685,6 +816,7 @@ export function ProjetoDetalhesClient({
                                 estrategia: estrategia.estrategia || '',
                                 kpi: estrategia.kpi || '',
                                 status: estrategia.status,
+                                data_inicio: estrategia.data_inicio || '',
                                 valor_bruto: estrategia.valor_bruto.toString(),
                                 porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
                                 porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
@@ -1047,6 +1179,23 @@ export function ProjetoDetalhesClient({
                     {kpiOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data de Início *</Label>
+                <Input
+                  type="date"
+                  value={estrategiaForm.data_inicio}
+                  onChange={e => setEstrategiaForm(p => ({ ...p, data_inicio: e.target.value }))}
+                  min={projeto.data_inicio || undefined}
+                  max={projeto.data_fim || undefined}
+                  required
+                />
+                {projeto.data_inicio && projeto.data_fim && (
+                  <p className="text-xs text-muted-foreground">
+                    Entre {formatDate(projeto.data_inicio)} e {formatDate(projeto.data_fim)}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

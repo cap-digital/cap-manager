@@ -45,6 +45,7 @@ interface Estrategia {
   plataforma: string
   estrategia: string | null
   status: string
+  data_inicio: string | null
   gasto_ate_momento: number | null
   entregue_ate_momento: number | null
   data_atualizacao: string | null
@@ -143,6 +144,54 @@ export function FollowUpClient({
     return { total, revisados, pendentes }
   }, [projetos])
 
+  // Verificar se projeto pode ser marcado como revisado
+  const podeMarcarRevisado = (projeto: ProjetoRevisao) => {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    // Verificar se todas as estratégias com data_inicio foram atualizadas hoje
+    const estrategiasAtivas = projeto.estrategias.filter(e => e.data_inicio && e.status === 'ativa')
+
+    if (estrategiasAtivas.length === 0) return { pode: true, mensagem: '' }
+
+    const estrategiasNaoAtualizadas = estrategiasAtivas.filter(e => {
+      // Se não tem data de atualização, não está atualizada
+      if (!e.data_atualizacao) return true
+
+      const dataAtualizacao = new Date(e.data_atualizacao)
+      dataAtualizacao.setHours(0, 0, 0, 0)
+
+      // Se a data de atualização não é hoje, não está atualizada
+      return dataAtualizacao.getTime() !== hoje.getTime()
+    })
+
+    const estrategiasSemGasto = estrategiasAtivas.filter(e => e.gasto_ate_momento === null)
+    const estrategiasSemEntrega = estrategiasAtivas.filter(e => e.entregue_ate_momento === null)
+
+    if (estrategiasNaoAtualizadas.length > 0) {
+      return {
+        pode: false,
+        mensagem: `${estrategiasNaoAtualizadas.length} estratégia(s) precisam ter a data de atualização de hoje`
+      }
+    }
+
+    if (estrategiasSemGasto.length > 0) {
+      return {
+        pode: false,
+        mensagem: `${estrategiasSemGasto.length} estratégia(s) precisam ter o gasto atualizado`
+      }
+    }
+
+    if (estrategiasSemEntrega.length > 0) {
+      return {
+        pode: false,
+        mensagem: `${estrategiasSemEntrega.length} estratégia(s) precisam ter a entrega atualizada`
+      }
+    }
+
+    return { pode: true, mensagem: '' }
+  }
+
   // Marcar como revisado
   const handleMarcarRevisado = async (projetoId: number) => {
     if (!currentUser) {
@@ -151,6 +200,20 @@ export function FollowUpClient({
         title: 'Usuário não identificado',
       })
       return
+    }
+
+    // Verificar se pode marcar como revisado
+    const projeto = projetos.find(p => p.id === projetoId)
+    if (projeto) {
+      const validacao = podeMarcarRevisado(projeto)
+      if (!validacao.pode) {
+        toast({
+          variant: 'destructive',
+          title: 'Não é possível marcar como revisado',
+          description: validacao.mensagem,
+        })
+        return
+      }
     }
 
     setLoadingProjetoId(projetoId)
@@ -194,19 +257,44 @@ export function FollowUpClient({
     }
   }
 
-  // Verificar se há dados de acompanhamento desatualizados
-  const temDadosDesatualizados = (projeto: ProjetoRevisao) => {
+  // Verificar se estratégia está atrasada baseada no grupo de revisão
+  const verificarEstrategiaAtrasada = (estrategia: Estrategia, grupoRevisao: GrupoRevisao) => {
+    if (!estrategia.data_inicio) return null
+
     const hoje = new Date()
     hoje.setHours(0, 0, 0, 0)
 
-    return projeto.estrategias.some(e => {
-      if (!e.data_atualizacao) return true
-      const dataAtualizacao = new Date(e.data_atualizacao)
-      dataAtualizacao.setHours(0, 0, 0, 0)
-      // Considera desatualizado se passou mais de 1 dia
-      const diffDias = Math.floor((hoje.getTime() - dataAtualizacao.getTime()) / (1000 * 60 * 60 * 24))
-      return diffDias > 1
-    })
+    const dataInicio = new Date(estrategia.data_inicio)
+    const dataUltimaAtualizacao = estrategia.data_atualizacao ? new Date(estrategia.data_atualizacao) : null
+
+    // Se não tem atualização, verificar desde o início
+    const dataReferencia = dataUltimaAtualizacao || dataInicio
+
+    // Calcular dias desde a última atualização
+    const diffTime = hoje.getTime() - dataReferencia.getTime()
+    const diasDesdeAtualizacao = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    // Definir limite baseado no grupo
+    let diasLimite = 1 // Grupo A - todos os dias
+    if (grupoRevisao === 'B') {
+      diasLimite = 2 // Segunda, Quarta, Sexta (max 2 dias)
+    } else if (grupoRevisao === 'C') {
+      diasLimite = 3 // Terça, Quinta (max 3 dias)
+    }
+
+    if (diasDesdeAtualizacao > diasLimite) {
+      return {
+        diasAtraso: diasDesdeAtualizacao - diasLimite,
+        diasDesdeAtualizacao
+      }
+    }
+
+    return null
+  }
+
+  // Verificar se há dados de acompanhamento desatualizados
+  const temDadosDesatualizados = (projeto: ProjetoRevisao) => {
+    return projeto.estrategias.some(e => verificarEstrategiaAtrasada(e, projeto.grupo_revisao) !== null)
   }
 
   return (
@@ -405,35 +493,53 @@ export function FollowUpClient({
                   {projeto.estrategias.length > 0 && (
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {projeto.estrategias.map(estrategia => (
-                          <div
-                            key={estrategia.id}
-                            className="p-3 bg-muted/50 rounded-lg text-sm"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium capitalize flex items-center gap-1">
-                                <TrendingUp className="h-3 w-3" />
-                                {estrategia.plataforma}
-                              </span>
-                              <Badge variant="secondary" className="text-xs">
-                                {estrategia.estrategia || estrategia.status}
-                              </Badge>
-                            </div>
-                            <div className="space-y-1 text-muted-foreground">
-                              <p>
-                                Gasto: {estrategia.gasto_ate_momento !== null ? formatCurrency(estrategia.gasto_ate_momento) : '-'}
-                              </p>
-                              <p>
-                                Entregue: {estrategia.entregue_ate_momento?.toLocaleString('pt-BR') || '-'}
-                              </p>
-                              {estrategia.data_atualizacao && (
-                                <p className="text-xs">
-                                  Atualizado: {formatDate(estrategia.data_atualizacao)}
+                        {projeto.estrategias.map(estrategia => {
+                          const atraso = verificarEstrategiaAtrasada(estrategia, projeto.grupo_revisao)
+                          return (
+                            <div
+                              key={estrategia.id}
+                              className={`p-3 rounded-lg text-sm border ${
+                                atraso
+                                  ? 'bg-red-50 border-red-200 dark:bg-red-950/20'
+                                  : 'bg-muted/50 border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium capitalize flex items-center gap-1">
+                                  <TrendingUp className="h-3 w-3" />
+                                  {estrategia.plataforma}
+                                </span>
+                                <div className="flex gap-1">
+                                  {atraso && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      {atraso.diasAtraso}d atraso
+                                    </Badge>
+                                  )}
+                                  <Badge variant="secondary" className="text-xs">
+                                    {estrategia.estrategia || estrategia.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="space-y-1 text-muted-foreground">
+                                <p>
+                                  Gasto: {estrategia.gasto_ate_momento !== null ? formatCurrency(estrategia.gasto_ate_momento) : '-'}
                                 </p>
-                              )}
+                                <p>
+                                  Entregue: {estrategia.entregue_ate_momento?.toLocaleString('pt-BR') || '-'}
+                                </p>
+                                <p className={`text-xs ${atraso ? 'text-red-600 font-medium' : ''}`}>
+                                  Atualizada em: {estrategia.data_atualizacao ? formatDate(estrategia.data_atualizacao) : 'Nunca'}
+                                </p>
+                                {estrategia.data_inicio && (
+                                  <p className="text-xs">
+                                    Início: {formatDate(estrategia.data_inicio)}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
 
                       {projeto.revisado_hoje && projeto.revisado_por && (

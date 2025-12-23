@@ -108,9 +108,10 @@ export default async function FollowUpPage() {
         plataforma: e.plataforma,
         estrategia: e.estrategia,
         status: e.status,
+        data_inicio: e.dataInicio?.toISOString().split('T')[0] || null,
         gasto_ate_momento: e.gastoAteMomento ? Number(e.gastoAteMomento) : null,
         entregue_ate_momento: e.entregueAteMomento ? Number(e.entregueAteMomento) : null,
-        data_atualizacao: e.dataAtualizacao?.toISOString() || null,
+        data_atualizacao: e.dataAtualizacao?.toISOString().split('T')[0] || null,
       })),
     }
   })

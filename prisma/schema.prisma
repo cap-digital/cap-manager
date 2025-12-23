@@ -147,6 +147,7 @@ model Estrategia {
   estrategia            String?          // Descricao da estrategia
   kpi                   String?
   status                StatusEstrategia @default(planejada)
+  dataInicio            DateTime?        @map("data_inicio") @db.Date // Data de início da estratégia
 
   // Valores financeiros
   valorBruto            Decimal          @default(0) @map("valor_bruto") @db.Decimal(12, 2)
