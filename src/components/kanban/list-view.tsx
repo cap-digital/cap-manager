@@ -13,6 +13,7 @@ import {
 import { Calendar, Edit, Folder, Trash2, User, ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 interface CardKanban {
   id: number
@@ -132,10 +133,14 @@ export function ListView({
                           </Badge>
 
                           {projeto && (
-                            <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground">
+                            <Link
+                              href={`/projetos/${projeto.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="hidden md:flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
                               <Folder className="h-3 w-3" />
-                              <span className="truncate max-w-[100px]">{projeto.nome}</span>
-                            </div>
+                              <span className="truncate max-w-[100px] hover:underline">{projeto.nome}</span>
+                            </Link>
                           )}
 
                           {responsavel && (

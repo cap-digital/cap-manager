@@ -19,7 +19,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import {
   Table,
   TableBody,
@@ -71,6 +77,7 @@ type TipoCobranca = 'td' | 'fee'
 type StatusProjeto = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
 type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
 type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
+type GrupoRevisao = 'A' | 'B' | 'C'
 
 interface SimplifiedPi {
   id: number
@@ -122,6 +129,7 @@ interface SimplifiedProjeto {
   data_fim: string | null
   link_proposta: string | null
   url_destino: string | null
+  grupo_revisao: GrupoRevisao | null
   estrategias_count: number
   estrategias: SimplifiedEstrategia[]
   created_at: string
@@ -158,6 +166,12 @@ const statusEstrategiaOptions: { value: StatusEstrategia; label: string; color: 
 const tipoCobrancaOptions: { value: TipoCobranca; label: string }[] = [
   { value: 'td', label: 'TD (Trading Desk)' },
   { value: 'fee', label: 'FEE' },
+]
+
+const grupoRevisaoOptions: { value: GrupoRevisao; label: string; description: string }[] = [
+  { value: 'A', label: 'Grupo A', description: 'Todos os dias' },
+  { value: 'B', label: 'Grupo B', description: 'Segunda, Quarta e Sexta' },
+  { value: 'C', label: 'Grupo C', description: 'Terça e Quinta' },
 ]
 
 const plataformaOptions: { value: Plataforma; label: string }[] = [
@@ -215,8 +229,6 @@ export function ProjetosClient({
   const [isEstrategiaOpen, setIsEstrategiaOpen] = useState(false)
   const [editingEstrategia, setEditingEstrategia] = useState<SimplifiedEstrategia | null>(null)
 
-  // View project details state
-  const [viewingProjeto, setViewingProjeto] = useState<SimplifiedProjeto | null>(null)
 
   const [formData, setFormData] = useState({
     cliente_id: null as number | null,
@@ -231,6 +243,7 @@ export function ProjetosClient({
     data_fim: '',
     link_proposta: '',
     url_destino: '',
+    grupo_revisao: null as GrupoRevisao | null,
   })
 
   const [estrategiaForm, setEstrategiaForm] = useState({
@@ -242,8 +255,8 @@ export function ProjetosClient({
     kpi: '',
     status: 'planejada' as StatusEstrategia,
     valor_bruto: '',
-    porcentagem_agencia: 0,
-    porcentagem_plataforma: 0,
+    porcentagem_agencia: '',
+    porcentagem_plataforma: '',
     entrega_contratada: '',
     estimativa_resultado: '',
     estimativa_sucesso: '',
@@ -289,6 +302,26 @@ export function ProjetosClient({
     return matchesSearch && matchesStatus && matchesTrader && matchesAgencia && matchesPi && matchesDataInicio && matchesDataFim
   })
 
+  // Agrupar projetos por cliente
+  const projetosAgrupados = useMemo(() => {
+    const grupos: Record<number, { cliente: { id: number; nome: string }; projetos: SimplifiedProjeto[] }> = {}
+
+    filteredProjetos.forEach(projeto => {
+      const clienteId = projeto.cliente_id
+      if (!grupos[clienteId]) {
+        grupos[clienteId] = {
+          cliente: projeto.cliente || { id: clienteId, nome: 'Sem cliente' },
+          projetos: []
+        }
+      }
+      grupos[clienteId].projetos.push(projeto)
+    })
+
+    return Object.values(grupos).sort((a, b) =>
+      a.cliente.nome.localeCompare(b.cliente.nome)
+    )
+  }, [filteredProjetos])
+
   const resetForm = () => {
     setFormData({
       cliente_id: null,
@@ -303,6 +336,7 @@ export function ProjetosClient({
       data_fim: '',
       link_proposta: '',
       url_destino: '',
+      grupo_revisao: null,
     })
     setEditingProjeto(null)
     setStep(1)
@@ -319,8 +353,8 @@ export function ProjetosClient({
       kpi: '',
       status: 'planejada',
       valor_bruto: '',
-      porcentagem_agencia: 0,
-      porcentagem_plataforma: 0,
+      porcentagem_agencia: '',
+      porcentagem_plataforma: '',
       entrega_contratada: '',
       estimativa_resultado: '',
       estimativa_sucesso: '',
@@ -346,6 +380,7 @@ export function ProjetosClient({
       data_fim: projeto.data_fim || '',
       link_proposta: projeto.link_proposta || '',
       url_destino: projeto.url_destino || '',
+      grupo_revisao: projeto.grupo_revisao || null,
     })
     setCurrentProjetoId(projeto.id)
     setStep(1)
@@ -371,6 +406,7 @@ export function ProjetosClient({
       data_fim: formData.data_fim || null,
       link_proposta: formData.link_proposta || null,
       url_destino: formData.url_destino || null,
+      grupo_revisao: formData.grupo_revisao || null,
     }
 
     try {
@@ -423,8 +459,8 @@ export function ProjetosClient({
       kpi: estrategiaForm.kpi || null,
       status: estrategiaForm.status,
       valor_bruto: estrategiaForm.valor_bruto ? parseFloat(estrategiaForm.valor_bruto) : 0,
-      porcentagem_agencia: estrategiaForm.porcentagem_agencia,
-      porcentagem_plataforma: estrategiaForm.porcentagem_plataforma,
+      porcentagem_agencia: estrategiaForm.porcentagem_agencia ? parseFloat(estrategiaForm.porcentagem_agencia.toString()) : 0,
+      porcentagem_plataforma: estrategiaForm.porcentagem_plataforma ? parseFloat(estrategiaForm.porcentagem_plataforma.toString()) : 0,
       entrega_contratada: estrategiaForm.entrega_contratada ? parseFloat(estrategiaForm.entrega_contratada) : null,
       estimativa_resultado: estrategiaForm.estimativa_resultado ? parseFloat(estrategiaForm.estimativa_resultado) : null,
       estimativa_sucesso: estrategiaForm.estimativa_sucesso ? parseFloat(estrategiaForm.estimativa_sucesso) : null,
@@ -441,6 +477,20 @@ export function ProjetosClient({
           body: JSON.stringify(payload),
         })
         if (!response.ok) throw new Error('Erro ao atualizar estrategia')
+        const updatedEstrategia = await response.json()
+
+        // Atualizar estado local imediatamente
+        setProjetos(prev => prev.map(p =>
+          p.id === currentProjetoId
+            ? {
+                ...p,
+                estrategias: p.estrategias.map(e =>
+                  e.id === editingEstrategia.id ? { ...e, ...updatedEstrategia } : e
+                )
+              }
+            : p
+        ))
+
         toast({ title: 'Estrategia atualizada!' })
       } else {
         const response = await fetch('/api/estrategias', {
@@ -449,6 +499,19 @@ export function ProjetosClient({
           body: JSON.stringify(payload),
         })
         if (!response.ok) throw new Error('Erro ao criar estrategia')
+        const novaEstrategia = await response.json()
+
+        // Adicionar nova estratégia ao estado local imediatamente
+        setProjetos(prev => prev.map(p =>
+          p.id === currentProjetoId
+            ? {
+                ...p,
+                estrategias: [...p.estrategias, novaEstrategia],
+                estrategias_count: p.estrategias_count + 1
+              }
+            : p
+        ))
+
         toast({ title: 'Estrategia adicionada!' })
       }
 
@@ -537,108 +600,139 @@ export function ProjetosClient({
   return (
     <div className="space-y-6">
       {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+      <div className="space-y-4">
+        {/* Linha 1: Busca e Botão */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar projetos..."
+              placeholder="Buscar projetos ou clientes..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos status</SelectItem>
-              {statusProjetoOptions.map(s => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <Select value={traderFilter} onValueChange={setTraderFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Trader" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos traders</SelectItem>
-              {traders.map(t => (
-                <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={agenciaFilter} onValueChange={setAgenciaFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Agência" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas agências</SelectItem>
-              {agencias.map(a => (
-                <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={piFilter} onValueChange={setPiFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="PI" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos PIs</SelectItem>
-              {pis.map(p => (
-                <SelectItem key={p.id} value={p.id.toString()}>{p.identificador}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button onClick={() => setIsOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />Novo Projeto
+          </Button>
         </div>
 
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm whitespace-nowrap">De:</Label>
-            <Input
-              type="date"
-              value={dataInicioFilter}
-              onChange={e => setDataInicioFilter(e.target.value)}
-              className="w-[150px]"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-sm whitespace-nowrap">Até:</Label>
-            <Input
-              type="date"
-              value={dataFimFilter}
-              onChange={e => setDataFimFilter(e.target.value)}
-              className="w-[150px]"
-            />
-          </div>
-          {(dataInicioFilter || dataFimFilter || traderFilter !== 'all' || agenciaFilter !== 'all' || piFilter !== 'all') && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setDataInicioFilter('')
-                setDataFimFilter('')
-                setTraderFilter('all')
-                setAgenciaFilter('all')
-                setPiFilter('all')
-              }}
-            >
-              Limpar filtros
-            </Button>
-          )}
-        </div>
+        {/* Linha 2: Filtros organizados */}
+        <Card className="p-4">
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {statusProjetoOptions.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <Dialog open={isOpen} onOpenChange={open => { setIsOpen(open); if (!open) resetForm() }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Novo Projeto</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-            {/* Step Indicator */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Trader</Label>
+              <Select value={traderFilter} onValueChange={setTraderFilter}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {traders.map(t => (
+                    <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Agência</Label>
+              <Select value={agenciaFilter} onValueChange={setAgenciaFilter}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {agencias.map(a => (
+                    <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">PI</Label>
+              <Select value={piFilter} onValueChange={setPiFilter}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {pis.map(p => (
+                    <SelectItem key={p.id} value={p.id.toString()}>{p.identificador}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="h-9 border-l mx-1" />
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Início a partir de</Label>
+              <Input
+                type="date"
+                value={dataInicioFilter}
+                onChange={e => setDataInicioFilter(e.target.value)}
+                className="w-[140px] h-9"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Fim até</Label>
+              <Input
+                type="date"
+                value={dataFimFilter}
+                onChange={e => setDataFimFilter(e.target.value)}
+                className="w-[140px] h-9"
+              />
+            </div>
+
+            {(statusFilter !== 'all' || traderFilter !== 'all' || agenciaFilter !== 'all' || piFilter !== 'all' || dataInicioFilter || dataFimFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  setStatusFilter('all')
+                  setTraderFilter('all')
+                  setAgenciaFilter('all')
+                  setPiFilter('all')
+                  setDataInicioFilter('')
+                  setDataFimFilter('')
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
+            )}
+
+            <div className="ml-auto text-sm text-muted-foreground">
+              {filteredProjetos.length} projeto(s)
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Dialog de Criação/Edição de Projeto */}
+      <Dialog open={isOpen} onOpenChange={open => { setIsOpen(open); if (!open) resetForm() }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          {/* Step Indicator */}
             <div className="flex items-center gap-4 mb-4">
               <div className={`flex items-center gap-2 ${step === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 1 ? 'bg-primary text-white' : 'bg-muted'}`}>1</div>
@@ -661,12 +755,14 @@ export function ProjetosClient({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
                   <div className="space-y-2">
                     <Label>Nome do Cliente *</Label>
-                    <Select value={formData.cliente_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, cliente_id: v ? parseInt(v) : null }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {clientes.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={clientes.map(c => ({ value: c.id.toString(), label: c.nome }))}
+                      value={formData.cliente_id?.toString() || ''}
+                      onValueChange={v => setFormData(p => ({ ...p, cliente_id: v ? parseInt(v) : null }))}
+                      placeholder="Selecione um cliente"
+                      searchPlaceholder="Buscar cliente..."
+                      emptyMessage="Nenhum cliente encontrado."
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -683,12 +779,18 @@ export function ProjetosClient({
                   {formData.tipo_cobranca === 'td' && (
                     <div className="space-y-2">
                       <Label>PI - Autorizacao</Label>
-                      <Select value={formData.pi_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}>
-                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          {pis.map(pi => <SelectItem key={pi.id} value={pi.id.toString()}>{pi.identificador} - {formatCurrency(pi.valor_bruto)}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <SearchableSelect
+                        options={pis.map(pi => ({
+                          value: pi.id.toString(),
+                          label: pi.identificador,
+                          description: formatCurrency(pi.valor_bruto)
+                        }))}
+                        value={formData.pi_id?.toString() || ''}
+                        onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}
+                        placeholder="Selecione um PI"
+                        searchPlaceholder="Buscar PI..."
+                        emptyMessage="Nenhum PI encontrado."
+                      />
                     </div>
                   )}
 
@@ -782,6 +884,24 @@ export function ProjetosClient({
                         {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Grupo de Revisão (Follow-up)</Label>
+                    <Select value={formData.grupo_revisao || ''} onValueChange={v => setFormData(p => ({ ...p, grupo_revisao: v ? v as GrupoRevisao : null }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o grupo" /></SelectTrigger>
+                      <SelectContent>
+                        {grupoRevisaoOptions.map(g => (
+                          <SelectItem key={g.value} value={g.value}>
+                            <div className="flex flex-col">
+                              <span>{g.label}</span>
+                              <span className="text-xs text-muted-foreground">{g.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Define os dias de revisão do projeto na página de Follow-ups</p>
                   </div>
                 </div>
 
@@ -894,8 +1014,8 @@ export function ProjetosClient({
                                           kpi: e.kpi || '',
                                           status: e.status,
                                           valor_bruto: e.valor_bruto.toString(),
-                                          porcentagem_agencia: e.porcentagem_agencia,
-                                          porcentagem_plataforma: e.porcentagem_plataforma,
+                                          porcentagem_agencia: e.porcentagem_agencia.toString(),
+                                          porcentagem_plataforma: e.porcentagem_plataforma.toString(),
                                           entrega_contratada: e.entrega_contratada?.toString() || '',
                                           estimativa_resultado: e.estimativa_resultado?.toString() || '',
                                           estimativa_sucesso: e.estimativa_sucesso?.toString() || '',
@@ -978,12 +1098,11 @@ export function ProjetosClient({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Campaign ID *</Label>
+                      <Label>Campaign ID</Label>
                       <Input
                         value={estrategiaForm.campaign_id}
                         onChange={e => setEstrategiaForm(p => ({ ...p, campaign_id: e.target.value }))}
                         placeholder="ID da campanha na plataforma"
-                        required
                       />
                     </div>
                   </>
@@ -1026,27 +1145,17 @@ export function ProjetosClient({
 
                 <div className="space-y-2">
                   <Label>% Agência</Label>
-                  <Input type="number" step="0.01" max="100" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: parseFloat(e.target.value) || 0 }))} />
+                  <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>% Plataforma</Label>
-                  <Input type="number" step="0.01" max="100" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: parseFloat(e.target.value) || 0 }))} />
+                  <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Entrega Contratada</Label>
                   <Input type="number" step="0.01" value={estrategiaForm.entrega_contratada} onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Estimativa de Resultado</Label>
-                  <Input type="number" step="0.01" value={estrategiaForm.estimativa_resultado} onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_resultado: e.target.value }))} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Estimativa de Sucesso (%)</Label>
-                  <Input type="number" step="0.01" max="100" value={estrategiaForm.estimativa_sucesso} onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_sucesso: e.target.value }))} />
                 </div>
 
                 {/* Campos de Acompanhamento em destaque */}
@@ -1090,7 +1199,7 @@ export function ProjetosClient({
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => { setIsEstrategiaOpen(false); resetEstrategiaForm() }}>Cancelar</Button>
-                <Button type="submit" disabled={isLoading || !estrategiaForm.plataforma || !estrategiaForm.nome_conta || !estrategiaForm.id_conta || !estrategiaForm.campaign_id}>
+                <Button type="submit" disabled={isLoading || !estrategiaForm.plataforma || !estrategiaForm.nome_conta || !estrategiaForm.id_conta}>
                   {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   {editingEstrategia ? 'Salvar' : 'Adicionar'}
                 </Button>
@@ -1098,233 +1207,6 @@ export function ProjetosClient({
             </form>
           </DialogContent>
         </Dialog>
-
-        {/* Modal de Visualização do Projeto */}
-        <Dialog open={!!viewingProjeto} onOpenChange={open => { if (!open) setViewingProjeto(null) }}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            {viewingProjeto && (
-              <>
-                <DialogHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <DialogTitle className="text-xl">{viewingProjeto.nome}</DialogTitle>
-                      <DialogDescription className="flex items-center gap-2 mt-1">
-                        <span>{viewingProjeto.cliente?.nome || 'Sem cliente'}</span>
-                        <span className="text-muted-foreground">|</span>
-                        {getStatusBadge(viewingProjeto.status)}
-                      </DialogDescription>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => { setViewingProjeto(null); openEditDialog(viewingProjeto) }}>
-                      <Pencil className="h-4 w-4 mr-2" />Editar Projeto
-                    </Button>
-                  </div>
-                </DialogHeader>
-
-                {/* Info do Projeto */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Tipo</p>
-                    <p className="font-medium">{viewingProjeto.tipo_cobranca?.toUpperCase() || 'TD'}</p>
-                  </div>
-                  {viewingProjeto.pi && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">PI</p>
-                      <p className="font-medium">{viewingProjeto.pi.identificador}</p>
-                    </div>
-                  )}
-                  {viewingProjeto.trader && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Trader</p>
-                      <p className="font-medium">{viewingProjeto.trader.nome}</p>
-                    </div>
-                  )}
-                  {viewingProjeto.agencia && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Agência</p>
-                      <p className="font-medium">{viewingProjeto.agencia.nome}</p>
-                    </div>
-                  )}
-                  {viewingProjeto.data_inicio && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Data Início</p>
-                      <p className="font-medium">{formatDate(viewingProjeto.data_inicio)}</p>
-                    </div>
-                  )}
-                  {viewingProjeto.data_fim && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Data Fim</p>
-                      <p className="font-medium">{formatDate(viewingProjeto.data_fim)}</p>
-                    </div>
-                  )}
-                  {viewingProjeto.colaborador && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Colaborador</p>
-                      <p className="font-medium">{viewingProjeto.colaborador.nome}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Resumo de Valores */}
-                <div className="p-4 bg-muted rounded-lg my-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Valor Total Bruto</p>
-                      <p className="text-lg font-semibold text-green-600">
-                        {formatCurrency(viewingProjeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0))}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Gasto Total</p>
-                      <p className="text-lg font-semibold">
-                        {formatCurrency(viewingProjeto.estrategias.reduce((acc, e) => acc + (e.gasto_ate_momento || 0), 0))}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Estratégias</p>
-                      <p className="text-lg font-semibold">{viewingProjeto.estrategias.length}</p>
-                    </div>
-                    {viewingProjeto.data_fim && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Dias Restantes</p>
-                        {(() => {
-                          const dias = getDiasAteAcabar(viewingProjeto.data_fim)
-                          return (
-                            <p className={`text-lg font-semibold ${dias !== null && dias <= 7 && dias >= 0 ? 'text-red-600' : ''}`}>
-                              {dias !== null ? (dias < 0 ? 'Encerrado' : `${dias} dias`) : '-'}
-                            </p>
-                          )
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tabela de Estratégias */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Layers className="h-4 w-4" />
-                      Estratégias
-                    </h3>
-                    <Button size="sm" onClick={() => {
-                      setCurrentProjetoId(viewingProjeto.id)
-                      resetEstrategiaForm()
-                      setIsEstrategiaOpen(true)
-                    }}>
-                      <Plus className="h-4 w-4 mr-2" />Nova Estratégia
-                    </Button>
-                  </div>
-
-                  {viewingProjeto.estrategias.length > 0 ? (
-                    <div className="border rounded-lg overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Plataforma</TableHead>
-                            <TableHead>Conta</TableHead>
-                            <TableHead>Estratégia</TableHead>
-                            <TableHead>KPI</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Valor Bruto</TableHead>
-                            <TableHead className="text-right">% Ag.</TableHead>
-                            <TableHead className="text-right">% Plat.</TableHead>
-                            <TableHead className="text-right">Valor Líq.</TableHead>
-                            <TableHead className="text-right">Gasto</TableHead>
-                            <TableHead className="text-right">Entregue</TableHead>
-                            <TableHead></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {viewingProjeto.estrategias.map(e => {
-                            const calc = calcularValoresEstrategia(e)
-                            return (
-                              <TableRow key={e.id}>
-                                <TableCell className="font-medium capitalize">{e.plataforma}</TableCell>
-                                <TableCell>
-                                  <div>
-                                    <p className="text-sm truncate max-w-[120px]">{e.nome_conta || '-'}</p>
-                                    {e.id_conta && <p className="text-xs text-muted-foreground">ID: {e.id_conta}</p>}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{e.estrategia || '-'}</TableCell>
-                                <TableCell>{e.kpi || '-'}</TableCell>
-                                <TableCell>
-                                  <Badge variant={statusEstrategiaOptions.find(s => s.value === e.status)?.color as 'default'}>
-                                    {statusEstrategiaOptions.find(s => s.value === e.status)?.label}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">{formatCurrency(e.valor_bruto)}</TableCell>
-                                <TableCell className="text-right">{e.porcentagem_agencia}%</TableCell>
-                                <TableCell className="text-right">{e.porcentagem_plataforma}%</TableCell>
-                                <TableCell className="text-right">{formatCurrency(calc.valorLiquido)}</TableCell>
-                                <TableCell className="text-right">{e.gasto_ate_momento !== null ? formatCurrency(e.gasto_ate_momento) : '-'}</TableCell>
-                                <TableCell className="text-right">{e.entregue_ate_momento !== null ? e.entregue_ate_momento.toLocaleString('pt-BR') : '-'}</TableCell>
-                                <TableCell>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => {
-                                        setCurrentProjetoId(viewingProjeto.id)
-                                        setEditingEstrategia(e)
-                                        setEstrategiaForm({
-                                          plataforma: e.plataforma,
-                                          nome_conta: e.nome_conta || '',
-                                          id_conta: e.id_conta || '',
-                                          campaign_id: e.campaign_id || '',
-                                          estrategia: e.estrategia || '',
-                                          kpi: e.kpi || '',
-                                          status: e.status,
-                                          valor_bruto: e.valor_bruto.toString(),
-                                          porcentagem_agencia: e.porcentagem_agencia,
-                                          porcentagem_plataforma: e.porcentagem_plataforma,
-                                          entrega_contratada: e.entrega_contratada?.toString() || '',
-                                          estimativa_resultado: e.estimativa_resultado?.toString() || '',
-                                          estimativa_sucesso: e.estimativa_sucesso?.toString() || '',
-                                          gasto_ate_momento: e.gasto_ate_momento?.toString() || '',
-                                          entregue_ate_momento: e.entregue_ate_momento?.toString() || '',
-                                          data_atualizacao: e.data_atualizacao || '',
-                                        })
-                                        setIsEstrategiaOpen(true)
-                                      }}>
-                                        <Pencil className="h-4 w-4 mr-2" />Editar
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleDeleteEstrategia(e.id.toString())} className="text-destructive">
-                                        <Trash2 className="h-4 w-4 mr-2" />Excluir
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 border rounded-lg">
-                      <Layers className="h-10 w-10 mx-auto text-muted-foreground/50" />
-                      <p className="mt-2 text-muted-foreground">Nenhuma estratégia cadastrada</p>
-                      <Button className="mt-4" size="sm" onClick={() => {
-                        setCurrentProjetoId(viewingProjeto.id)
-                        resetEstrategiaForm()
-                        setIsEstrategiaOpen(true)
-                      }}>
-                        <Plus className="h-4 w-4 mr-2" />Adicionar Estratégia
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <DialogFooter className="mt-4">
-                  <Button variant="outline" onClick={() => setViewingProjeto(null)}>Fechar</Button>
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
 
       {/* Projetos List */}
       <Tabs defaultValue="grid" className="space-y-4">
@@ -1334,87 +1216,101 @@ export function ProjetosClient({
         </TabsList>
 
         <TabsContent value="grid">
-          {filteredProjetos.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProjetos.map(projeto => {
-                const diasAteAcabar = getDiasAteAcabar(projeto.data_fim)
-                const totalValorBruto = projeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0)
-                return (
-                  <Card key={projeto.id} className="group cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewingProjeto(projeto)}>
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(projeto.status)}
-                          {diasAteAcabar !== null && diasAteAcabar <= 7 && diasAteAcabar >= 0 && (
-                            <Badge variant="destructive" className="text-xs">{diasAteAcabar}d restantes</Badge>
-                          )}
-                        </div>
-                        <CardTitle className="text-base line-clamp-2">{projeto.nome}</CardTitle>
-                        <CardDescription>{projeto.cliente?.nome || 'Sem cliente'}</CardDescription>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setViewingProjeto(projeto) }}>
-                            <Eye className="h-4 w-4 mr-2" />Ver Detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={e => { e.stopPropagation(); openEditDialog(projeto) }}>
-                            <Pencil className="h-4 w-4 mr-2" />Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={e => { e.stopPropagation(); handleDeleteProjeto(projeto.id.toString()) }} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        {projeto.trader && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <User className="h-3 w-3" />
-                            <span className="truncate">{projeto.trader.nome}</span>
-                          </div>
-                        )}
-                        {projeto.agencia && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Building2 className="h-3 w-3" />
-                            <span className="truncate">{projeto.agencia.nome}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Layers className="h-3 w-3" />
-                          <span>{projeto.estrategias_count} estrategia(s)</span>
-                        </div>
-                        {projeto.data_inicio && (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(projeto.data_inicio)}
-                          </div>
-                        )}
-                      </div>
+          {projetosAgrupados.length > 0 ? (
+            <Accordion type="multiple" defaultValue={projetosAgrupados.map(g => `cliente-${g.cliente.id}`)} className="space-y-2">
+              {projetosAgrupados.map(grupo => (
+                <AccordionItem key={grupo.cliente.id} value={`cliente-${grupo.cliente.id}`} className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Building2 className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-semibold">{grupo.cliente.nome}</span>
+                      <Badge variant="secondary" className="ml-2">{grupo.projetos.length} projeto(s)</Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                      {grupo.projetos.map(projeto => {
+                        const diasAteAcabar = getDiasAteAcabar(projeto.data_fim)
+                        const totalValorBruto = projeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0)
+                        return (
+                          <Card key={projeto.id} className="group cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push(`/projetos/${projeto.id}`)}>
+                            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  {getStatusBadge(projeto.status)}
+                                  {diasAteAcabar !== null && diasAteAcabar <= 7 && diasAteAcabar >= 0 && (
+                                    <Badge variant="destructive" className="text-xs">{diasAteAcabar}d restantes</Badge>
+                                  )}
+                                </div>
+                                <CardTitle className="text-base line-clamp-2">{projeto.nome}</CardTitle>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={e => { e.stopPropagation(); router.push(`/projetos/${projeto.id}`) }}>
+                                    <Eye className="h-4 w-4 mr-2" />Ver Detalhes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={e => { e.stopPropagation(); openEditDialog(projeto) }}>
+                                    <Pencil className="h-4 w-4 mr-2" />Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={e => { e.stopPropagation(); handleDeleteProjeto(projeto.id.toString()) }} className="text-destructive">
+                                    <Trash2 className="h-4 w-4 mr-2" />Excluir
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {projeto.trader && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <User className="h-3 w-3" />
+                                    <span className="truncate">{projeto.trader.nome}</span>
+                                  </div>
+                                )}
+                                {projeto.agencia && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Building2 className="h-3 w-3" />
+                                    <span className="truncate">{projeto.agencia.nome}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <Layers className="h-3 w-3" />
+                                  <span>{projeto.estrategias_count} estrategia(s)</span>
+                                </div>
+                                {projeto.data_inicio && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Calendar className="h-3 w-3" />
+                                    {formatDate(projeto.data_inicio)}
+                                  </div>
+                                )}
+                              </div>
 
-                      {totalValorBruto > 0 && (
-                        <div className="flex items-center gap-1 text-green-600 font-medium text-sm">
-                          <DollarSign className="h-3 w-3" />
-                          {formatCurrency(totalValorBruto)}
-                        </div>
-                      )}
+                              {totalValorBruto > 0 && (
+                                <div className="flex items-center gap-1 text-green-600 font-medium text-sm">
+                                  <DollarSign className="h-3 w-3" />
+                                  {formatCurrency(totalValorBruto)}
+                                </div>
+                              )}
 
-                      <div className="pt-2 border-t space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                          {projeto.tipo_cobranca?.toUpperCase() || 'TD'}
-                          {projeto.pi && ` | PI: ${projeto.pi.identificador}`}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
+                              <div className="pt-2 border-t space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                  {projeto.tipo_cobranca?.toUpperCase() || 'TD'}
+                                  {projeto.pi && ` | PI: ${projeto.pi.identificador}`}
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           ) : (
             <Card className="p-12">
               <div className="text-center">
@@ -1479,7 +1375,7 @@ export function ProjetosClient({
                               <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setViewingProjeto(projeto)}>
+                              <DropdownMenuItem onClick={() => router.push(`/projetos/${projeto.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" />Ver Detalhes
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditDialog(projeto)}>

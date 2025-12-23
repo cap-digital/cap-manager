@@ -1,6 +1,7 @@
 'use client'
 
-import { Bell, Search } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, Bell, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,12 +15,20 @@ import { Badge } from '@/components/ui/badge'
 interface HeaderProps {
   title: string
   subtitle?: string
+  backHref?: string
 }
 
-export function Header({ title, subtitle }: HeaderProps) {
+export function Header({ title, subtitle, backHref }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-8">
       <div className="flex-1 flex items-center gap-4">
+        {backHref && (
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={backHref}>
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+        )}
         <div className="hidden md:block">
           <h1 className="text-xl font-semibold">{title}</h1>
           {subtitle && (

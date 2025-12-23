@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { Edit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 interface CardKanban {
   id: number
@@ -140,7 +141,12 @@ export function TableView({
                     </TableCell>
                     <TableCell>
                       {projeto ? (
-                        <span className="text-sm truncate block max-w-[150px]">{projeto.nome}</span>
+                        <Link
+                          href={`/projetos/${projeto.id}`}
+                          className="text-sm truncate block max-w-[150px] hover:underline hover:text-primary transition-colors"
+                        >
+                          {projeto.nome}
+                        </Link>
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
                       )}

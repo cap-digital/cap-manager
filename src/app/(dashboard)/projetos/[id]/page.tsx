@@ -1,26 +1,23 @@
+import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { Header } from '@/components/layout/header'
-import { ProjetosClient } from './projetos-client'
+import { ProjetoDetalhesClient } from './projeto-detalhes-client'
 
-export default async function ProjetosPage() {
-  // Automaticamente finalizar projetos com data_fim passada
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
+interface PageProps {
+  params: Promise<{ id: string }>
+}
 
-  await prisma.projeto.updateMany({
-    where: {
-      status: 'ativo',
-      dataFim: {
-        lt: hoje
-      }
-    },
-    data: {
-      status: 'finalizado'
-    }
-  })
+export default async function ProjetoDetalhesPage({ params }: PageProps) {
+  const { id } = await params
+  const projetoId = parseInt(id)
 
-  const [projetos, clientes, usuarios, pis, agencias] = await Promise.all([
-    prisma.projeto.findMany({
+  if (isNaN(projetoId)) {
+    notFound()
+  }
+
+  const [projeto, usuarios, pis, agencias, clientes] = await Promise.all([
+    prisma.projeto.findUnique({
+      where: { id: projetoId },
       include: {
         cliente: { select: { id: true, nome: true } },
         trader: { select: { id: true, nome: true } },
@@ -28,14 +25,7 @@ export default async function ProjetosPage() {
         pi: { select: { id: true, identificador: true, valorBruto: true } },
         agencia: { select: { id: true, nome: true } },
         estrategias: true,
-        _count: { select: { estrategias: true } },
       },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.cliente.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
     }),
     prisma.usuario.findMany({
       where: { ativo: true },
@@ -50,10 +40,19 @@ export default async function ProjetosPage() {
       select: { id: true, nome: true },
       orderBy: { nome: 'asc' },
     }),
+    prisma.cliente.findMany({
+      where: { ativo: true },
+      select: { id: true, nome: true },
+      orderBy: { nome: 'asc' },
+    }),
   ])
 
+  if (!projeto) {
+    notFound()
+  }
+
   // Transform data to snake_case for frontend
-  const projetosFormatted = projetos.map(projeto => ({
+  const projetoFormatted = {
     id: projeto.id,
     cliente_id: projeto.clienteId,
     cliente: projeto.cliente,
@@ -80,7 +79,6 @@ export default async function ProjetosPage() {
     link_proposta: projeto.linkProposta,
     url_destino: projeto.urlDestino,
     grupo_revisao: projeto.grupoRevisao,
-    estrategias_count: projeto._count.estrategias,
     estrategias: projeto.estrategias.map(e => ({
       id: e.id,
       projeto_id: e.projetoId,
@@ -105,7 +103,7 @@ export default async function ProjetosPage() {
     })),
     created_at: projeto.createdAt.toISOString(),
     updated_at: projeto.updatedAt.toISOString(),
-  }))
+  }
 
   const pisFormatted = pis.map(pi => ({
     id: pi.id,
@@ -121,16 +119,17 @@ export default async function ProjetosPage() {
   return (
     <div>
       <Header
-        title="Projetos"
-        subtitle="Gerencie seus projetos e estrategias de midia"
+        title={projeto.nome}
+        subtitle={projeto.cliente?.nome || 'Detalhes do projeto'}
+        backHref="/projetos"
       />
       <div className="p-4 lg:p-8">
-        <ProjetosClient
-          projetos={projetosFormatted}
-          clientes={clientes}
+        <ProjetoDetalhesClient
+          projeto={projetoFormatted}
           traders={usuarios}
           pis={pisFormatted}
           agencias={agenciasFormatted}
+          clientes={clientes}
         />
       </div>
     </div>

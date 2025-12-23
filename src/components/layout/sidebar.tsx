@@ -32,6 +32,7 @@ import {
   UserCog,
   Sun,
   Moon,
+  Briefcase,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -68,6 +69,7 @@ const mainNavigation: NavItem[] = [
   { name: 'Agências', href: '/agencias', icon: Building2 },
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'PIs', href: '/pi', icon: FileText },
+  { name: 'Projetos', href: '/projetos', icon: Briefcase },
 ]
 
 // Subcategorias dentro de Gestão de Projetos
@@ -75,7 +77,7 @@ const campanhaSubCategory: NavSubCategory = {
   name: 'Campanha',
   icon: Megaphone,
   items: [
-    { name: 'Gestão de Tráfego', href: '/gestao-trafego', icon: TrendingUp },
+    { name: 'Gestão de Tarefas', href: '/gestao-trafego', icon: TrendingUp },
     { name: 'Faturamento', href: '/faturamento', icon: DollarSign },
   ],
 }
@@ -100,7 +102,7 @@ const inteligenciaSubCategory: NavSubCategory = {
 // Itens secundários (fora de categorias)
 const secondaryNavigation: NavItem[] = [
   { name: 'Gerador UTM', href: '/utm', icon: Link2 },
-  { name: 'Follow-up', href: '/follow-up', icon: MessageSquare },
+  { name: 'Revisão Diária', href: '/follow-up', icon: MessageSquare },
 ]
 
 interface SidebarProps {

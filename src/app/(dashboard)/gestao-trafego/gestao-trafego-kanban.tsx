@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  useDroppable,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -53,6 +54,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ViewToggle, ViewMode } from '@/components/kanban/view-toggle'
 import { ListView } from '@/components/kanban/list-view'
 import { TableView } from '@/components/kanban/table-view'
@@ -202,13 +204,19 @@ function SortableCard({
           {card.prioridade}
         </Badge>
         {projeto && (
-          <Badge variant="outline" className="text-xs">
-            <Folder className="h-3 w-3 mr-1" />
-            {projeto.nome}
-            {projeto.tipo_cobranca === 'fee' && (
-              <span className="ml-1 text-purple-600">(FEE)</span>
-            )}
-          </Badge>
+          <Link
+            href={`/projetos/${projeto.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:opacity-80 transition-opacity"
+          >
+            <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
+              <Folder className="h-3 w-3 mr-1" />
+              {projeto.nome}
+              {projeto.tipo_cobranca === 'fee' && (
+                <span className="ml-1 text-purple-600">(FEE)</span>
+              )}
+            </Badge>
+          </Link>
         )}
       </div>
 
@@ -272,6 +280,29 @@ function SortableCard({
   )
 }
 
+// Componente para tornar coluna droppable
+function DroppableColumn({
+  id,
+  children,
+}: {
+  id: string
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'space-y-3 min-h-[200px] transition-colors rounded-lg p-2 -m-2',
+        isOver && 'bg-primary/10'
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
 export function GestaoTrafegoKanban({
   cards: initialCards,
   projetos,
@@ -327,30 +358,39 @@ export function GestaoTrafegoKanban({
     const overId = over.id.toString()
     const isColumn = columns.some(col => col.id === overId)
 
-    if (isColumn && activeCard.status !== overId) {
-      // Validações de fluxo
-      const projeto = projetos.find(p => p.id === activeCard.projeto_id)
+    // Se soltar sobre um card, encontrar a coluna desse card
+    let targetColumnId = overId
+    if (!isColumn) {
+      const overCard = cards.find(c => c.id === Number(overId))
+      if (overCard) {
+        targetColumnId = overCard.status
+      }
+    }
 
+    const isTargetColumn = columns.some(col => col.id === targetColumnId)
+
+    if (isTargetColumn && activeCard.status !== targetColumnId) {
+      // Validações de fluxo
       // Para mover para "em_execucao", precisa ter projeto e trader
-      if (overId === 'em_execucao' && (!activeCard.projeto_id || !activeCard.trader_id)) {
+      if (targetColumnId === 'em_execucao' && (!activeCard.projeto_id || !activeCard.trader_id)) {
         alert('Para mover para Em Execucao, vincule um Projeto e um Trader primeiro.')
         return
       }
 
       // Para mover para "relatorio_a_fazer", precisa ter responsável de relatório
-      if (overId === 'relatorio_a_fazer' && !activeCard.responsavel_relatorio_id) {
+      if (targetColumnId === 'relatorio_a_fazer' && !activeCard.responsavel_relatorio_id) {
         alert('Para mover para Relatorio A Fazer, defina o Responsavel pelo Relatorio primeiro.')
         return
       }
 
       // Para mover para "relatorio_em_revisao", precisa ter responsável de revisão
-      if (overId === 'relatorio_em_revisao' && !activeCard.responsavel_revisao_id) {
+      if (targetColumnId === 'relatorio_em_revisao' && !activeCard.responsavel_revisao_id) {
         alert('Para mover para Relatorio em Revisao, defina o Responsavel pela Revisao primeiro.')
         return
       }
 
       // Para mover para "relatorio_finalizado", precisa ter check de revisão e link
-      if (overId === 'relatorio_finalizado') {
+      if (targetColumnId === 'relatorio_finalizado') {
         if (!activeCard.revisao_relatorio_ok) {
           alert('Para finalizar o relatorio, o revisor precisa aprovar primeiro.')
           return
@@ -363,14 +403,14 @@ export function GestaoTrafegoKanban({
 
       // Movendo para outra coluna
       const updatedCards = cards.map(c =>
-        c.id === activeCard.id ? { ...c, status: overId } : c
+        c.id === activeCard.id ? { ...c, status: targetColumnId } : c
       )
       setCards(updatedCards)
 
       await fetch(`/api/cards-kanban?id=${activeCard.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: overId }),
+        body: JSON.stringify({ status: targetColumnId }),
       })
     }
   }
@@ -837,29 +877,30 @@ export function GestaoTrafegoKanban({
                       </Badge>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <SortableContext
-                      items={getColumnCards(column.id).map(c => c.id)}
-                      strategy={verticalListSortingStrategy}
-                      id={column.id}
-                    >
-                      {getColumnCards(column.id).map((card) => (
-                        <SortableCard
-                          key={card.id}
-                          card={card}
-                          projetos={projetos}
-                          usuarios={usuarios}
-                          onEdit={handleEdit}
-                          onDelete={handleDelete}
-                          onConcluirProjeto={handleConcluirProjeto}
-                        />
-                      ))}
-                    </SortableContext>
-                    {getColumnCards(column.id).length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground text-sm">
-                        Arraste cards aqui
-                      </div>
-                    )}
+                  <CardContent>
+                    <DroppableColumn id={column.id}>
+                      <SortableContext
+                        items={getColumnCards(column.id).map(c => c.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {getColumnCards(column.id).map((card) => (
+                          <SortableCard
+                            key={card.id}
+                            card={card}
+                            projetos={projetos}
+                            usuarios={usuarios}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            onConcluirProjeto={handleConcluirProjeto}
+                          />
+                        ))}
+                      </SortableContext>
+                      {getColumnCards(column.id).length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          Arraste cards aqui
+                        </div>
+                      )}
+                    </DroppableColumn>
                   </CardContent>
                 </Card>
               ))}

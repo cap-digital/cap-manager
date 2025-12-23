@@ -4,6 +4,32 @@ import { authOptions } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
 import { FollowUpClient } from './follow-up-client'
 
+// Determina qual grupo de revisão é para hoje
+function getGrupoRevisaoHoje(): ('A' | 'B' | 'C')[] {
+  const hoje = new Date()
+  const diaSemana = hoje.getDay() // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+
+  const grupos: ('A' | 'B' | 'C')[] = ['A'] // Grupo A sempre aparece
+
+  // Grupo B: Segunda (1), Quarta (3), Sexta (5)
+  if ([1, 3, 5].includes(diaSemana)) {
+    grupos.push('B')
+  }
+
+  // Grupo C: Terça (2), Quinta (4)
+  if ([2, 4].includes(diaSemana)) {
+    grupos.push('C')
+  }
+
+  return grupos
+}
+
+// Retorna o nome do dia da semana
+function getNomeDiaSemana(): string {
+  const dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+  return dias[new Date().getDay()]
+}
+
 export default async function FollowUpPage() {
   const session = await getServerSession(authOptions)
 
@@ -13,24 +39,38 @@ export default async function FollowUpPage() {
       })
     : null
 
-  const [projetos, followUps, traders] = await Promise.all([
+  const gruposHoje = getGrupoRevisaoHoje()
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
+  // Buscar projetos ativos com grupo de revisão definido que devem ser revisados hoje
+  const [projetosParaRevisar, revisoesHoje, traders] = await Promise.all([
     prisma.projeto.findMany({
-      where: { status: { in: ['ativo', 'pausado'] } },
-      include: {
-        cliente: { select: { nome: true } },
-        trader: { select: { id: true, nome: true } },
+      where: {
+        status: 'ativo',
+        grupoRevisao: { in: gruposHoje },
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        cliente: { select: { id: true, nome: true } },
+        trader: { select: { id: true, nome: true } },
+        colaborador: { select: { id: true, nome: true } },
+        estrategias: true,
+      },
+      orderBy: [
+        { cliente: { nome: 'asc' } },
+        { nome: 'asc' },
+      ],
     }),
-    prisma.followUp.findMany({
-      include: {
-        projeto: {
-          include: { cliente: { select: { nome: true } } },
-        },
-        trader: { select: { id: true, nome: true } },
+    prisma.revisaoDiaria.findMany({
+      where: {
+        dataAgendada: hoje,
       },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
+      select: {
+        projetoId: true,
+        revisado: true,
+        dataRevisao: true,
+        revisadoPor: { select: { id: true, nome: true } },
+      },
     }),
     prisma.usuario.findMany({
       where: { ativo: true },
@@ -39,29 +79,41 @@ export default async function FollowUpPage() {
     }),
   ])
 
-  // Transform data to match expected types
-  const projetosFormatted = projetos.map(p => ({
-    id: p.id,
-    nome: p.nome,
-    status: p.status,
-    cliente: p.cliente,
-    trader: p.trader,
-  }))
+  // Criar um mapa de revisões para fácil acesso
+  const revisoesMap = new Map(
+    revisoesHoje.map(r => [r.projetoId, r])
+  )
 
-  const followUpsFormatted = followUps.map(f => ({
-    id: f.id,
-    conteudo: f.conteudo,
-    tipo: f.tipo,
-    created_at: f.createdAt.toISOString(),
-    projeto: f.projeto
-      ? {
-          id: f.projeto.id,
-          nome: f.projeto.nome,
-          cliente: f.projeto.cliente,
-        }
-      : null,
-    trader: f.trader,
-  }))
+  // Formatar projetos com status de revisão
+  const projetosFormatted = projetosParaRevisar.map(projeto => {
+    const revisao = revisoesMap.get(projeto.id)
+    return {
+      id: projeto.id,
+      nome: projeto.nome,
+      cliente_id: projeto.clienteId,
+      cliente: projeto.cliente,
+      trader_id: projeto.traderId,
+      trader: projeto.trader,
+      colaborador_id: projeto.colaboradorId,
+      colaborador: projeto.colaborador,
+      status: projeto.status,
+      grupo_revisao: projeto.grupoRevisao as 'A' | 'B' | 'C',
+      data_inicio: projeto.dataInicio?.toISOString().split('T')[0] || null,
+      data_fim: projeto.dataFim?.toISOString().split('T')[0] || null,
+      revisado_hoje: revisao?.revisado || false,
+      data_revisao: revisao?.dataRevisao?.toISOString() || null,
+      revisado_por: revisao?.revisadoPor || null,
+      estrategias: projeto.estrategias.map(e => ({
+        id: e.id,
+        plataforma: e.plataforma,
+        estrategia: e.estrategia,
+        status: e.status,
+        gasto_ate_momento: e.gastoAteMomento ? Number(e.gastoAteMomento) : null,
+        entregue_ate_momento: e.entregueAteMomento ? Number(e.entregueAteMomento) : null,
+        data_atualizacao: e.dataAtualizacao?.toISOString() || null,
+      })),
+    }
+  })
 
   const currentUserFormatted = currentUser
     ? {
@@ -80,13 +132,13 @@ export default async function FollowUpPage() {
   return (
     <div>
       <Header
-        title="Follow-up de Projetos"
-        subtitle="Acompanhe o progresso dos projetos por trader"
+        title="Revisão Diária"
+        subtitle={`${getNomeDiaSemana()} - Grupos ${gruposHoje.join(', ')}`}
       />
       <div className="p-4 lg:p-8">
         <FollowUpClient
           projetos={projetosFormatted}
-          followUps={followUpsFormatted}
+          gruposHoje={gruposHoje}
           traders={traders}
           currentUser={currentUserFormatted}
         />

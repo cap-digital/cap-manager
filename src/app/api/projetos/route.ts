@@ -61,6 +61,7 @@ export async function POST(request: Request) {
         dataFim: data.data_fim ? new Date(data.data_fim) : null,
         linkProposta: data.link_proposta || null,
         urlDestino: data.url_destino || null,
+        grupoRevisao: data.grupo_revisao || null,
       },
       include: {
         cliente: { select: { id: true, nome: true } },
@@ -110,6 +111,7 @@ export async function PUT(request: Request) {
         dataFim: data.data_fim ? new Date(data.data_fim) : null,
         linkProposta: data.link_proposta || null,
         urlDestino: data.url_destino || null,
+        grupoRevisao: data.grupo_revisao || null,
       },
       include: {
         cliente: { select: { id: true, nome: true } },

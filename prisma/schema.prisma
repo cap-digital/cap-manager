@@ -24,11 +24,12 @@ model Usuario {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relações
-  projetosComoTrader      Projeto[]   @relation("TraderProjetos")
-  projetosComoColaborador Projeto[]   @relation("ColaboradorProjetos")
-  tarefas                 Tarefa[]    @relation("ResponsavelTarefas")
+  projetosComoTrader      Projeto[]       @relation("TraderProjetos")
+  projetosComoColaborador Projeto[]       @relation("ColaboradorProjetos")
+  tarefas                 Tarefa[]        @relation("ResponsavelTarefas")
   followUps               FollowUp[]
   alertas                 Alerta[]
+  revisoesDiarias         RevisaoDiaria[] @relation("RevisoesDiarias")
 
   @@index([role])
   @@index([ativo])
@@ -99,6 +100,8 @@ model Projeto {
   dataFim        DateTime?      @map("data_fim") @db.Date
   linkProposta   String?        @map("link_proposta")
   urlDestino     String?        @map("url_destino") @db.Text
+  // Grupo de revisão para follow-ups
+  grupoRevisao   GrupoRevisao?  @map("grupo_revisao")
   // Campos de revisão final (ativo quando data_fim = hoje + 1 dia)
   revisaoFinalOk       Boolean   @default(false) @map("revisao_final_ok")
   revisaoFinalData     DateTime? @map("revisao_final_data")
@@ -107,21 +110,30 @@ model Projeto {
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
   // Relações
-  cliente     Cliente      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  trader      Usuario?     @relation("TraderProjetos", fields: [traderId], references: [id], onDelete: SetNull)
-  colaborador Usuario?     @relation("ColaboradorProjetos", fields: [colaboradorId], references: [id], onDelete: SetNull)
-  pi          Pi?          @relation(fields: [piId], references: [id], onDelete: SetNull)
-  agencia     Agencia?     @relation(fields: [agenciaId], references: [id], onDelete: SetNull)
-  estrategias Estrategia[]
-  tarefas     Tarefa[]
-  followUps   FollowUp[]
-  utmConfigs  UtmConfig[]
+  cliente       Cliente            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  trader        Usuario?           @relation("TraderProjetos", fields: [traderId], references: [id], onDelete: SetNull)
+  colaborador   Usuario?           @relation("ColaboradorProjetos", fields: [colaboradorId], references: [id], onDelete: SetNull)
+  pi            Pi?                @relation(fields: [piId], references: [id], onDelete: SetNull)
+  agencia       Agencia?           @relation(fields: [agenciaId], references: [id], onDelete: SetNull)
+  estrategias   Estrategia[]
+  tarefas       Tarefa[]
+  followUps     FollowUp[]
+  utmConfigs    UtmConfig[]
+  revisoesDiarias RevisaoDiaria[]
 
   @@index([status])
   @@index([clienteId])
   @@index([traderId])
   @@index([status, clienteId])
+  @@index([grupoRevisao])
   @@map("projetos")
+}
+
+// Grupos de Revisão para Follow-ups
+enum GrupoRevisao {
+  A  // Todos os dias
+  B  // Segunda, Quarta, Sexta
+  C  // Terça, Quinta
 }
 
 // Estrategia = linha de midia dentro de um Projeto
@@ -258,6 +270,27 @@ enum TipoFollowUp {
   alerta
   atualizacao
   reuniao
+}
+
+// Revisão Diária - rastreia se o projeto foi revisado em cada dia agendado
+model RevisaoDiaria {
+  id              Int       @id @default(autoincrement())
+  projetoId       Int       @map("projeto_id")
+  dataAgendada    DateTime  @map("data_agendada") @db.Date
+  revisado        Boolean   @default(false)
+  dataRevisao     DateTime? @map("data_revisao")
+  revisadoPorId   Int?      @map("revisado_por_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relações
+  projeto     Projeto  @relation(fields: [projetoId], references: [id], onDelete: Cascade)
+  revisadoPor Usuario? @relation("RevisoesDiarias", fields: [revisadoPorId], references: [id], onDelete: SetNull)
+
+  @@unique([projetoId, dataAgendada])
+  @@index([dataAgendada])
+  @@index([revisado])
+  @@map("revisoes_diarias")
 }
 
 model UtmConfig {
