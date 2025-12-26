@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["cap_manager"]
 }
 
 // =============================================
@@ -34,6 +36,7 @@ model Usuario {
   @@index([role])
   @@index([ativo])
   @@map("usuarios")
+  @@schema("cap_manager")
 }
 
 enum Role {
@@ -41,6 +44,8 @@ enum Role {
   trader
   gestor
   cliente
+
+  @@schema("cap_manager")
 }
 
 model Agencia {
@@ -49,7 +54,7 @@ model Agencia {
   cnpj      String?
   telefone  String?
   email     String?
-  contato   String?  // Nome do contato (opcional)
+  contato   String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -59,6 +64,7 @@ model Agencia {
   pis      Pi[]
 
   @@map("agencias")
+  @@schema("cap_manager")
 }
 
 model Cliente {
@@ -83,26 +89,24 @@ model Cliente {
   @@index([ativo])
   @@index([agenciaId])
   @@map("clientes")
+  @@schema("cap_manager")
 }
 
-// Projeto = antiga Campanha (container principal)
 model Projeto {
   id             Int            @id @default(autoincrement())
   clienteId      Int            @map("cliente_id")
   nome           String
-  piId           Int?           @map("pi_id") // Só para projetos TD
+  piId           Int?           @map("pi_id")
   tipoCobranca   TipoCobranca   @default(td) @map("tipo_cobranca")
-  agenciaId      Int?           @map("agencia_id") // Só para projetos TD
-  traderId       Int?           @map("trader_id") // Responsável principal
-  colaboradorId  Int?           @map("colaborador_id") // Colaborador do projeto
+  agenciaId      Int?           @map("agencia_id")
+  traderId       Int?           @map("trader_id")
+  colaboradorId  Int?           @map("colaborador_id")
   status         StatusProjeto  @default(rascunho)
   dataInicio     DateTime?      @map("data_inicio") @db.Date
   dataFim        DateTime?      @map("data_fim") @db.Date
   linkProposta   String?        @map("link_proposta")
   urlDestino     String?        @map("url_destino") @db.Text
-  // Grupo de revisão para follow-ups
   grupoRevisao   GrupoRevisao?  @map("grupo_revisao")
-  // Campos de revisão final (ativo quando data_fim = hoje + 1 dia)
   revisaoFinalOk       Boolean   @default(false) @map("revisao_final_ok")
   revisaoFinalData     DateTime? @map("revisao_final_data")
   revisaoFinalUsuarioId Int?     @map("revisao_final_usuario_id")
@@ -127,60 +131,54 @@ model Projeto {
   @@index([status, clienteId])
   @@index([grupoRevisao])
   @@map("projetos")
+  @@schema("cap_manager")
 }
 
-// Grupos de Revisão para Follow-ups
 enum GrupoRevisao {
-  A  // Todos os dias
-  B  // Segunda, Quarta, Sexta
-  C  // Terça, Quinta
+  A
+  B
+  C
+
+  @@schema("cap_manager")
 }
 
-// Estrategia = linha de midia dentro de um Projeto
 model Estrategia {
   id                    Int              @id @default(autoincrement())
   projetoId             Int              @map("projeto_id")
   plataforma            Plataforma
   nomeConta             String?          @map("nome_conta")
   idConta               String?          @map("id_conta")
-  campaignId            String?          @map("campaign_id") // Obrigatorio antes de criar nova estrategia
-  estrategia            String?          // Descricao da estrategia
+  campaignId            String?          @map("campaign_id")
+  estrategia            String?
   kpi                   String?
   status                StatusEstrategia @default(planejada)
-  dataInicio            DateTime?        @map("data_inicio") @db.Date // Data de início da estratégia
+  dataInicio            DateTime?        @map("data_inicio") @db.Date
 
-  // Valores financeiros de entrada
   valorBruto            Decimal          @default(0) @map("valor_bruto") @db.Decimal(12, 2)
-  porcentagemAgencia    Decimal          @default(0) @map("porcentagem_agencia") @db.Decimal(5, 2) // % Agencia (TD apenas)
-  porcentagemPlataforma Decimal          @default(0) @map("porcentagem_plataforma") @db.Decimal(5, 2) // % Plataforma (TD apenas)
+  porcentagemAgencia    Decimal          @default(0) @map("porcentagem_agencia") @db.Decimal(5, 2)
+  porcentagemPlataforma Decimal          @default(0) @map("porcentagem_plataforma") @db.Decimal(5, 2)
 
-  // Valores calculados (salvos no banco)
-  valorLiquido          Decimal?         @map("valor_liquido") @db.Decimal(12, 2) // TD: Bruto - (Bruto * %Agência), FEE: Bruto
-  valorPlataforma       Decimal?         @map("valor_plataforma") @db.Decimal(12, 2) // TD: Líquido * %Plataforma, FEE: Bruto
-  coeficiente           Decimal?         @map("coeficiente") @db.Decimal(8, 6) // Valor Plataforma / Valor Bruto (TD apenas)
-  valorPorDiaPlataforma Decimal?         @map("valor_por_dia_plataforma") @db.Decimal(12, 2) // Valor Plataforma / Dias Estratégia
-  valorRestante         Decimal?         @map("valor_restante") @db.Decimal(12, 2) // Valor Plataforma - Gasto até o momento
-  restantePorDia        Decimal?         @map("restante_por_dia") @db.Decimal(12, 2) // Valor Restante / Dias até acabar
+  valorLiquido          Decimal?         @map("valor_liquido") @db.Decimal(12, 2)
+  valorPlataforma       Decimal?         @map("valor_plataforma") @db.Decimal(12, 2)
+  coeficiente           Decimal?         @map("coeficiente") @db.Decimal(8, 6)
+  valorPorDiaPlataforma Decimal?         @map("valor_por_dia_plataforma") @db.Decimal(12, 2)
+  valorRestante         Decimal?         @map("valor_restante") @db.Decimal(12, 2)
+  restantePorDia        Decimal?         @map("restante_por_dia") @db.Decimal(12, 2)
 
-  // Entrega e estimativas
   entregaContratada     Decimal?         @map("entrega_contratada") @db.Decimal(12, 2)
-  percentualEntrega     Decimal?         @map("percentual_entrega") @db.Decimal(8, 4) // % (Entregue / Contratada) * 100
-  estimativaResultado   Decimal?         @map("estimativa_resultado") @db.Decimal(12, 2) // Valor Plataforma / Custo por Resultado
-  estimativaSucesso     Decimal?         @map("estimativa_sucesso") @db.Decimal(8, 4) // % Estimativa Resultado / Entrega Contratada
+  percentualEntrega     Decimal?         @map("percentual_entrega") @db.Decimal(8, 4)
+  estimativaResultado   Decimal?         @map("estimativa_resultado") @db.Decimal(12, 2)
+  estimativaSucesso     Decimal?         @map("estimativa_sucesso") @db.Decimal(8, 4)
 
-  // Custos
-  metaCustoResultado    Decimal?         @map("meta_custo_resultado") @db.Decimal(12, 2) // Valor Plataforma / (Entrega / divisor KPI)
-  custoResultado        Decimal?         @map("custo_resultado") @db.Decimal(12, 2) // Gasto até o momento / Entregue até o momento
+  metaCustoResultado    Decimal?         @map("meta_custo_resultado") @db.Decimal(12, 2)
+  custoResultado        Decimal?         @map("custo_resultado") @db.Decimal(12, 2)
 
-  // Valores brutos calculados (TD apenas)
-  gastoAteMomentoBruto  Decimal?         @map("gasto_ate_momento_bruto") @db.Decimal(12, 2) // Gasto / Coeficiente
-  valorRestanteBruto    Decimal?         @map("valor_restante_bruto") @db.Decimal(12, 2) // Valor Bruto - Gasto Bruto
+  gastoAteMomentoBruto  Decimal?         @map("gasto_ate_momento_bruto") @db.Decimal(12, 2)
+  valorRestanteBruto    Decimal?         @map("valor_restante_bruto") @db.Decimal(12, 2)
 
-  // Indicadores de margem (TD apenas)
-  podeAbaixarMargem     Boolean?         @map("pode_abaixar_margem") // Estimativa Sucesso > 150%
-  podeAumentarMargem    Boolean?         @map("pode_aumentar_margem") // Estimativa Sucesso < 100%
+  podeAbaixarMargem     Boolean?         @map("pode_abaixar_margem")
+  podeAumentarMargem    Boolean?         @map("pode_aumentar_margem")
 
-  // Acompanhamento em destaque para o trader
   gastoAteMomento       Decimal?         @map("gasto_ate_momento") @db.Decimal(12, 2)
   entregueAteMomento    Decimal?         @map("entregue_ate_momento") @db.Decimal(12, 2)
   dataAtualizacao       DateTime?        @map("data_atualizacao")
@@ -188,15 +186,17 @@ model Estrategia {
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
 
-  // Relacoes
   projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: Cascade)
 
   @@map("estrategias")
+  @@schema("cap_manager")
 }
 
 enum TipoCobranca {
   td
   fee
+
+  @@schema("cap_manager")
 }
 
 enum Plataforma {
@@ -209,6 +209,8 @@ enum Plataforma {
   spotify
   programatica
   outro
+
+  @@schema("cap_manager")
 }
 
 enum StatusProjeto {
@@ -217,6 +219,8 @@ enum StatusProjeto {
   pausado
   finalizado
   cancelado
+
+  @@schema("cap_manager")
 }
 
 enum StatusEstrategia {
@@ -225,6 +229,8 @@ enum StatusEstrategia {
   pausada
   finalizada
   cancelada
+
+  @@schema("cap_manager")
 }
 
 model Tarefa {
@@ -241,7 +247,6 @@ model Tarefa {
   createdAt      DateTime         @default(now()) @map("created_at")
   updatedAt      DateTime         @updatedAt @map("updated_at")
 
-  // Relações
   projeto     Projeto?  @relation(fields: [projetoId], references: [id], onDelete: SetNull)
   cliente     Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   responsavel Usuario?  @relation("ResponsavelTarefas", fields: [responsavelId], references: [id], onDelete: SetNull)
@@ -250,6 +255,7 @@ model Tarefa {
   @@index([responsavelId])
   @@index([status, ordem])
   @@map("tarefas")
+  @@schema("cap_manager")
 }
 
 enum StatusTarefa {
@@ -258,6 +264,8 @@ enum StatusTarefa {
   doing
   review
   done
+
+  @@schema("cap_manager")
 }
 
 enum PrioridadeTarefa {
@@ -265,6 +273,8 @@ enum PrioridadeTarefa {
   media
   alta
   urgente
+
+  @@schema("cap_manager")
 }
 
 model FollowUp {
@@ -275,11 +285,11 @@ model FollowUp {
   tipo      TipoFollowUp @default(nota)
   createdAt DateTime     @default(now()) @map("created_at")
 
-  // Relações
   projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: Cascade)
   trader  Usuario @relation(fields: [traderId], references: [id], onDelete: Cascade)
 
   @@map("follow_ups")
+  @@schema("cap_manager")
 }
 
 enum TipoFollowUp {
@@ -287,9 +297,10 @@ enum TipoFollowUp {
   alerta
   atualizacao
   reuniao
+
+  @@schema("cap_manager")
 }
 
-// Revisão Diária - rastreia se o projeto foi revisado em cada dia agendado
 model RevisaoDiaria {
   id              Int       @id @default(autoincrement())
   projetoId       Int       @map("projeto_id")
@@ -300,7 +311,6 @@ model RevisaoDiaria {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  // Relações
   projeto     Projeto  @relation(fields: [projetoId], references: [id], onDelete: Cascade)
   revisadoPor Usuario? @relation("RevisoesDiarias", fields: [revisadoPorId], references: [id], onDelete: SetNull)
 
@@ -308,6 +318,7 @@ model RevisaoDiaria {
   @@index([dataAgendada])
   @@index([revisado])
   @@map("revisoes_diarias")
+  @@schema("cap_manager")
 }
 
 model UtmConfig {
@@ -322,10 +333,10 @@ model UtmConfig {
   urlGerada   String   @map("url_gerada") @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
 
-  // Relações
   projeto Projeto? @relation(fields: [projetoId], references: [id], onDelete: Cascade)
 
   @@map("utm_configs")
+  @@schema("cap_manager")
 }
 
 model Alerta {
@@ -339,10 +350,10 @@ model Alerta {
   dataEnvioWhatsapp DateTime?   @map("data_envio_whatsapp")
   createdAt         DateTime    @default(now()) @map("created_at")
 
-  // Relações
   destinatario Usuario @relation(fields: [destinatarioId], references: [id], onDelete: Cascade)
 
   @@map("alertas")
+  @@schema("cap_manager")
 }
 
 enum TipoAlerta {
@@ -350,6 +361,8 @@ enum TipoAlerta {
   campanha
   tarefa
   sistema
+
+  @@schema("cap_manager")
 }
 
 model Pi {
@@ -361,43 +374,38 @@ model Pi {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  // Relações
   agencia  Agencia?  @relation(fields: [agenciaId], references: [id], onDelete: SetNull)
   cliente  Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   projetos Projeto[]
 
   @@map("pis")
+  @@schema("cap_manager")
 }
 
-// =============================================
-// GESTÃO DE PROJETOS - KANBAN
-// =============================================
-
-// Card do Kanban para as áreas de Gestão de Projetos
 model CardKanban {
   id                    Int              @id @default(autoincrement())
   titulo                String
   descricao             String?          @db.Text
-  area                  AreaKanban       // Qual área do sistema (gestao_trafego, faturamento, etc)
-  status                String           @default("backlog") // Status dinâmico por área
+  area                  AreaKanban
+  status                String           @default("backlog")
   prioridade            PrioridadeTarefa @default(media)
   clienteId             Int?             @map("cliente_id")
   projetoId             Int?             @map("projeto_id")
-  traderId              Int?             @map("trader_id") // Trader responsável
-  responsavelRelatorioId Int?            @map("responsavel_relatorio_id") // Quem faz o relatório
-  responsavelRevisaoId  Int?             @map("responsavel_revisao_id") // Quem revisa o relatório
-  revisaoRelatorioOk    Boolean          @default(false) @map("revisao_relatorio_ok") // Check da revisão
-  linkRelatorio         String?          @map("link_relatorio") // Link do relatório final
-  faturamentoCardId     Int?             @map("faturamento_card_id") // ID do card de faturamento relacionado (para projetos concluídos)
+  traderId              Int?             @map("trader_id")
+  responsavelRelatorioId Int?            @map("responsavel_relatorio_id")
+  responsavelRevisaoId  Int?             @map("responsavel_revisao_id")
+  revisaoRelatorioOk    Boolean          @default(false) @map("revisao_relatorio_ok")
+  linkRelatorio         String?          @map("link_relatorio")
+  faturamentoCardId     Int?             @map("faturamento_card_id")
   dataVencimento        DateTime?        @map("data_vencimento") @db.Date
   ordem                 Int              @default(0)
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
 
   @@map("cards_kanban")
+  @@schema("cap_manager")
 }
 
-// Áreas do Kanban
 enum AreaKanban {
   gestao_trafego
   faturamento
@@ -405,14 +413,6 @@ enum AreaKanban {
   gtm
   sites_lp
   projetos_concluidos
+
+  @@schema("cap_manager")
 }
-
-// Status para Gestão de Tráfego (fluxo completo):
-// backlog -> para_fazer -> em_execucao -> projeto_finalizado ->
-// relatorio_a_fazer -> relatorio_em_revisao -> relatorio_finalizado -> (vai para faturamento + projetos_concluidos)
-
-// Status para Inteligência (dashboards, gtm, sites_lp):
-// backlog -> para_fazer -> em_execucao -> finalizado
-
-// Status para Faturamento:
-// backlog -> para_fazer -> em_execucao -> finalizado
