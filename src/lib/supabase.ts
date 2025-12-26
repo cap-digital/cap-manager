@@ -18,10 +18,7 @@ if (!supabaseServiceKey) {
 // Cliente público (para uso no frontend)
 export const supabase = createClient(
   supabaseUrl || '',
-  supabaseAnonKey || '',
-  {
-    db: { schema: 'cap_manager' }
-  }
+  supabaseAnonKey || ''
 )
 
 // Cliente admin (para uso no backend - bypass RLS)
@@ -29,7 +26,6 @@ export const supabaseAdmin = createClient(
   supabaseUrl || '',
   supabaseServiceKey || '',
   {
-    db: { schema: 'cap_manager' },
     auth: {
       autoRefreshToken: false,
       persistSession: false
