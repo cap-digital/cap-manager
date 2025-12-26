@@ -1,31 +1,34 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { GestaoTrafegoKanban } from './gestao-trafego-kanban'
 
 export default async function GestaoTrafegoPage() {
-  const [cards, projetos, clientes, usuarios] = await Promise.all([
-    prisma.cardKanban.findMany({
-      where: { area: 'gestao_trafego' },
-      orderBy: { ordem: 'asc' },
-    }),
-    prisma.projeto.findMany({
-      include: {
-        cliente: { select: { id: true, nome: true } },
-        trader: { select: { id: true, nome: true } },
-      },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.cliente.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.usuario.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
+  const [cardsRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
+    supabaseAdmin
+      .from('cards_kanban')
+      .select('*')
+      .eq('area', 'gestao_trafego')
+      .order('ordem', { ascending: true }),
+    supabaseAdmin
+      .from('projetos')
+      .select('*, clientes:cliente_id(id, nome), trader:usuarios!projetos_trader_id_fkey(id, nome)')
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('clientes')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
   ])
+
+  const cards = cardsRes.data || []
+  const projetos = projetosRes.data || []
+  const clientes = clientesRes.data || []
+  const usuarios = usuariosRes.data || []
 
   const cardsFormatted = cards.map(card => ({
     id: card.id,
@@ -34,26 +37,26 @@ export default async function GestaoTrafegoPage() {
     area: card.area,
     status: card.status,
     prioridade: card.prioridade as 'baixa' | 'media' | 'alta' | 'urgente',
-    cliente_id: card.clienteId,
-    projeto_id: card.projetoId,
-    trader_id: card.traderId,
-    responsavel_relatorio_id: card.responsavelRelatorioId,
-    responsavel_revisao_id: card.responsavelRevisaoId,
-    revisao_relatorio_ok: card.revisaoRelatorioOk,
-    link_relatorio: card.linkRelatorio,
-    data_vencimento: card.dataVencimento?.toISOString().split('T')[0] || null,
+    cliente_id: card.cliente_id,
+    projeto_id: card.projeto_id,
+    trader_id: card.trader_id,
+    responsavel_relatorio_id: card.responsavel_relatorio_id,
+    responsavel_revisao_id: card.responsavel_revisao_id,
+    revisao_relatorio_ok: card.revisao_relatorio_ok,
+    link_relatorio: card.link_relatorio,
+    data_vencimento: card.data_vencimento?.split('T')[0] || null,
     ordem: card.ordem,
-    created_at: card.createdAt.toISOString(),
-    updated_at: card.updatedAt.toISOString(),
+    created_at: card.created_at,
+    updated_at: card.updated_at,
   }))
 
   const projetosFormatted = projetos.map(p => ({
     id: p.id,
     nome: p.nome,
-    tipo_cobranca: p.tipoCobranca,
-    data_fim: p.dataFim?.toISOString().split('T')[0] || null,
-    revisao_final_ok: p.revisaoFinalOk,
-    cliente: p.cliente,
+    tipo_cobranca: p.tipo_cobranca,
+    data_fim: p.data_fim?.split('T')[0] || null,
+    revisao_final_ok: p.revisao_final_ok,
+    cliente: p.clientes,
     trader: p.trader,
   }))
 

@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    const adminCount = await prisma.usuario.count({
-      where: { role: 'admin' },
-    })
+    const { count, error } = await supabaseAdmin
+      .from('usuarios')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+
+    if (error) {
+      throw error
+    }
 
     return NextResponse.json({
-      hasAdmin: adminCount > 0,
+      hasAdmin: (count ?? 0) > 0,
     })
   } catch (error) {
     console.error('Erro ao verificar admin:', error)
@@ -41,9 +46,15 @@ export async function POST(request: Request) {
     }
 
     // Verificar se já existe admin
-    const existingAdmin = await prisma.usuario.findFirst({
-      where: { role: 'admin' },
-    })
+    const { data: existingAdmin, error: adminCheckError } = await supabaseAdmin
+      .from('usuarios')
+      .select('id')
+      .eq('role', 'admin')
+      .single()
+
+    if (adminCheckError && adminCheckError.code !== 'PGRST116') {
+      throw adminCheckError
+    }
 
     if (existingAdmin) {
       return NextResponse.json(
@@ -53,9 +64,15 @@ export async function POST(request: Request) {
     }
 
     // Verificar se email já existe
-    const existingUser = await prisma.usuario.findUnique({
-      where: { email },
-    })
+    const { data: existingUser, error: userCheckError } = await supabaseAdmin
+      .from('usuarios')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (userCheckError && userCheckError.code !== 'PGRST116') {
+      throw userCheckError
+    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -68,15 +85,21 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Criar usuário admin
-    await prisma.usuario.create({
-      data: {
+    const { error: insertError } = await supabaseAdmin
+      .from('usuarios')
+      .insert({
         email,
         senha: hashedPassword,
         nome,
         role: 'admin',
         ativo: true,
-      },
-    })
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      throw insertError
+    }
 
     return NextResponse.json({
       success: true,

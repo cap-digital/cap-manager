@@ -1,22 +1,22 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { AgenciasClient } from './agencias-client'
 
 export default async function AgenciasPage() {
-  const agencias = await prisma.agencia.findMany({
-    orderBy: { nome: 'asc' },
-  })
+  const { data: agencias } = await supabaseAdmin
+    .from('agencias')
+    .select('*')
+    .order('nome', { ascending: true })
 
-  // Transform data to match expected types
-  const agenciasFormatted = agencias.map(agencia => ({
+  const agenciasFormatted = (agencias || []).map(agencia => ({
     id: agencia.id,
     nome: agencia.nome,
     cnpj: agencia.cnpj,
     telefone: agencia.telefone,
     email: agencia.email,
     contato: agencia.contato,
-    created_at: agencia.createdAt.toISOString(),
-    updated_at: agencia.updatedAt.toISOString(),
+    created_at: agencia.created_at,
+    updated_at: agencia.updated_at,
   }))
 
   return (

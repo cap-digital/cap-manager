@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
@@ -33,55 +33,51 @@ function getNomeDiaSemana(): string {
 export default async function FollowUpPage() {
   const session = await getServerSession(authOptions)
 
-  const currentUser = session?.user?.email
-    ? await prisma.usuario.findUnique({
-        where: { email: session.user.email },
-      })
-    : null
+  let currentUser = null
+  if (session?.user?.email) {
+    const { data } = await supabaseAdmin
+      .from('usuarios')
+      .select('*')
+      .eq('email', session.user.email)
+      .single()
+    currentUser = data
+  }
 
   const gruposHoje = getGrupoRevisaoHoje()
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
+  const hoje = new Date().toISOString().split('T')[0]
 
   // Buscar projetos ativos com grupo de revisão definido que devem ser revisados hoje
-  const [projetosParaRevisar, revisoesHoje, traders] = await Promise.all([
-    prisma.projeto.findMany({
-      where: {
-        status: 'ativo',
-        grupoRevisao: { in: gruposHoje },
-      },
-      include: {
-        cliente: { select: { id: true, nome: true } },
-        trader: { select: { id: true, nome: true } },
-        colaborador: { select: { id: true, nome: true } },
-        estrategias: true,
-      },
-      orderBy: [
-        { cliente: { nome: 'asc' } },
-        { nome: 'asc' },
-      ],
-    }),
-    prisma.revisaoDiaria.findMany({
-      where: {
-        dataAgendada: hoje,
-      },
-      select: {
-        projetoId: true,
-        revisado: true,
-        dataRevisao: true,
-        revisadoPor: { select: { id: true, nome: true } },
-      },
-    }),
-    prisma.usuario.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
+  const [projetosRes, revisoesRes, tradersRes] = await Promise.all([
+    supabaseAdmin
+      .from('projetos')
+      .select(`
+        *,
+        clientes:cliente_id(id, nome),
+        trader:usuarios!projetos_trader_id_fkey(id, nome),
+        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        estrategias(*)
+      `)
+      .eq('status', 'ativo')
+      .in('grupo_revisao', gruposHoje)
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('revisoes_diarias')
+      .select('projeto_id, revisado, data_revisao, revisado_por:usuarios!revisoes_diarias_revisado_por_id_fkey(id, nome)')
+      .eq('data_agendada', hoje),
+    supabaseAdmin
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
   ])
+
+  const projetosParaRevisar = projetosRes.data || []
+  const revisoesHoje = revisoesRes.data || []
+  const traders = tradersRes.data || []
 
   // Criar um mapa de revisões para fácil acesso
   const revisoesMap = new Map(
-    revisoesHoje.map(r => [r.projetoId, r])
+    revisoesHoje.map(r => [r.projeto_id, r])
   )
 
   // Formatar projetos com status de revisão
@@ -90,28 +86,28 @@ export default async function FollowUpPage() {
     return {
       id: projeto.id,
       nome: projeto.nome,
-      cliente_id: projeto.clienteId,
-      cliente: projeto.cliente,
-      trader_id: projeto.traderId,
+      cliente_id: projeto.cliente_id,
+      cliente: projeto.clientes,
+      trader_id: projeto.trader_id,
       trader: projeto.trader,
-      colaborador_id: projeto.colaboradorId,
+      colaborador_id: projeto.colaborador_id,
       colaborador: projeto.colaborador,
       status: projeto.status,
-      grupo_revisao: projeto.grupoRevisao as 'A' | 'B' | 'C',
-      data_inicio: projeto.dataInicio?.toISOString().split('T')[0] || null,
-      data_fim: projeto.dataFim?.toISOString().split('T')[0] || null,
+      grupo_revisao: projeto.grupo_revisao as 'A' | 'B' | 'C',
+      data_inicio: projeto.data_inicio?.split('T')[0] || null,
+      data_fim: projeto.data_fim?.split('T')[0] || null,
       revisado_hoje: revisao?.revisado || false,
-      data_revisao: revisao?.dataRevisao?.toISOString() || null,
-      revisado_por: revisao?.revisadoPor || null,
-      estrategias: projeto.estrategias.map(e => ({
+      data_revisao: revisao?.data_revisao || null,
+      revisado_por: Array.isArray(revisao?.revisado_por) ? revisao.revisado_por[0] || null : revisao?.revisado_por || null,
+      estrategias: (projeto.estrategias || []).map((e: any) => ({
         id: e.id,
         plataforma: e.plataforma,
         estrategia: e.estrategia,
         status: e.status,
-        data_inicio: e.dataInicio?.toISOString().split('T')[0] || null,
-        gasto_ate_momento: e.gastoAteMomento ? Number(e.gastoAteMomento) : null,
-        entregue_ate_momento: e.entregueAteMomento ? Number(e.entregueAteMomento) : null,
-        data_atualizacao: e.dataAtualizacao?.toISOString().split('T')[0] || null,
+        data_inicio: e.data_inicio?.split('T')[0] || null,
+        gasto_ate_momento: e.gasto_ate_momento ? Number(e.gasto_ate_momento) : null,
+        entregue_ate_momento: e.entregue_ate_momento ? Number(e.entregue_ate_momento) : null,
+        data_atualizacao: e.data_atualizacao?.split('T')[0] || null,
       })),
     }
   })
@@ -121,12 +117,12 @@ export default async function FollowUpPage() {
         id: currentUser.id,
         email: currentUser.email,
         nome: currentUser.nome,
-        avatar_url: currentUser.avatarUrl,
+        avatar_url: currentUser.avatar_url,
         role: currentUser.role as 'admin' | 'trader' | 'gestor' | 'cliente',
         whatsapp: currentUser.whatsapp,
         ativo: currentUser.ativo,
-        created_at: currentUser.createdAt.toISOString(),
-        updated_at: currentUser.updatedAt.toISOString(),
+        created_at: currentUser.created_at,
+        updated_at: currentUser.updated_at,
       }
     : null
 

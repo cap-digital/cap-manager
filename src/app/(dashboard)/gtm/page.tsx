@@ -1,28 +1,34 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { SimpleKanban } from '@/components/kanban/simple-kanban'
 
 export default async function GTMPage() {
-  const [cards, projetos, clientes, usuarios] = await Promise.all([
-    prisma.cardKanban.findMany({
-      where: { area: 'gtm' },
-      orderBy: { ordem: 'asc' },
-    }),
-    prisma.projeto.findMany({
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.cliente.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.usuario.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
+  const [cardsRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
+    supabaseAdmin
+      .from('cards_kanban')
+      .select('*')
+      .eq('area', 'gtm')
+      .order('ordem', { ascending: true }),
+    supabaseAdmin
+      .from('projetos')
+      .select('id, nome')
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('clientes')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
   ])
+
+  const cards = cardsRes.data || []
+  const projetos = projetosRes.data || []
+  const clientes = clientesRes.data || []
+  const usuarios = usuariosRes.data || []
 
   const cardsFormatted = cards.map(card => ({
     id: card.id,
@@ -31,13 +37,13 @@ export default async function GTMPage() {
     area: card.area,
     status: card.status,
     prioridade: card.prioridade as 'baixa' | 'media' | 'alta' | 'urgente',
-    cliente_id: card.clienteId,
-    projeto_id: card.projetoId,
-    trader_id: card.traderId,
-    data_vencimento: card.dataVencimento?.toISOString().split('T')[0] || null,
+    cliente_id: card.cliente_id,
+    projeto_id: card.projeto_id,
+    trader_id: card.trader_id,
+    data_vencimento: card.data_vencimento?.split('T')[0] || null,
     ordem: card.ordem,
-    created_at: card.createdAt.toISOString(),
-    updated_at: card.updatedAt.toISOString(),
+    created_at: card.created_at,
+    updated_at: card.updated_at,
   }))
 
   return (

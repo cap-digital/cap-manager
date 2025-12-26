@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -13,27 +13,19 @@ export default async function UsuariosPage() {
     redirect('/')
   }
 
-  const usuarios = await prisma.usuario.findMany({
-    select: {
-      id: true,
-      email: true,
-      nome: true,
-      role: true,
-      whatsapp: true,
-      ativo: true,
-      createdAt: true,
-    },
-    orderBy: { nome: 'asc' },
-  })
+  const { data: usuarios } = await supabaseAdmin
+    .from('usuarios')
+    .select('id, email, nome, role, whatsapp, ativo, created_at')
+    .order('nome', { ascending: true })
 
-  const usuariosFormatted = usuarios.map(u => ({
+  const usuariosFormatted = (usuarios || []).map(u => ({
     id: u.id,
     email: u.email,
     nome: u.nome,
     role: u.role as 'admin' | 'trader' | 'gestor' | 'cliente',
     whatsapp: u.whatsapp,
     ativo: u.ativo,
-    created_at: u.createdAt.toISOString(),
+    created_at: u.created_at,
   }))
 
   return (

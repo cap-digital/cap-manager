@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -10,12 +10,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const utms = await prisma.utmConfig.findMany({
-      include: {
-        projeto: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const { data: utms, error } = await supabaseAdmin
+      .from('utm_configs')
+      .select('*, projetos(*)')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Erro ao buscar UTMs:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(utms)
   } catch (error) {
@@ -33,21 +36,25 @@ export async function POST(request: Request) {
 
     const data = await request.json()
 
-    const utm = await prisma.utmConfig.create({
-      data: {
-        projetoId: data.projeto_id || null,
-        utmSource: data.utm_source,
-        utmMedium: data.utm_medium,
-        utmCampaign: data.utm_campaign,
-        utmTerm: data.utm_term || null,
-        utmContent: data.utm_content || null,
-        urlDestino: data.url_destino,
-        urlGerada: data.url_gerada,
-      },
-      include: {
-        projeto: true,
-      },
-    })
+    const { data: utm, error } = await supabaseAdmin
+      .from('utm_configs')
+      .insert({
+        projeto_id: data.projeto_id || null,
+        utm_source: data.utm_source,
+        utm_medium: data.utm_medium,
+        utm_campaign: data.utm_campaign,
+        utm_term: data.utm_term || null,
+        utm_content: data.utm_content || null,
+        url_destino: data.url_destino,
+        url_gerada: data.url_gerada,
+      })
+      .select('*, projetos(*)')
+      .single()
+
+    if (error) {
+      console.error('Erro ao criar UTM:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(utm)
   } catch (error) {
@@ -70,9 +77,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
-    await prisma.utmConfig.delete({
-      where: { id: Number(id) },
-    })
+    const { error } = await supabaseAdmin
+      .from('utm_configs')
+      .delete()
+      .eq('id', Number(id))
+
+    if (error) {
+      console.error('Erro ao deletar UTM:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

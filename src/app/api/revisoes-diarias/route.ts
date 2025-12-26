@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // GET - Buscar revisões do dia atual ou de uma data específica
 export async function GET(request: Request) {
@@ -18,28 +18,30 @@ export async function GET(request: Request) {
     const data = dataParam ? new Date(dataParam) : new Date()
     data.setHours(0, 0, 0, 0)
 
-    const where: Record<string, unknown> = {
-      dataAgendada: data,
-    }
+    let query = supabaseAdmin
+      .from('revisoes_diarias')
+      .select(`
+        *,
+        projetos (
+          *,
+          clientes:cliente_id (id, nome),
+          traders:trader_id (id, nome),
+          estrategias (*)
+        ),
+        usuarios:revisado_por_id (id, nome)
+      `)
+      .eq('data_agendada', data.toISOString().split('T')[0])
 
     if (projetoIdParam) {
-      where.projetoId = parseInt(projetoIdParam)
+      query = query.eq('projeto_id', parseInt(projetoIdParam))
     }
 
-    const revisoes = await prisma.revisaoDiaria.findMany({
-      where,
-      include: {
-        projeto: {
-          include: {
-            cliente: { select: { id: true, nome: true } },
-            trader: { select: { id: true, nome: true } },
-            estrategias: true,
-          },
-        },
-        revisadoPor: { select: { id: true, nome: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const { data: revisoes, error } = await query.order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Erro ao buscar revisões:', error)
+      return NextResponse.json({ error: 'Erro ao buscar revisões' }, { status: 500 })
+    }
 
     return NextResponse.json(revisoes)
   } catch (error) {
@@ -56,11 +58,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const usuario = await prisma.usuario.findUnique({
-      where: { email: session.user.email },
-    })
+    const { data: usuario, error: usuarioError } = await supabaseAdmin
+      .from('usuarios')
+      .select('*')
+      .eq('email', session.user.email)
+      .single()
 
-    if (!usuario) {
+    if (usuarioError || !usuario) {
+      console.error('Erro ao buscar usuário:', usuarioError)
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
     }
 
@@ -74,55 +79,69 @@ export async function POST(request: Request) {
     hoje.setHours(0, 0, 0, 0)
 
     // Verificar se já existe uma revisão para hoje
-    const revisaoExistente = await prisma.revisaoDiaria.findUnique({
-      where: {
-        projetoId_dataAgendada: {
-          projetoId: data.projeto_id,
-          dataAgendada: hoje,
-        },
-      },
-    })
+    const { data: revisaoExistente, error: checkError } = await supabaseAdmin
+      .from('revisoes_diarias')
+      .select('*')
+      .eq('projeto_id', data.projeto_id)
+      .eq('data_agendada', hoje.toISOString().split('T')[0])
+      .single()
 
     let revisao
-    if (revisaoExistente) {
+    if (revisaoExistente && !checkError) {
       // Atualizar revisão existente
-      revisao = await prisma.revisaoDiaria.update({
-        where: { id: revisaoExistente.id },
-        data: {
+      const { data: revisaoAtualizada, error: updateError } = await supabaseAdmin
+        .from('revisoes_diarias')
+        .update({
           revisado: true,
-          dataRevisao: new Date(),
-          revisadoPorId: usuario.id,
-        },
-        include: {
-          projeto: {
-            include: {
-              cliente: { select: { id: true, nome: true } },
-              trader: { select: { id: true, nome: true } },
-            },
-          },
-          revisadoPor: { select: { id: true, nome: true } },
-        },
-      })
+          data_revisao: new Date().toISOString(),
+          revisado_por_id: usuario.id,
+        })
+        .eq('id', revisaoExistente.id)
+        .select(`
+          *,
+          projetos (
+            *,
+            clientes:cliente_id (id, nome),
+            traders:trader_id (id, nome)
+          ),
+          usuarios:revisado_por_id (id, nome)
+        `)
+        .single()
+
+      if (updateError) {
+        console.error('Erro ao atualizar revisão:', updateError)
+        return NextResponse.json({ error: 'Erro ao atualizar revisão' }, { status: 500 })
+      }
+
+      revisao = revisaoAtualizada
     } else {
       // Criar nova revisão
-      revisao = await prisma.revisaoDiaria.create({
-        data: {
-          projetoId: data.projeto_id,
-          dataAgendada: hoje,
+      const { data: novaRevisao, error: createError } = await supabaseAdmin
+        .from('revisoes_diarias')
+        .insert({
+          projeto_id: data.projeto_id,
+          data_agendada: hoje.toISOString().split('T')[0],
           revisado: true,
-          dataRevisao: new Date(),
-          revisadoPorId: usuario.id,
-        },
-        include: {
-          projeto: {
-            include: {
-              cliente: { select: { id: true, nome: true } },
-              trader: { select: { id: true, nome: true } },
-            },
-          },
-          revisadoPor: { select: { id: true, nome: true } },
-        },
-      })
+          data_revisao: new Date().toISOString(),
+          revisado_por_id: usuario.id,
+        })
+        .select(`
+          *,
+          projetos (
+            *,
+            clientes:cliente_id (id, nome),
+            traders:trader_id (id, nome)
+          ),
+          usuarios:revisado_por_id (id, nome)
+        `)
+        .single()
+
+      if (createError) {
+        console.error('Erro ao criar revisão:', createError)
+        return NextResponse.json({ error: 'Erro ao criar revisão' }, { status: 500 })
+      }
+
+      revisao = novaRevisao
     }
 
     return NextResponse.json(revisao)

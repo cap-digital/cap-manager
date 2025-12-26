@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 // Função para calcular todos os valores da estratégia
 interface CalculoInput {
@@ -138,13 +138,29 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const projetoId = searchParams.get('projeto_id')
 
-    const estrategias = await prisma.estrategia.findMany({
-      where: projetoId ? { projetoId: parseInt(projetoId) } : undefined,
-      include: {
-        projeto: { select: { id: true, nome: true, tipoCobranca: true, dataFim: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    let query = supabaseAdmin
+      .from('estrategias')
+      .select(`
+        *,
+        projeto:projetos!projeto_id (
+          id,
+          nome,
+          tipo_cobranca,
+          data_fim
+        )
+      `)
+      .order('created_at', { ascending: false })
+
+    if (projetoId) {
+      query = query.eq('projeto_id', parseInt(projetoId))
+    }
+
+    const { data: estrategias, error } = await query
+
+    if (error) {
+      console.error('Erro ao buscar estrategias:', error)
+      return NextResponse.json({ error: 'Erro ao buscar estrategias' }, { status: 500 })
+    }
 
     return NextResponse.json(estrategias)
   } catch (error) {
@@ -163,12 +179,14 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     // Buscar dados do projeto para cálculos
-    const projeto = await prisma.projeto.findUnique({
-      where: { id: data.projeto_id },
-      select: { tipoCobranca: true, dataFim: true }
-    })
+    const { data: projeto, error: projetoError } = await supabaseAdmin
+      .from('projetos')
+      .select('tipo_cobranca, data_fim')
+      .eq('id', data.projeto_id)
+      .single()
 
-    if (!projeto) {
+    if (projetoError || !projeto) {
+      console.error('Erro ao buscar projeto:', projetoError)
       return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
     }
 
@@ -184,35 +202,64 @@ export async function POST(request: Request) {
       entregueAteMomento: data.entregue_ate_momento || null,
       kpi: data.kpi || null,
       dataInicio,
-      tipoCobranca: projeto.tipoCobranca,
-      dataFimProjeto: projeto.dataFim,
+      tipoCobranca: projeto.tipo_cobranca,
+      dataFimProjeto: projeto.data_fim ? new Date(projeto.data_fim) : null,
     })
 
-    const estrategia = await prisma.estrategia.create({
-      data: {
-        projetoId: data.projeto_id,
-        plataforma: data.plataforma,
-        nomeConta: data.nome_conta || null,
-        idConta: data.id_conta || null,
-        campaignId: data.campaign_id || null,
-        estrategia: data.estrategia || null,
-        kpi: data.kpi || null,
-        status: data.status || 'planejada',
-        dataInicio,
-        valorBruto: data.valor_bruto || 0,
-        porcentagemAgencia: data.porcentagem_agencia || 0,
-        porcentagemPlataforma: data.porcentagem_plataforma || 0,
-        entregaContratada: data.entrega_contratada || null,
-        gastoAteMomento: data.gasto_ate_momento || null,
-        entregueAteMomento: data.entregue_ate_momento || null,
-        dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00') : null,
-        // Valores calculados
-        ...valoresCalculados,
-      },
-      include: {
-        projeto: { select: { id: true, nome: true, tipoCobranca: true, dataFim: true } },
-      },
-    })
+    // Preparar dados para inserção (snake_case)
+    const insertData = {
+      projeto_id: data.projeto_id,
+      plataforma: data.plataforma,
+      nome_conta: data.nome_conta || null,
+      id_conta: data.id_conta || null,
+      campaign_id: data.campaign_id || null,
+      estrategia: data.estrategia || null,
+      kpi: data.kpi || null,
+      status: data.status || 'planejada',
+      data_inicio: dataInicio?.toISOString(),
+      valor_bruto: data.valor_bruto || 0,
+      porcentagem_agencia: data.porcentagem_agencia || 0,
+      porcentagem_plataforma: data.porcentagem_plataforma || 0,
+      entrega_contratada: data.entrega_contratada || null,
+      gasto_ate_momento: data.gasto_ate_momento || null,
+      entregue_ate_momento: data.entregue_ate_momento || null,
+      data_atualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00').toISOString() : null,
+      // Valores calculados (snake_case)
+      valor_liquido: valoresCalculados.valorLiquido,
+      valor_plataforma: valoresCalculados.valorPlataforma,
+      coeficiente: valoresCalculados.coeficiente,
+      valor_por_dia_plataforma: valoresCalculados.valorPorDiaPlataforma,
+      percentual_entrega: valoresCalculados.percentualEntrega,
+      custo_resultado: valoresCalculados.custoResultado,
+      estimativa_resultado: valoresCalculados.estimativaResultado,
+      estimativa_sucesso: valoresCalculados.estimativaSucesso,
+      valor_restante: valoresCalculados.valorRestante,
+      restante_por_dia: valoresCalculados.restantePorDia,
+      meta_custo_resultado: valoresCalculados.metaCustoResultado,
+      gasto_ate_momento_bruto: valoresCalculados.gastoAteMomentoBruto,
+      valor_restante_bruto: valoresCalculados.valorRestanteBruto,
+      pode_abaixar_margem: valoresCalculados.podeAbaixarMargem,
+      pode_aumentar_margem: valoresCalculados.podeAumentarMargem,
+    }
+
+    const { data: estrategia, error } = await supabaseAdmin
+      .from('estrategias')
+      .insert(insertData)
+      .select(`
+        *,
+        projeto:projetos!projeto_id (
+          id,
+          nome,
+          tipo_cobranca,
+          data_fim
+        )
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao criar estrategia:', error)
+      return NextResponse.json({ error: 'Erro ao criar estrategia' }, { status: 500 })
+    }
 
     return NextResponse.json(estrategia)
   } catch (error) {
@@ -238,14 +285,20 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     // Verificar se a estratégia existe e buscar dados do projeto
-    const existente = await prisma.estrategia.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        projeto: { select: { tipoCobranca: true, dataFim: true } }
-      }
-    })
+    const { data: existente, error: existenteError } = await supabaseAdmin
+      .from('estrategias')
+      .select(`
+        *,
+        projeto:projetos!projeto_id (
+          tipo_cobranca,
+          data_fim
+        )
+      `)
+      .eq('id', parseInt(id))
+      .single()
 
-    if (!existente) {
+    if (existenteError || !existente) {
+      console.error('Erro ao buscar estrategia:', existenteError)
       return NextResponse.json({ error: 'Estrategia nao encontrada' }, { status: 404 })
     }
 
@@ -261,37 +314,64 @@ export async function PUT(request: Request) {
       entregueAteMomento: data.entregue_ate_momento || null,
       kpi: data.kpi || null,
       dataInicio,
-      tipoCobranca: existente.projeto.tipoCobranca,
-      dataFimProjeto: existente.projeto.dataFim,
+      tipoCobranca: existente.projeto.tipo_cobranca,
+      dataFimProjeto: existente.projeto.data_fim ? new Date(existente.projeto.data_fim) : null,
     })
 
+    // Preparar dados para atualização (snake_case)
     const updateData = {
       plataforma: data.plataforma,
-      nomeConta: data.nome_conta || null,
-      idConta: data.id_conta || null,
-      campaignId: data.campaign_id || null,
+      nome_conta: data.nome_conta || null,
+      id_conta: data.id_conta || null,
+      campaign_id: data.campaign_id || null,
       estrategia: data.estrategia || null,
       kpi: data.kpi || null,
       status: data.status,
-      dataInicio,
-      valorBruto: data.valor_bruto || 0,
-      porcentagemAgencia: data.porcentagem_agencia || 0,
-      porcentagemPlataforma: data.porcentagem_plataforma || 0,
-      entregaContratada: data.entrega_contratada || null,
-      gastoAteMomento: data.gasto_ate_momento || null,
-      entregueAteMomento: data.entregue_ate_momento || null,
-      dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00') : null,
-      // Valores calculados
-      ...valoresCalculados,
+      data_inicio: dataInicio?.toISOString(),
+      valor_bruto: data.valor_bruto || 0,
+      porcentagem_agencia: data.porcentagem_agencia || 0,
+      porcentagem_plataforma: data.porcentagem_plataforma || 0,
+      entrega_contratada: data.entrega_contratada || null,
+      gasto_ate_momento: data.gasto_ate_momento || null,
+      entregue_ate_momento: data.entregue_ate_momento || null,
+      data_atualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00').toISOString() : null,
+      // Valores calculados (snake_case)
+      valor_liquido: valoresCalculados.valorLiquido,
+      valor_plataforma: valoresCalculados.valorPlataforma,
+      coeficiente: valoresCalculados.coeficiente,
+      valor_por_dia_plataforma: valoresCalculados.valorPorDiaPlataforma,
+      percentual_entrega: valoresCalculados.percentualEntrega,
+      custo_resultado: valoresCalculados.custoResultado,
+      estimativa_resultado: valoresCalculados.estimativaResultado,
+      estimativa_sucesso: valoresCalculados.estimativaSucesso,
+      valor_restante: valoresCalculados.valorRestante,
+      restante_por_dia: valoresCalculados.restantePorDia,
+      meta_custo_resultado: valoresCalculados.metaCustoResultado,
+      gasto_ate_momento_bruto: valoresCalculados.gastoAteMomentoBruto,
+      valor_restante_bruto: valoresCalculados.valorRestanteBruto,
+      pode_abaixar_margem: valoresCalculados.podeAbaixarMargem,
+      pode_aumentar_margem: valoresCalculados.podeAumentarMargem,
     }
 
-    const estrategia = await prisma.estrategia.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      include: {
-        projeto: { select: { id: true, nome: true, tipoCobranca: true, dataFim: true } },
-      },
-    })
+    const { data: estrategia, error } = await supabaseAdmin
+      .from('estrategias')
+      .update(updateData)
+      .eq('id', parseInt(id))
+      .select(`
+        *,
+        projeto:projetos!projeto_id (
+          id,
+          nome,
+          tipo_cobranca,
+          data_fim
+        )
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao atualizar estrategia:', error)
+      return NextResponse.json({ error: 'Erro ao atualizar estrategia' }, { status: 500 })
+    }
 
     return NextResponse.json(estrategia)
   } catch (error) {
@@ -315,9 +395,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID nao fornecido' }, { status: 400 })
     }
 
-    await prisma.estrategia.delete({
-      where: { id: parseInt(id) },
-    })
+    const { error } = await supabaseAdmin
+      .from('estrategias')
+      .delete()
+      .eq('id', parseInt(id))
+
+    if (error) {
+      console.error('Erro ao excluir estrategia:', error)
+      return NextResponse.json({ error: 'Erro ao excluir estrategia' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

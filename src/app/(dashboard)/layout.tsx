@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MainContent } from '@/components/layout/main-content'
 
@@ -18,9 +18,11 @@ export default async function DashboardLayout({
 
   // Buscar dados do usuário
   const userId = parseInt(session.user.id)
-  const userData = await prisma.usuario.findUnique({
-    where: { id: userId },
-  })
+  const { data: userData } = await supabaseAdmin
+    .from('usuarios')
+    .select('*')
+    .eq('id', userId)
+    .single()
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -30,7 +32,7 @@ export default async function DashboardLayout({
             ? {
                 nome: userData.nome,
                 email: userData.email,
-                avatar_url: userData.avatarUrl,
+                avatar_url: userData.avatar_url,
                 role: userData.role,
               }
             : null

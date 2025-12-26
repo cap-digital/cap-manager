@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
-import { prisma } from './prisma'
+import { supabaseAdmin, Usuario } from './supabase'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,12 +21,18 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email e senha são obrigatórios')
         }
 
-        const user = await prisma.usuario.findUnique({
-          where: { email: credentials.email },
-        })
+        const { data: user, error } = await supabaseAdmin
+          .from('usuarios')
+          .select('*')
+          .eq('email', credentials.email)
+          .single()
 
-        if (!user || !user.ativo) {
-          throw new Error('Usuário não encontrado ou inativo')
+        if (error || !user) {
+          throw new Error('Usuário não encontrado')
+        }
+
+        if (!user.ativo) {
+          throw new Error('Usuário inativo')
         }
 
         const isValidPassword = await bcrypt.compare(
@@ -51,32 +57,39 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       // Para login com Google, criar ou atualizar usuário no banco
       if (account?.provider === 'google' && user.email) {
-        const existingUser = await prisma.usuario.findUnique({
-          where: { email: user.email },
-        })
+        const { data: existingUser } = await supabaseAdmin
+          .from('usuarios')
+          .select('*')
+          .eq('email', user.email)
+          .single()
 
         if (!existingUser) {
           // Criar novo usuário com dados do Google
-          await prisma.usuario.create({
-            data: {
+          const { error } = await supabaseAdmin
+            .from('usuarios')
+            .insert({
               email: user.email,
               nome: user.name || user.email.split('@')[0],
               senha: '', // Sem senha para usuários Google
               role: 'trader',
               ativo: true,
-              avatarUrl: user.image || null,
-            },
-          })
+              avatar_url: user.image || null,
+            })
+
+          if (error) {
+            console.error('Erro ao criar usuário:', error)
+            return false
+          }
         } else if (!existingUser.ativo) {
           // Usuário existe mas está inativo
           return false
         } else {
           // Atualizar avatar se mudou
-          if (user.image && user.image !== existingUser.avatarUrl) {
-            await prisma.usuario.update({
-              where: { id: existingUser.id },
-              data: { avatarUrl: user.image },
-            })
+          if (user.image && user.image !== existingUser.avatar_url) {
+            await supabaseAdmin
+              .from('usuarios')
+              .update({ avatar_url: user.image })
+              .eq('id', existingUser.id)
           }
         }
       }
@@ -86,9 +99,12 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         // Para login com Google, buscar dados do banco
         if (account?.provider === 'google' && user.email) {
-          const dbUser = await prisma.usuario.findUnique({
-            where: { email: user.email },
-          })
+          const { data: dbUser } = await supabaseAdmin
+            .from('usuarios')
+            .select('*')
+            .eq('email', user.email)
+            .single()
+
           if (dbUser) {
             token.id = dbUser.id.toString()
             token.role = dbUser.role

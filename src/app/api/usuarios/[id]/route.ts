@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(
   request: Request,
@@ -14,24 +14,28 @@ export async function GET(
     }
 
     const { id } = await params
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: parseInt(id) },
-      select: {
-        id: true,
-        email: true,
-        nome: true,
-        role: true,
-        whatsapp: true,
-        ativo: true,
-        createdAt: true,
-      },
-    })
+    const { data: usuario, error } = await supabaseAdmin
+      .from('usuarios')
+      .select('id, email, nome, role, whatsapp, ativo, created_at')
+      .eq('id', parseInt(id))
+      .single()
 
-    if (!usuario) {
+    if (error || !usuario) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
     }
 
-    return NextResponse.json(usuario)
+    // Converter snake_case para camelCase
+    const usuarioFormatado = {
+      id: usuario.id,
+      email: usuario.email,
+      nome: usuario.nome,
+      role: usuario.role,
+      whatsapp: usuario.whatsapp,
+      ativo: usuario.ativo,
+      createdAt: usuario.created_at,
+    }
+
+    return NextResponse.json(usuarioFormatado)
   } catch (error) {
     console.error('Erro ao buscar usuário:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -65,18 +69,17 @@ export async function PUT(
     if (data.whatsapp !== undefined) updateData.whatsapp = data.whatsapp || null
     if (data.ativo !== undefined) updateData.ativo = data.ativo
 
-    const usuario = await prisma.usuario.update({
-      where: { id: parseInt(id) },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        nome: true,
-        role: true,
-        whatsapp: true,
-        ativo: true,
-      },
-    })
+    const { data: usuario, error } = await supabaseAdmin
+      .from('usuarios')
+      .update(updateData)
+      .eq('id', parseInt(id))
+      .select('id, email, nome, role, whatsapp, ativo')
+      .single()
+
+    if (error || !usuario) {
+      console.error('Erro ao atualizar usuário:', error)
+      return NextResponse.json({ error: 'Erro ao atualizar usuário' }, { status: 500 })
+    }
 
     return NextResponse.json(usuario)
   } catch (error) {
@@ -98,10 +101,15 @@ export async function DELETE(
     const { id } = await params
 
     // Soft delete - apenas desativa o usuário
-    await prisma.usuario.update({
-      where: { id: parseInt(id) },
-      data: { ativo: false },
-    })
+    const { error } = await supabaseAdmin
+      .from('usuarios')
+      .update({ ativo: false })
+      .eq('id', parseInt(id))
+
+    if (error) {
+      console.error('Erro ao deletar usuário:', error)
+      return NextResponse.json({ error: 'Erro ao deletar usuário' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

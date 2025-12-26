@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -10,18 +10,23 @@ export async function GET() {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 
-    const projetos = await prisma.projeto.findMany({
-      include: {
-        cliente: { select: { id: true, nome: true } },
-        trader: { select: { id: true, nome: true } },
-        colaborador: { select: { id: true, nome: true } },
-        pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true } },
-        estrategias: true,
-        _count: { select: { estrategias: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const { data: projetos, error } = await supabaseAdmin
+      .from('projetos')
+      .select(`
+        *,
+        clientes:cliente_id(id, nome),
+        trader:usuarios!projetos_trader_id_fkey(id, nome),
+        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        pis:pi_id(id, identificador, valor_bruto),
+        agencias:agencia_id(id, nome),
+        estrategias(*)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Erro ao buscar projetos:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(projetos)
   } catch (error) {
@@ -47,31 +52,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Nome do projeto é obrigatório' }, { status: 400 })
     }
 
-    const projeto = await prisma.projeto.create({
-      data: {
-        clienteId: data.cliente_id,
+    const { data: projeto, error } = await supabaseAdmin
+      .from('projetos')
+      .insert({
+        cliente_id: data.cliente_id,
         nome: data.nome,
-        piId: data.pi_id || null,
-        tipoCobranca: data.tipo_cobranca || 'td',
-        agenciaId: data.agencia_id || null,
-        traderId: data.trader_id || null,
-        colaboradorId: data.colaborador_id || null,
+        pi_id: data.pi_id || null,
+        tipo_cobranca: data.tipo_cobranca || 'td',
+        agencia_id: data.agencia_id || null,
+        trader_id: data.trader_id || null,
+        colaborador_id: data.colaborador_id || null,
         status: data.status || 'rascunho',
-        dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
-        dataFim: data.data_fim ? new Date(data.data_fim) : null,
-        linkProposta: data.link_proposta || null,
-        urlDestino: data.url_destino || null,
-        grupoRevisao: data.grupo_revisao || null,
-      },
-      include: {
-        cliente: { select: { id: true, nome: true } },
-        trader: { select: { id: true, nome: true } },
-        colaborador: { select: { id: true, nome: true } },
-        pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true } },
-        estrategias: true,
-      },
-    })
+        data_inicio: data.data_inicio || null,
+        data_fim: data.data_fim || null,
+        link_proposta: data.link_proposta || null,
+        url_destino: data.url_destino || null,
+        grupo_revisao: data.grupo_revisao || null,
+      })
+      .select(`
+        *,
+        clientes:cliente_id(id, nome),
+        trader:usuarios!projetos_trader_id_fkey(id, nome),
+        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        pis:pi_id(id, identificador, valor_bruto),
+        agencias:agencia_id(id, nome),
+        estrategias(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao criar projeto:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(projeto)
   } catch (error) {
@@ -97,32 +109,39 @@ export async function PUT(request: Request) {
     const data = await request.json()
     console.log('PUT /api/projetos - Dados recebidos:', JSON.stringify(data, null, 2))
 
-    const projeto = await prisma.projeto.update({
-      where: { id: parseInt(id) },
-      data: {
-        clienteId: data.cliente_id,
+    const { data: projeto, error } = await supabaseAdmin
+      .from('projetos')
+      .update({
+        cliente_id: data.cliente_id,
         nome: data.nome,
-        piId: data.pi_id || null,
-        tipoCobranca: data.tipo_cobranca || 'td',
-        agenciaId: data.agencia_id || null,
-        traderId: data.trader_id || null,
-        colaboradorId: data.colaborador_id || null,
+        pi_id: data.pi_id || null,
+        tipo_cobranca: data.tipo_cobranca || 'td',
+        agencia_id: data.agencia_id || null,
+        trader_id: data.trader_id || null,
+        colaborador_id: data.colaborador_id || null,
         status: data.status,
-        dataInicio: data.data_inicio ? new Date(data.data_inicio) : null,
-        dataFim: data.data_fim ? new Date(data.data_fim) : null,
-        linkProposta: data.link_proposta || null,
-        urlDestino: data.url_destino || null,
-        grupoRevisao: data.grupo_revisao || null,
-      },
-      include: {
-        cliente: { select: { id: true, nome: true } },
-        trader: { select: { id: true, nome: true } },
-        colaborador: { select: { id: true, nome: true } },
-        pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true } },
-        estrategias: true,
-      },
-    })
+        data_inicio: data.data_inicio || null,
+        data_fim: data.data_fim || null,
+        link_proposta: data.link_proposta || null,
+        url_destino: data.url_destino || null,
+        grupo_revisao: data.grupo_revisao || null,
+      })
+      .eq('id', parseInt(id))
+      .select(`
+        *,
+        clientes:cliente_id(id, nome),
+        trader:usuarios!projetos_trader_id_fkey(id, nome),
+        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        pis:pi_id(id, identificador, valor_bruto),
+        agencias:agencia_id(id, nome),
+        estrategias(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao atualizar projeto:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     console.log('PUT /api/projetos - Projeto atualizado:', projeto.id)
     return NextResponse.json(projeto)
@@ -146,9 +165,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID nao fornecido' }, { status: 400 })
     }
 
-    await prisma.projeto.delete({
-      where: { id: parseInt(id) },
-    })
+    const { error } = await supabaseAdmin
+      .from('projetos')
+      .delete()
+      .eq('id', parseInt(id))
+
+    if (error) {
+      console.error('Erro ao excluir projeto:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

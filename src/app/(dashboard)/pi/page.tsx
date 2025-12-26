@@ -1,45 +1,45 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { PiClient } from './pi-client'
 
 export default async function PiPage() {
-  const [pis, agencias, clientes] = await Promise.all([
-    prisma.pi.findMany({
-      include: {
-        agencia: true,
-        cliente: true,
-        _count: {
-          select: { projetos: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.agencia.findMany({
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.cliente.findMany({
-      orderBy: { nome: 'asc' },
-    }),
+  const [pisRes, agenciasRes, clientesRes] = await Promise.all([
+    supabaseAdmin
+      .from('pis')
+      .select('*, agencias(*), clientes(*), projetos(count)')
+      .order('created_at', { ascending: false }),
+    supabaseAdmin
+      .from('agencias')
+      .select('id, nome')
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('clientes')
+      .select('id, nome, agencia_id')
+      .order('nome', { ascending: true }),
   ])
+
+  const pis = pisRes.data || []
+  const agencias = agenciasRes.data || []
+  const clientes = clientesRes.data || []
 
   const pisFormatted = pis.map(pi => ({
     id: pi.id,
     identificador: pi.identificador,
-    valor_bruto: Number(pi.valorBruto),
-    agencia_id: pi.agenciaId,
-    agencia: pi.agencia ? {
-      id: pi.agencia.id,
-      nome: pi.agencia.nome,
+    valor_bruto: Number(pi.valor_bruto),
+    agencia_id: pi.agencia_id,
+    agencia: pi.agencias ? {
+      id: pi.agencias.id,
+      nome: pi.agencias.nome,
     } : null,
-    cliente_id: pi.clienteId,
-    cliente: pi.cliente ? {
-      id: pi.cliente.id,
-      nome: pi.cliente.nome,
-      agencia_id: pi.cliente.agenciaId,
+    cliente_id: pi.cliente_id,
+    cliente: pi.clientes ? {
+      id: pi.clientes.id,
+      nome: pi.clientes.nome,
+      agencia_id: pi.clientes.agencia_id,
     } : null,
-    projetos_count: pi._count.projetos,
-    created_at: pi.createdAt.toISOString(),
-    updated_at: pi.updatedAt.toISOString(),
+    projetos_count: pi.projetos?.[0]?.count || 0,
+    created_at: pi.created_at,
+    updated_at: pi.updated_at,
   }))
 
   const agenciasFormatted = agencias.map(agencia => ({
@@ -50,7 +50,7 @@ export default async function PiPage() {
   const clientesFormatted = clientes.map(cliente => ({
     id: cliente.id,
     nome: cliente.nome,
-    agencia_id: cliente.agenciaId,
+    agencia_id: cliente.agencia_id,
   }))
 
   return (

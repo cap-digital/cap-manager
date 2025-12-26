@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { sendWhatsAppMessage, messageTemplates } from '@/lib/whatsapp'
 
 export async function POST(request: NextRequest) {
@@ -37,11 +37,13 @@ async function handleBillingReminder(data: {
   cliente_id: number
   valor?: string
 }) {
-  const cliente = await prisma.cliente.findUnique({
-    where: { id: data.cliente_id },
-  })
+  const { data: cliente, error } = await supabaseAdmin
+    .from('clientes')
+    .select('*')
+    .eq('id', data.cliente_id)
+    .single()
 
-  if (!cliente || !cliente.whatsapp) {
+  if (error || !cliente || !cliente.whatsapp) {
     return NextResponse.json({ error: 'Cliente não encontrado ou sem WhatsApp' }, { status: 404 })
   }
 
@@ -63,10 +65,13 @@ async function handleTaskAssigned(data: {
   tarefa_id: number
   responsavel_id: number
 }) {
-  const [tarefa, responsavel] = await Promise.all([
-    prisma.tarefa.findUnique({ where: { id: data.tarefa_id } }),
-    prisma.usuario.findUnique({ where: { id: data.responsavel_id } }),
+  const [tarefaRes, responsavelRes] = await Promise.all([
+    supabaseAdmin.from('tarefas').select('*').eq('id', data.tarefa_id).single(),
+    supabaseAdmin.from('usuarios').select('*').eq('id', data.responsavel_id).single(),
   ])
+
+  const tarefa = tarefaRes.data
+  const responsavel = responsavelRes.data
 
   if (!tarefa || !responsavel || !responsavel.whatsapp) {
     return NextResponse.json({ error: 'Dados não encontrados' }, { status: 404 })
@@ -74,8 +79,8 @@ async function handleTaskAssigned(data: {
 
   const message = messageTemplates.tarefaAtribuida(
     tarefa.titulo,
-    tarefa.dataVencimento
-      ? tarefa.dataVencimento.toLocaleDateString('pt-BR')
+    tarefa.data_vencimento
+      ? new Date(tarefa.data_vencimento).toLocaleDateString('pt-BR')
       : undefined
   )
 
@@ -85,48 +90,50 @@ async function handleTaskAssigned(data: {
   })
 
   // Registrar alerta
-  await prisma.alerta.create({
-    data: {
-      tipo: 'tarefa',
-      titulo: `Tarefa atribuída: ${tarefa.titulo}`,
-      mensagem: message,
-      destinatarioId: responsavel.id,
-      enviadoWhatsapp: result.success,
-      dataEnvioWhatsapp: result.success ? new Date() : null,
-    },
+  await supabaseAdmin.from('alertas').insert({
+    tipo: 'tarefa',
+    titulo: `Tarefa atribuída: ${tarefa.titulo}`,
+    mensagem: message,
+    destinatario_id: responsavel.id,
+    enviado_whatsapp: result.success,
+    data_envio_whatsapp: result.success ? new Date().toISOString() : null,
   })
 
   return NextResponse.json(result)
 }
 
 async function handleProjectActivated(data: { projeto_id: number }) {
-  const projeto = await prisma.projeto.findUnique({
-    where: { id: data.projeto_id },
-    include: {
-      cliente: true,
-      trader: true,
-    },
-  })
+  const { data: projeto, error } = await supabaseAdmin
+    .from('projetos')
+    .select(`
+      *,
+      clientes:cliente_id(id, nome),
+      trader:usuarios!projetos_trader_id_fkey(id, nome, whatsapp)
+    `)
+    .eq('id', data.projeto_id)
+    .single()
 
-  if (!projeto) {
+  if (error || !projeto) {
     return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
   }
 
   const results = []
+  const trader = Array.isArray(projeto.trader) ? projeto.trader[0] : projeto.trader
+  const cliente = Array.isArray(projeto.clientes) ? projeto.clientes[0] : projeto.clientes
 
   // Notificar trader
-  if (projeto.trader?.whatsapp) {
+  if (trader?.whatsapp) {
     const message = messageTemplates.campanhaAtiva(
       projeto.nome,
-      projeto.cliente?.nome || 'Cliente'
+      cliente?.nome || 'Cliente'
     )
 
     const result = await sendWhatsAppMessage({
-      to: projeto.trader.whatsapp,
+      to: trader.whatsapp,
       message,
     })
 
-    results.push({ trader: projeto.trader.nome, ...result })
+    results.push({ trader: trader.nome, ...result })
   }
 
   return NextResponse.json({ results })
@@ -137,11 +144,13 @@ async function handleCustomAlert(data: {
   titulo: string
   mensagem: string
 }) {
-  const destinatario = await prisma.usuario.findUnique({
-    where: { id: data.destinatario_id },
-  })
+  const { data: destinatario, error } = await supabaseAdmin
+    .from('usuarios')
+    .select('*')
+    .eq('id', data.destinatario_id)
+    .single()
 
-  if (!destinatario || !destinatario.whatsapp) {
+  if (error || !destinatario || !destinatario.whatsapp) {
     return NextResponse.json({ error: 'Destinatário não encontrado' }, { status: 404 })
   }
 
@@ -153,15 +162,13 @@ async function handleCustomAlert(data: {
   })
 
   // Registrar alerta
-  await prisma.alerta.create({
-    data: {
-      tipo: 'sistema',
-      titulo: data.titulo,
-      mensagem: data.mensagem,
-      destinatarioId: destinatario.id,
-      enviadoWhatsapp: result.success,
-      dataEnvioWhatsapp: result.success ? new Date() : null,
-    },
+  await supabaseAdmin.from('alertas').insert({
+    tipo: 'sistema',
+    titulo: data.titulo,
+    mensagem: data.mensagem,
+    destinatario_id: destinatario.id,
+    enviado_whatsapp: result.success,
+    data_envio_whatsapp: result.success ? new Date().toISOString() : null,
   })
 
   return NextResponse.json(result)

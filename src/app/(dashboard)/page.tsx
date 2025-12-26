@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,35 +16,37 @@ import Link from 'next/link'
 export default async function DashboardPage() {
   // Buscar estatísticas
   const [
-    clientesCount,
-    agenciasCount,
-    projetosCount,
-    tarefasPendentesCount,
-    projetosRecentes,
-    tarefasUrgentes,
+    clientesResult,
+    agenciasResult,
+    projetosResult,
+    tarefasPendentesResult,
+    projetosRecentesResult,
+    tarefasUrgentesResult,
   ] = await Promise.all([
-    prisma.cliente.count(),
-    prisma.agencia.count(),
-    prisma.projeto.count(),
-    prisma.tarefa.count({ where: { status: { not: 'done' } } }),
-    prisma.projeto.findMany({
-      include: { cliente: { select: { nome: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    }),
-    prisma.tarefa.findMany({
-      where: {
-        prioridade: { in: ['alta', 'urgente'] },
-        status: { not: 'done' },
-      },
-      include: {
-        cliente: { select: { nome: true } },
-        projeto: { select: { nome: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    }),
+    supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('agencias').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('projetos').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('tarefas').select('id', { count: 'exact', head: true }).neq('status', 'done'),
+    supabaseAdmin
+      .from('projetos')
+      .select('*, cliente:clientes(nome)')
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabaseAdmin
+      .from('tarefas')
+      .select('*, cliente:clientes(nome), projeto:projetos(nome)')
+      .in('prioridade', ['alta', 'urgente'])
+      .neq('status', 'done')
+      .order('created_at', { ascending: false })
+      .limit(5),
   ])
+
+  const clientesCount = clientesResult.count || 0
+  const agenciasCount = agenciasResult.count || 0
+  const projetosCount = projetosResult.count || 0
+  const tarefasPendentesCount = tarefasPendentesResult.count || 0
+  const projetosRecentes = projetosRecentesResult.data || []
+  const tarefasUrgentes = tarefasUrgentesResult.data || []
 
   const stats = [
     {

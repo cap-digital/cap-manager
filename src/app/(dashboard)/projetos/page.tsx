@@ -1,116 +1,115 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { ProjetosClient } from './projetos-client'
 
 export default async function ProjetosPage() {
   // Automaticamente finalizar projetos com data_fim passada
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
+  const hoje = new Date().toISOString().split('T')[0]
 
-  await prisma.projeto.updateMany({
-    where: {
-      status: 'ativo',
-      dataFim: {
-        lt: hoje
-      }
-    },
-    data: {
-      status: 'finalizado'
-    }
-  })
+  await supabaseAdmin
+    .from('projetos')
+    .update({ status: 'finalizado' })
+    .eq('status', 'ativo')
+    .lt('data_fim', hoje)
 
-  const [projetos, clientes, usuarios, pis, agencias] = await Promise.all([
-    prisma.projeto.findMany({
-      include: {
-        cliente: { select: { id: true, nome: true } },
-        trader: { select: { id: true, nome: true } },
-        colaborador: { select: { id: true, nome: true } },
-        pi: { select: { id: true, identificador: true, valorBruto: true } },
-        agencia: { select: { id: true, nome: true } },
-        estrategias: true,
-        _count: { select: { estrategias: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.cliente.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.usuario.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.pi.findMany({
-      select: { id: true, identificador: true, valorBruto: true },
-      orderBy: { identificador: 'asc' },
-    }),
-    prisma.agencia.findMany({
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
+  const [projetosRes, clientesRes, usuariosRes, pisRes, agenciasRes] = await Promise.all([
+    supabaseAdmin
+      .from('projetos')
+      .select(`
+        *,
+        clientes:cliente_id(id, nome),
+        trader:usuarios!projetos_trader_id_fkey(id, nome),
+        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        pis:pi_id(id, identificador, valor_bruto),
+        agencias:agencia_id(id, nome),
+        estrategias(*)
+      `)
+      .order('created_at', { ascending: false }),
+    supabaseAdmin
+      .from('clientes')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('pis')
+      .select('id, identificador, valor_bruto')
+      .order('identificador', { ascending: true }),
+    supabaseAdmin
+      .from('agencias')
+      .select('id, nome')
+      .order('nome', { ascending: true }),
   ])
 
-  // Transform data to snake_case for frontend
+  const projetos = projetosRes.data || []
+  const clientes = clientesRes.data || []
+  const usuarios = usuariosRes.data || []
+  const pis = pisRes.data || []
+  const agencias = agenciasRes.data || []
+
+  // Transform data to match expected format
   const projetosFormatted = projetos.map(projeto => ({
     id: projeto.id,
-    cliente_id: projeto.clienteId,
-    cliente: projeto.cliente,
+    cliente_id: projeto.cliente_id,
+    cliente: projeto.clientes,
     nome: projeto.nome,
-    pi_id: projeto.piId,
-    pi: projeto.pi ? {
-      id: projeto.pi.id,
-      identificador: projeto.pi.identificador,
-      valor_bruto: Number(projeto.pi.valorBruto),
+    pi_id: projeto.pi_id,
+    pi: projeto.pis ? {
+      id: projeto.pis.id,
+      identificador: projeto.pis.identificador,
+      valor_bruto: Number(projeto.pis.valor_bruto),
     } : null,
-    tipo_cobranca: projeto.tipoCobranca,
-    agencia_id: projeto.agenciaId,
-    agencia: projeto.agencia ? {
-      id: projeto.agencia.id,
-      nome: projeto.agencia.nome,
+    tipo_cobranca: projeto.tipo_cobranca,
+    agencia_id: projeto.agencia_id,
+    agencia: projeto.agencias ? {
+      id: projeto.agencias.id,
+      nome: projeto.agencias.nome,
     } : null,
-    trader_id: projeto.traderId,
+    trader_id: projeto.trader_id,
     trader: projeto.trader,
-    colaborador_id: projeto.colaboradorId,
+    colaborador_id: projeto.colaborador_id,
     colaborador: projeto.colaborador,
     status: projeto.status,
-    data_inicio: projeto.dataInicio?.toISOString().split('T')[0] || null,
-    data_fim: projeto.dataFim?.toISOString().split('T')[0] || null,
-    link_proposta: projeto.linkProposta,
-    url_destino: projeto.urlDestino,
-    grupo_revisao: projeto.grupoRevisao,
-    estrategias_count: projeto._count.estrategias,
-    estrategias: projeto.estrategias.map(e => ({
+    data_inicio: projeto.data_inicio?.split('T')[0] || null,
+    data_fim: projeto.data_fim?.split('T')[0] || null,
+    link_proposta: projeto.link_proposta,
+    url_destino: projeto.url_destino,
+    grupo_revisao: projeto.grupo_revisao,
+    estrategias_count: projeto.estrategias?.length || 0,
+    estrategias: (projeto.estrategias || []).map((e: any) => ({
       id: e.id,
-      projeto_id: e.projetoId,
+      projeto_id: e.projeto_id,
       plataforma: e.plataforma,
-      nome_conta: e.nomeConta,
-      id_conta: e.idConta,
-      campaign_id: e.campaignId,
+      nome_conta: e.nome_conta,
+      id_conta: e.id_conta,
+      campaign_id: e.campaign_id,
       estrategia: e.estrategia,
       kpi: e.kpi,
       status: e.status,
-      valor_bruto: Number(e.valorBruto),
-      porcentagem_agencia: Number(e.porcentagemAgencia),
-      porcentagem_plataforma: Number(e.porcentagemPlataforma),
-      entrega_contratada: e.entregaContratada ? Number(e.entregaContratada) : null,
-      estimativa_resultado: e.estimativaResultado ? Number(e.estimativaResultado) : null,
-      estimativa_sucesso: e.estimativaSucesso ? Number(e.estimativaSucesso) : null,
-      gasto_ate_momento: e.gastoAteMomento ? Number(e.gastoAteMomento) : null,
-      entregue_ate_momento: e.entregueAteMomento ? Number(e.entregueAteMomento) : null,
-      data_atualizacao: e.dataAtualizacao?.toISOString() || null,
-      created_at: e.createdAt.toISOString(),
-      updated_at: e.updatedAt.toISOString(),
+      valor_bruto: Number(e.valor_bruto),
+      porcentagem_agencia: Number(e.porcentagem_agencia),
+      porcentagem_plataforma: Number(e.porcentagem_plataforma),
+      entrega_contratada: e.entrega_contratada ? Number(e.entrega_contratada) : null,
+      estimativa_resultado: e.estimativa_resultado ? Number(e.estimativa_resultado) : null,
+      estimativa_sucesso: e.estimativa_sucesso ? Number(e.estimativa_sucesso) : null,
+      gasto_ate_momento: e.gasto_ate_momento ? Number(e.gasto_ate_momento) : null,
+      entregue_ate_momento: e.entregue_ate_momento ? Number(e.entregue_ate_momento) : null,
+      data_atualizacao: e.data_atualizacao || null,
+      created_at: e.created_at,
+      updated_at: e.updated_at,
     })),
-    created_at: projeto.createdAt.toISOString(),
-    updated_at: projeto.updatedAt.toISOString(),
+    created_at: projeto.created_at,
+    updated_at: projeto.updated_at,
   }))
 
   const pisFormatted = pis.map(pi => ({
     id: pi.id,
     identificador: pi.identificador,
-    valor_bruto: Number(pi.valorBruto),
+    valor_bruto: Number(pi.valor_bruto),
   }))
 
   const agenciasFormatted = agencias.map(agencia => ({

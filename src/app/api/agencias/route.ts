@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -10,16 +10,25 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const agencias = await prisma.agencia.findMany({
-      include: {
-        _count: {
-          select: { clientes: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const { data: agencias, error } = await supabaseAdmin
+      .from('agencias')
+      .select('*, clientes:clientes(count)')
+      .order('created_at', { ascending: false })
 
-    return NextResponse.json(agencias)
+    if (error) {
+      console.error('Erro ao buscar agências:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
+
+    // Formatar os dados para corresponder à estrutura anterior
+    const formattedAgencias = agencias?.map((agencia) => ({
+      ...agencia,
+      _count: {
+        clientes: agencia.clientes?.[0]?.count || 0,
+      },
+    }))
+
+    return NextResponse.json(formattedAgencias)
   } catch (error) {
     console.error('Erro ao buscar agências:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -35,15 +44,22 @@ export async function POST(request: Request) {
 
     const data = await request.json()
 
-    const agencia = await prisma.agencia.create({
-      data: {
+    const { data: agencia, error } = await supabaseAdmin
+      .from('agencias')
+      .insert({
         nome: data.nome,
         cnpj: data.cnpj || null,
         telefone: data.telefone || null,
         email: data.email || null,
         contato: data.contato || null,
-      },
-    })
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Erro ao criar agência:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(agencia)
   } catch (error) {
@@ -68,16 +84,23 @@ export async function PUT(request: Request) {
 
     const data = await request.json()
 
-    const agencia = await prisma.agencia.update({
-      where: { id: parseInt(id) },
-      data: {
+    const { data: agencia, error } = await supabaseAdmin
+      .from('agencias')
+      .update({
         nome: data.nome,
         cnpj: data.cnpj || null,
         telefone: data.telefone || null,
         email: data.email || null,
         contato: data.contato || null,
-      },
-    })
+      })
+      .eq('id', parseInt(id))
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Erro ao atualizar agência:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(agencia)
   } catch (error) {
@@ -100,9 +123,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
-    await prisma.agencia.delete({
-      where: { id: parseInt(id) },
-    })
+    const { error } = await supabaseAdmin
+      .from('agencias')
+      .delete()
+      .eq('id', parseInt(id))
+
+    if (error) {
+      console.error('Erro ao excluir agência:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

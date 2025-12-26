@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -10,18 +10,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const tarefas = await prisma.tarefa.findMany({
-      include: {
-        projeto: {
-          include: {
-            cliente: true,
-          },
-        },
-        cliente: true,
-        responsavel: true,
-      },
-      orderBy: [{ status: 'asc' }, { ordem: 'asc' }],
-    })
+    const { data: tarefas, error } = await supabaseAdmin
+      .from('tarefas')
+      .select(`
+        *,
+        projetos:projeto_id (*,
+          clientes:cliente_id (*)
+        ),
+        clientes:cliente_id (*),
+        usuarios:responsavel_id (*)
+      `)
+      .order('status', { ascending: true })
+      .order('ordem', { ascending: true })
+
+    if (error) {
+      throw error
+    }
 
     return NextResponse.json(tarefas)
   } catch (error) {
@@ -39,28 +43,34 @@ export async function POST(request: Request) {
 
     const data = await request.json()
 
-    const tarefa = await prisma.tarefa.create({
-      data: {
-        titulo: data.titulo,
-        descricao: data.descricao || null,
-        status: data.status || 'backlog',
-        prioridade: data.prioridade || 'media',
-        projetoId: data.projeto_id || null,
-        clienteId: data.cliente_id || null,
-        responsavelId: data.responsavel_id || null,
-        dataVencimento: data.data_vencimento ? new Date(data.data_vencimento) : null,
-        ordem: data.ordem || 0,
-      },
-      include: {
-        projeto: {
-          include: {
-            cliente: true,
-          },
-        },
-        cliente: true,
-        responsavel: true,
-      },
-    })
+    const insertData = {
+      titulo: data.titulo,
+      descricao: data.descricao || null,
+      status: data.status || 'backlog',
+      prioridade: data.prioridade || 'media',
+      projeto_id: data.projeto_id || null,
+      cliente_id: data.cliente_id || null,
+      responsavel_id: data.responsavel_id || null,
+      data_vencimento: data.data_vencimento || null,
+      ordem: data.ordem || 0,
+    }
+
+    const { data: tarefa, error } = await supabaseAdmin
+      .from('tarefas')
+      .insert(insertData)
+      .select(`
+        *,
+        projetos:projeto_id (*,
+          clientes:cliente_id (*)
+        ),
+        clientes:cliente_id (*),
+        usuarios:responsavel_id (*)
+      `)
+      .single()
+
+    if (error) {
+      throw error
+    }
 
     return NextResponse.json(tarefa)
   } catch (error) {
@@ -79,26 +89,32 @@ export async function PATCH(request: Request) {
     const data = await request.json()
     const { id, ...updateData } = data
 
-    const tarefa = await prisma.tarefa.update({
-      where: { id },
-      data: {
-        ...(updateData.titulo && { titulo: updateData.titulo }),
-        ...(updateData.descricao !== undefined && { descricao: updateData.descricao }),
-        ...(updateData.status && { status: updateData.status }),
-        ...(updateData.prioridade && { prioridade: updateData.prioridade }),
-        ...(updateData.ordem !== undefined && { ordem: updateData.ordem }),
-        ...(updateData.responsavel_id !== undefined && { responsavelId: updateData.responsavel_id }),
-      },
-      include: {
-        projeto: {
-          include: {
-            cliente: true,
-          },
-        },
-        cliente: true,
-        responsavel: true,
-      },
-    })
+    const supabaseUpdateData: Record<string, any> = {}
+
+    if (updateData.titulo) supabaseUpdateData.titulo = updateData.titulo
+    if (updateData.descricao !== undefined) supabaseUpdateData.descricao = updateData.descricao
+    if (updateData.status) supabaseUpdateData.status = updateData.status
+    if (updateData.prioridade) supabaseUpdateData.prioridade = updateData.prioridade
+    if (updateData.ordem !== undefined) supabaseUpdateData.ordem = updateData.ordem
+    if (updateData.responsavel_id !== undefined) supabaseUpdateData.responsavel_id = updateData.responsavel_id
+
+    const { data: tarefa, error } = await supabaseAdmin
+      .from('tarefas')
+      .update(supabaseUpdateData)
+      .eq('id', id)
+      .select(`
+        *,
+        projetos:projeto_id (*,
+          clientes:cliente_id (*)
+        ),
+        clientes:cliente_id (*),
+        usuarios:responsavel_id (*)
+      `)
+      .single()
+
+    if (error) {
+      throw error
+    }
 
     return NextResponse.json(tarefa)
   } catch (error) {
@@ -121,9 +137,14 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
-    await prisma.tarefa.delete({
-      where: { id: Number(id) },
-    })
+    const { error } = await supabaseAdmin
+      .from('tarefas')
+      .delete()
+      .eq('id', Number(id))
+
+    if (error) {
+      throw error
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

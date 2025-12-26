@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -10,16 +10,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const pis = await prisma.pi.findMany({
-      include: {
-        agencia: true,
-        cliente: true,
-        _count: {
-          select: { projetos: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const { data: pis, error } = await supabaseAdmin
+      .from('pis')
+      .select('*, agencias(*), clientes(*), projetos(count)')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Erro ao buscar PIs:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(pis)
   } catch (error) {
@@ -38,9 +37,11 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     // Verificar se identificador já existe
-    const existing = await prisma.pi.findUnique({
-      where: { identificador: data.identificador },
-    })
+    const { data: existing } = await supabaseAdmin
+      .from('pis')
+      .select('id')
+      .eq('identificador', data.identificador)
+      .single()
 
     if (existing) {
       return NextResponse.json(
@@ -49,18 +50,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const pi = await prisma.pi.create({
-      data: {
+    const { data: pi, error } = await supabaseAdmin
+      .from('pis')
+      .insert({
         identificador: data.identificador,
-        valorBruto: data.valor_bruto,
-        agenciaId: data.agencia_id || null,
-        clienteId: data.cliente_id || null,
-      },
-      include: {
-        agencia: true,
-        cliente: true,
-      },
-    })
+        valor_bruto: data.valor_bruto,
+        agencia_id: data.agencia_id || null,
+        cliente_id: data.cliente_id || null,
+      })
+      .select('*, agencias(*), clientes(*)')
+      .single()
+
+    if (error) {
+      console.error('Erro ao criar PI:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(pi)
   } catch (error) {
@@ -86,12 +90,12 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     // Verificar se identificador já existe em outro PI
-    const existing = await prisma.pi.findFirst({
-      where: {
-        identificador: data.identificador,
-        id: { not: parseInt(id) },
-      },
-    })
+    const { data: existing } = await supabaseAdmin
+      .from('pis')
+      .select('id')
+      .eq('identificador', data.identificador)
+      .neq('id', parseInt(id))
+      .single()
 
     if (existing) {
       return NextResponse.json(
@@ -100,19 +104,22 @@ export async function PUT(request: Request) {
       )
     }
 
-    const pi = await prisma.pi.update({
-      where: { id: parseInt(id) },
-      data: {
+    const { data: pi, error } = await supabaseAdmin
+      .from('pis')
+      .update({
         identificador: data.identificador,
-        valorBruto: data.valor_bruto,
-        agenciaId: data.agencia_id || null,
-        clienteId: data.cliente_id || null,
-      },
-      include: {
-        agencia: true,
-        cliente: true,
-      },
-    })
+        valor_bruto: data.valor_bruto,
+        agencia_id: data.agencia_id || null,
+        cliente_id: data.cliente_id || null,
+      })
+      .eq('id', parseInt(id))
+      .select('*, agencias(*), clientes(*)')
+      .single()
+
+    if (error) {
+      console.error('Erro ao atualizar PI:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json(pi)
   } catch (error) {
@@ -136,20 +143,27 @@ export async function DELETE(request: Request) {
     }
 
     // Verificar se há projetos usando este PI
-    const projetosUsando = await prisma.projeto.count({
-      where: { piId: parseInt(id) },
-    })
+    const { count: projetosUsando } = await supabaseAdmin
+      .from('projetos')
+      .select('*', { count: 'exact', head: true })
+      .eq('pi_id', parseInt(id))
 
-    if (projetosUsando > 0) {
+    if (projetosUsando && projetosUsando > 0) {
       return NextResponse.json(
         { error: `Este PI está sendo usado por ${projetosUsando} projeto(s)` },
         { status: 400 }
       )
     }
 
-    await prisma.pi.delete({
-      where: { id: parseInt(id) },
-    })
+    const { error } = await supabaseAdmin
+      .from('pis')
+      .delete()
+      .eq('id', parseInt(id))
+
+    if (error) {
+      console.error('Erro ao excluir PI:', error)
+      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

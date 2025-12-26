@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
@@ -21,11 +21,13 @@ export async function POST(request: Request) {
     }
 
     // Verificar se email já existe
-    const existingUser = await prisma.usuario.findUnique({
-      where: { email },
-    })
+    const { data: existingUser, error: findError } = await supabaseAdmin
+      .from('usuarios')
+      .select('*')
+      .eq('email', email)
+      .single()
 
-    if (existingUser) {
+    if (existingUser && !findError) {
       return NextResponse.json(
         { error: 'Este email já está cadastrado' },
         { status: 400 }
@@ -36,21 +38,25 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(senha, 12)
 
     // Criar usuário como trader (cargo padrão)
-    const usuario = await prisma.usuario.create({
-      data: {
+    const { data: usuario, error: createError } = await supabaseAdmin
+      .from('usuarios')
+      .insert({
         email,
         senha: hashedPassword,
         nome,
         role: 'trader',
         ativo: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        nome: true,
-        role: true,
-      },
-    })
+      })
+      .select('id, email, nome, role')
+      .single()
+
+    if (createError) {
+      console.error('Erro ao criar usuário:', createError)
+      return NextResponse.json(
+        { error: 'Erro ao criar conta' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,

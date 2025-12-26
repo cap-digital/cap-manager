@@ -1,51 +1,54 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { ProjetosConcluidosClient } from './projetos-concluidos-client'
 
 export default async function ProjetosConcluidosPage() {
   // Buscar cards de projetos concluídos
-  const cards = await prisma.cardKanban.findMany({
-    where: { area: 'projetos_concluidos' },
-    orderBy: { ordem: 'asc' },
-  })
+  const { data: cards } = await supabaseAdmin
+    .from('cards_kanban')
+    .select('*')
+    .eq('area', 'projetos_concluidos')
+    .order('ordem', { ascending: true })
 
   // Buscar os IDs dos cards de faturamento relacionados
-  const faturamentoCardIds = cards
-    .map(c => c.faturamentoCardId)
+  const faturamentoCardIds = (cards || [])
+    .map(c => c.faturamento_card_id)
     .filter((id): id is number => id !== null)
 
   // Buscar os cards de faturamento para mostrar o status
-  const faturamentoCards = faturamentoCardIds.length > 0
-    ? await prisma.cardKanban.findMany({
-        where: { id: { in: faturamentoCardIds } },
-        select: { id: true, status: true },
-      })
-    : []
+  let faturamentoCards: { id: number; status: string }[] = []
+  if (faturamentoCardIds.length > 0) {
+    const { data } = await supabaseAdmin
+      .from('cards_kanban')
+      .select('id, status')
+      .in('id', faturamentoCardIds)
+    faturamentoCards = data || []
+  }
 
   // Criar mapa de status de faturamento
   const faturamentoStatusMap = new Map(
     faturamentoCards.map(c => [c.id, c.status])
   )
 
-  const cardsFormatted = cards.map(card => ({
+  const cardsFormatted = (cards || []).map(card => ({
     id: card.id,
     titulo: card.titulo,
     descricao: card.descricao,
     area: card.area,
     status: card.status,
     prioridade: card.prioridade as 'baixa' | 'media' | 'alta' | 'urgente',
-    cliente_id: card.clienteId,
-    projeto_id: card.projetoId,
-    trader_id: card.traderId,
-    link_relatorio: card.linkRelatorio,
-    faturamento_card_id: card.faturamentoCardId,
-    faturamento_status: card.faturamentoCardId
-      ? faturamentoStatusMap.get(card.faturamentoCardId) || null
+    cliente_id: card.cliente_id,
+    projeto_id: card.projeto_id,
+    trader_id: card.trader_id,
+    link_relatorio: card.link_relatorio,
+    faturamento_card_id: card.faturamento_card_id,
+    faturamento_status: card.faturamento_card_id
+      ? faturamentoStatusMap.get(card.faturamento_card_id) || null
       : null,
-    data_vencimento: card.dataVencimento?.toISOString().split('T')[0] || null,
+    data_vencimento: card.data_vencimento?.split('T')[0] || null,
     ordem: card.ordem,
-    created_at: card.createdAt.toISOString(),
-    updated_at: card.updatedAt.toISOString(),
+    created_at: card.created_at,
+    updated_at: card.updated_at,
   }))
 
   return (

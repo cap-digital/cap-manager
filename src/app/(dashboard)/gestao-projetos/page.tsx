@@ -1,32 +1,33 @@
-import { prisma } from '@/lib/prisma'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { TarefasKanban } from '../tarefas/tarefas-kanban'
 
 export default async function GestaoprojetosPage() {
-  const [tarefas, projetos, clientes, usuarios] = await Promise.all([
-    prisma.tarefa.findMany({
-      include: {
-        projeto: { select: { id: true, nome: true } },
-        cliente: { select: { id: true, nome: true } },
-        responsavel: { select: { id: true, nome: true } },
-      },
-      orderBy: { ordem: 'asc' },
-    }),
-    prisma.projeto.findMany({
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.cliente.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-    prisma.usuario.findMany({
-      where: { ativo: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
+  const [tarefasRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
+    supabaseAdmin
+      .from('tarefas')
+      .select('*, projetos:projeto_id(id, nome), clientes:cliente_id(id, nome), responsavel:usuarios!tarefas_responsavel_id_fkey(id, nome)')
+      .order('ordem', { ascending: true }),
+    supabaseAdmin
+      .from('projetos')
+      .select('id, nome')
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('clientes')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
+    supabaseAdmin
+      .from('usuarios')
+      .select('id, nome')
+      .eq('ativo', true)
+      .order('nome', { ascending: true }),
   ])
+
+  const tarefas = tarefasRes.data || []
+  const projetos = projetosRes.data || []
+  const clientes = clientesRes.data || []
+  const usuarios = usuariosRes.data || []
 
   // Transform data to match expected types (snake_case for frontend compatibility)
   const tarefasFormatted = tarefas.map(tarefa => ({
@@ -35,16 +36,16 @@ export default async function GestaoprojetosPage() {
     descricao: tarefa.descricao,
     status: tarefa.status as 'backlog' | 'todo' | 'doing' | 'review' | 'done',
     prioridade: tarefa.prioridade as 'baixa' | 'media' | 'alta' | 'urgente',
-    projeto_id: tarefa.projetoId,
-    projeto: tarefa.projeto,
-    cliente_id: tarefa.clienteId,
-    cliente: tarefa.cliente,
-    responsavel_id: tarefa.responsavelId,
+    projeto_id: tarefa.projeto_id,
+    projeto: tarefa.projetos,
+    cliente_id: tarefa.cliente_id,
+    cliente: tarefa.clientes,
+    responsavel_id: tarefa.responsavel_id,
     responsavel: tarefa.responsavel,
-    data_vencimento: tarefa.dataVencimento?.toISOString().split('T')[0] || null,
+    data_vencimento: tarefa.data_vencimento?.split('T')[0] || null,
     ordem: tarefa.ordem,
-    created_at: tarefa.createdAt.toISOString(),
-    updated_at: tarefa.updatedAt.toISOString(),
+    created_at: tarefa.created_at,
+    updated_at: tarefa.updated_at,
   }))
 
   return (
