@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  useDroppable,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -196,6 +197,29 @@ function SortableCard({
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+// Componente para tornar coluna droppable
+function DroppableColumn({
+  id,
+  children,
+}: {
+  id: string
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'space-y-3 min-h-[200px] transition-colors rounded-lg p-2 -m-2',
+        isOver && 'bg-primary/10'
+      )}
+    >
+      {children}
     </div>
   )
 }
@@ -575,29 +599,30 @@ export function SimpleKanban({
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <SortableContext
-                    items={getColumnCards(column.id).map(c => c.id)}
-                    strategy={verticalListSortingStrategy}
-                    id={column.id}
-                  >
-                    {getColumnCards(column.id).map((card) => (
-                      <SortableCard
-                        key={card.id}
-                        card={card}
-                        projetos={projetos}
-                        clientes={clientes}
-                        usuarios={usuarios}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-                  </SortableContext>
-                  {getColumnCards(column.id).length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      Arraste cards aqui
-                    </div>
-                  )}
+                <CardContent>
+                  <DroppableColumn id={column.id}>
+                    <SortableContext
+                      items={getColumnCards(column.id).map(c => c.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {getColumnCards(column.id).map((card) => (
+                        <SortableCard
+                          key={card.id}
+                          card={card}
+                          projetos={projetos}
+                          clientes={clientes}
+                          usuarios={usuarios}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                    </SortableContext>
+                    {getColumnCards(column.id).length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        Arraste cards aqui
+                      </div>
+                    )}
+                  </DroppableColumn>
                 </CardContent>
               </Card>
             ))}

@@ -10,6 +10,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -193,6 +194,29 @@ function TarefaCard({
           </div>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+// Componente para tornar coluna droppable
+function DroppableColumn({
+  id,
+  children,
+}: {
+  id: string
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'space-y-2 min-h-[200px] transition-colors rounded-lg p-2 -m-2',
+        isOver && 'bg-primary/10'
+      )}
+    >
+      {children}
     </div>
   )
 }
@@ -611,29 +635,31 @@ export function TarefasKanban({
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-2 space-y-2 min-h-[200px]">
-                  <SortableContext
-                    items={tarefasByStatus[column.id].map(t => String(t.id))}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {tarefasByStatus[column.id].map(tarefa => (
-                      <TarefaCard
-                        key={tarefa.id}
-                        tarefa={tarefa}
-                        onEdit={() => openEditDialog(tarefa)}
-                        onDelete={() => handleDelete(tarefa.id)}
-                      />
-                    ))}
-                  </SortableContext>
+                <CardContent className="p-2">
+                  <DroppableColumn id={column.id}>
+                    <SortableContext
+                      items={tarefasByStatus[column.id].map(t => String(t.id))}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {tarefasByStatus[column.id].map(tarefa => (
+                        <TarefaCard
+                          key={tarefa.id}
+                          tarefa={tarefa}
+                          onEdit={() => openEditDialog(tarefa)}
+                          onDelete={() => handleDelete(tarefa.id)}
+                        />
+                      ))}
+                    </SortableContext>
 
-                  <Button
-                    variant="ghost"
-                    className="w-full border-2 border-dashed border-muted-foreground/20 hover:border-muted-foreground/40"
-                    onClick={() => openCreateDialog(column.id)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full border-2 border-dashed border-muted-foreground/20 hover:border-muted-foreground/40 mt-2"
+                      onClick={() => openCreateDialog(column.id)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar
+                    </Button>
+                  </DroppableColumn>
                 </CardContent>
               </Card>
             </div>
