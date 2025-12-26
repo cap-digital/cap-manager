@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,8 +11,8 @@ export async function GET() {
     }
 
     const { data: pis, error } = await supabaseAdmin
-      .from('pis')
-      .select('*, agencias(*), clientes(*), projetos(count)')
+      .from(TABLES.pis)
+      .select(`*, agencias:${TABLES.agencias}(*), clientes:${TABLES.clientes}(*), projetos:${TABLES.projetos}(count)`)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     // Verificar se identificador já existe
     const { data: existing } = await supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .select('id')
       .eq('identificador', data.identificador)
       .single()
@@ -51,14 +51,14 @@ export async function POST(request: Request) {
     }
 
     const { data: pi, error } = await supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .insert({
         identificador: data.identificador,
         valor_bruto: data.valor_bruto,
         agencia_id: data.agencia_id || null,
         cliente_id: data.cliente_id || null,
       })
-      .select('*, agencias(*), clientes(*)')
+      .select(`*, agencias:${TABLES.agencias}(*), clientes:${TABLES.clientes}(*)`)
       .single()
 
     if (error) {
@@ -91,7 +91,7 @@ export async function PUT(request: Request) {
 
     // Verificar se identificador já existe em outro PI
     const { data: existing } = await supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .select('id')
       .eq('identificador', data.identificador)
       .neq('id', parseInt(id))
@@ -105,7 +105,7 @@ export async function PUT(request: Request) {
     }
 
     const { data: pi, error } = await supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .update({
         identificador: data.identificador,
         valor_bruto: data.valor_bruto,
@@ -113,7 +113,7 @@ export async function PUT(request: Request) {
         cliente_id: data.cliente_id || null,
       })
       .eq('id', parseInt(id))
-      .select('*, agencias(*), clientes(*)')
+      .select(`*, agencias:${TABLES.agencias}(*), clientes:${TABLES.clientes}(*)`)
       .single()
 
     if (error) {
@@ -144,7 +144,7 @@ export async function DELETE(request: Request) {
 
     // Verificar se há projetos usando este PI
     const { count: projetosUsando } = await supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select('*', { count: 'exact', head: true })
       .eq('pi_id', parseInt(id))
 
@@ -156,7 +156,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .delete()
       .eq('id', parseInt(id))
 

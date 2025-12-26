@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -9,7 +9,7 @@ export async function GET() {
     console.log('Service Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'definida' : 'NÃO DEFINIDA')
 
     const { count, error } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id', { count: 'exact', head: true })
       .eq('role', 'admin')
 
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     // Verificar se já existe admin
     const { data: existingAdmin, error: adminCheckError } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id')
       .eq('role', 'admin')
       .single()
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     // Verificar se email já existe
     const { data: existingUser, error: userCheckError } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id')
       .eq('email', email)
       .single()
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
 
     // Criar usuário admin
     const { error: insertError } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .insert({
         email,
         senha: hashedPassword,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const { data: usuarios, error } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, email, nome, role, avatar_url')
       .eq('ativo', true)
       .order('nome', { ascending: true })
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(data.password, 12)
 
     const { data: usuario, error } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .insert({
         email: data.email,
         senha: hashedPassword,

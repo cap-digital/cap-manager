@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 // GET - Buscar revisões do dia atual ou de uma data específica
 export async function GET(request: Request) {
@@ -19,14 +19,14 @@ export async function GET(request: Request) {
     data.setHours(0, 0, 0, 0)
 
     let query = supabaseAdmin
-      .from('revisoes_diarias')
+      .from(TABLES.revisoes_diarias)
       .select(`
         *,
-        projetos (
+        projetos:${TABLES.projetos} (
           *,
           clientes:cliente_id (id, nome),
           traders:trader_id (id, nome),
-          estrategias (*)
+          estrategias:${TABLES.estrategias} (*)
         ),
         usuarios:revisado_por_id (id, nome)
       `)
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     const { data: usuario, error: usuarioError } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('*')
       .eq('email', session.user.email)
       .single()
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
     // Verificar se já existe uma revisão para hoje
     const { data: revisaoExistente, error: checkError } = await supabaseAdmin
-      .from('revisoes_diarias')
+      .from(TABLES.revisoes_diarias)
       .select('*')
       .eq('projeto_id', data.projeto_id)
       .eq('data_agendada', hoje.toISOString().split('T')[0])
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     if (revisaoExistente && !checkError) {
       // Atualizar revisão existente
       const { data: revisaoAtualizada, error: updateError } = await supabaseAdmin
-        .from('revisoes_diarias')
+        .from(TABLES.revisoes_diarias)
         .update({
           revisado: true,
           data_revisao: new Date().toISOString(),
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         .eq('id', revisaoExistente.id)
         .select(`
           *,
-          projetos (
+          projetos:${TABLES.projetos} (
             *,
             clientes:cliente_id (id, nome),
             traders:trader_id (id, nome)
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     } else {
       // Criar nova revisão
       const { data: novaRevisao, error: createError } = await supabaseAdmin
-        .from('revisoes_diarias')
+        .from(TABLES.revisoes_diarias)
         .insert({
           projeto_id: data.projeto_id,
           data_agendada: hoje.toISOString().split('T')[0],
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
         })
         .select(`
           *,
-          projetos (
+          projetos:${TABLES.projetos} (
             *,
             clientes:cliente_id (id, nome),
             traders:trader_id (id, nome)

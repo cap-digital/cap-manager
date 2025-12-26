@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET(request: Request) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     }
 
     const { data: cards, error } = await supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .select('*')
       .eq('area', area)
       .order('ordem', { ascending: true })
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     // Get max ordem for this area and status
     const { data: maxOrdemData } = await supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .select('ordem')
       .eq('area', data.area)
       .eq('status', data.status || 'backlog')
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     const maxOrdem = maxOrdemData?.ordem || 0
 
     const { data: card, error } = await supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .insert({
         titulo: data.titulo,
         descricao: data.descricao || null,
@@ -123,7 +123,7 @@ export async function PUT(request: Request) {
     if (data.ordem !== undefined) updateData.ordem = data.ordem
 
     const { data: card, error } = await supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .update(updateData)
       .eq('id', parseInt(id))
       .select()
@@ -156,7 +156,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .delete()
       .eq('id', parseInt(id))
 

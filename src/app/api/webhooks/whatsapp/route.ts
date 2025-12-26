@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { sendWhatsAppMessage, messageTemplates } from '@/lib/whatsapp'
 
 export async function POST(request: NextRequest) {
@@ -38,7 +38,7 @@ async function handleBillingReminder(data: {
   valor?: string
 }) {
   const { data: cliente, error } = await supabaseAdmin
-    .from('clientes')
+    .from(TABLES.clientes)
     .select('*')
     .eq('id', data.cliente_id)
     .single()
@@ -66,8 +66,8 @@ async function handleTaskAssigned(data: {
   responsavel_id: number
 }) {
   const [tarefaRes, responsavelRes] = await Promise.all([
-    supabaseAdmin.from('tarefas').select('*').eq('id', data.tarefa_id).single(),
-    supabaseAdmin.from('usuarios').select('*').eq('id', data.responsavel_id).single(),
+    supabaseAdmin.from(TABLES.tarefas).select('*').eq('id', data.tarefa_id).single(),
+    supabaseAdmin.from(TABLES.usuarios).select('*').eq('id', data.responsavel_id).single(),
   ])
 
   const tarefa = tarefaRes.data
@@ -90,7 +90,7 @@ async function handleTaskAssigned(data: {
   })
 
   // Registrar alerta
-  await supabaseAdmin.from('alertas').insert({
+  await supabaseAdmin.from(TABLES.alertas).insert({
     tipo: 'tarefa',
     titulo: `Tarefa atribuída: ${tarefa.titulo}`,
     mensagem: message,
@@ -104,11 +104,11 @@ async function handleTaskAssigned(data: {
 
 async function handleProjectActivated(data: { projeto_id: number }) {
   const { data: projeto, error } = await supabaseAdmin
-    .from('projetos')
+    .from(TABLES.projetos)
     .select(`
       *,
       clientes:cliente_id(id, nome),
-      trader:usuarios!projetos_trader_id_fkey(id, nome, whatsapp)
+      trader:${TABLES.usuarios}!cap_manager_projetos_trader_id_fkey(id, nome, whatsapp)
     `)
     .eq('id', data.projeto_id)
     .single()
@@ -145,7 +145,7 @@ async function handleCustomAlert(data: {
   mensagem: string
 }) {
   const { data: destinatario, error } = await supabaseAdmin
-    .from('usuarios')
+    .from(TABLES.usuarios)
     .select('*')
     .eq('id', data.destinatario_id)
     .single()
@@ -162,7 +162,7 @@ async function handleCustomAlert(data: {
   })
 
   // Registrar alerta
-  await supabaseAdmin.from('alertas').insert({
+  await supabaseAdmin.from(TABLES.alertas).insert({
     tipo: 'sistema',
     titulo: data.titulo,
     mensagem: data.mensagem,

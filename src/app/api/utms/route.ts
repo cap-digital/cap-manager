@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,8 +11,8 @@ export async function GET() {
     }
 
     const { data: utms, error } = await supabaseAdmin
-      .from('utm_configs')
-      .select('*, projetos(*)')
+      .from(TABLES.utm_configs)
+      .select(`*, projetos:${TABLES.projetos}(*)`)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     const { data: utm, error } = await supabaseAdmin
-      .from('utm_configs')
+      .from(TABLES.utm_configs)
       .insert({
         projeto_id: data.projeto_id || null,
         utm_source: data.utm_source,
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
         url_destino: data.url_destino,
         url_gerada: data.url_gerada,
       })
-      .select('*, projetos(*)')
+      .select(`*, projetos:${TABLES.projetos}(*)`)
       .single()
 
     if (error) {
@@ -78,7 +78,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('utm_configs')
+      .from(TABLES.utm_configs)
       .delete()
       .eq('id', Number(id))
 

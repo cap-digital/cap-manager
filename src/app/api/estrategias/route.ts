@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 // Função para calcular todos os valores da estratégia
 interface CalculoInput {
@@ -139,10 +139,10 @@ export async function GET(request: Request) {
     const projetoId = searchParams.get('projeto_id')
 
     let query = supabaseAdmin
-      .from('estrategias')
+      .from(TABLES.estrategias)
       .select(`
         *,
-        projeto:projetos!projeto_id (
+        projeto:${TABLES.projetos}!projeto_id (
           id,
           nome,
           tipo_cobranca,
@@ -180,7 +180,7 @@ export async function POST(request: Request) {
 
     // Buscar dados do projeto para cálculos
     const { data: projeto, error: projetoError } = await supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select('tipo_cobranca, data_fim')
       .eq('id', data.projeto_id)
       .single()
@@ -243,11 +243,11 @@ export async function POST(request: Request) {
     }
 
     const { data: estrategia, error } = await supabaseAdmin
-      .from('estrategias')
+      .from(TABLES.estrategias)
       .insert(insertData)
       .select(`
         *,
-        projeto:projetos!projeto_id (
+        projeto:${TABLES.projetos}!projeto_id (
           id,
           nome,
           tipo_cobranca,
@@ -286,10 +286,10 @@ export async function PUT(request: Request) {
 
     // Verificar se a estratégia existe e buscar dados do projeto
     const { data: existente, error: existenteError } = await supabaseAdmin
-      .from('estrategias')
+      .from(TABLES.estrategias)
       .select(`
         *,
-        projeto:projetos!projeto_id (
+        projeto:${TABLES.projetos}!projeto_id (
           tipo_cobranca,
           data_fim
         )
@@ -354,12 +354,12 @@ export async function PUT(request: Request) {
     }
 
     const { data: estrategia, error } = await supabaseAdmin
-      .from('estrategias')
+      .from(TABLES.estrategias)
       .update(updateData)
       .eq('id', parseInt(id))
       .select(`
         *,
-        projeto:projetos!projeto_id (
+        projeto:${TABLES.projetos}!projeto_id (
           id,
           nome,
           tipo_cobranca,
@@ -396,7 +396,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('estrategias')
+      .from(TABLES.estrategias)
       .delete()
       .eq('id', parseInt(id))
 

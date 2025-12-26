@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
-import { supabaseAdmin, Usuario } from './supabase'
+import { supabaseAdmin, TABLES, Usuario } from './supabase'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -22,7 +22,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const { data: user, error } = await supabaseAdmin
-          .from('usuarios')
+          .from(TABLES.usuarios)
           .select('*')
           .eq('email', credentials.email)
           .single()
@@ -58,7 +58,7 @@ export const authOptions: NextAuthOptions = {
       // Para login com Google, criar ou atualizar usuário no banco
       if (account?.provider === 'google' && user.email) {
         const { data: existingUser } = await supabaseAdmin
-          .from('usuarios')
+          .from(TABLES.usuarios)
           .select('*')
           .eq('email', user.email)
           .single()
@@ -66,7 +66,7 @@ export const authOptions: NextAuthOptions = {
         if (!existingUser) {
           // Criar novo usuário com dados do Google
           const { error } = await supabaseAdmin
-            .from('usuarios')
+            .from(TABLES.usuarios)
             .insert({
               email: user.email,
               nome: user.name || user.email.split('@')[0],
@@ -87,7 +87,7 @@ export const authOptions: NextAuthOptions = {
           // Atualizar avatar se mudou
           if (user.image && user.image !== existingUser.avatar_url) {
             await supabaseAdmin
-              .from('usuarios')
+              .from(TABLES.usuarios)
               .update({ avatar_url: user.image })
               .eq('id', existingUser.id)
           }
@@ -100,7 +100,7 @@ export const authOptions: NextAuthOptions = {
         // Para login com Google, buscar dados do banco
         if (account?.provider === 'google' && user.email) {
           const { data: dbUser } = await supabaseAdmin
-            .from('usuarios')
+            .from(TABLES.usuarios)
             .select('*')
             .eq('email', user.email)
             .single()

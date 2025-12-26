@@ -33,6 +33,22 @@ export const supabaseAdmin = createClient(
   }
 )
 
+// Nomes das tabelas com prefixo
+export const TABLES = {
+  usuarios: 'cap_manager_usuarios',
+  agencias: 'cap_manager_agencias',
+  clientes: 'cap_manager_clientes',
+  pis: 'cap_manager_pis',
+  projetos: 'cap_manager_projetos',
+  estrategias: 'cap_manager_estrategias',
+  tarefas: 'cap_manager_tarefas',
+  cards_kanban: 'cap_manager_cards_kanban',
+  utm_configs: 'cap_manager_utm_configs',
+  revisoes_diarias: 'cap_manager_revisoes_diarias',
+  follow_ups: 'cap_manager_follow_ups',
+  alertas: 'cap_manager_alertas',
+} as const
+
 // Tipos para o banco de dados
 export type Role = 'admin' | 'trader' | 'gestor' | 'cliente'
 export type TipoCobranca = 'td' | 'fee'

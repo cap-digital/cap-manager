@@ -1,15 +1,15 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { ClientesClient } from './clientes-client'
 
 export default async function ClientesPage() {
   const [clientesResult, agenciasResult] = await Promise.all([
     supabaseAdmin
-      .from('clientes')
-      .select('*, agencia:agencias!clientes_agencia_id_fkey(*)')
+      .from(TABLES.clientes)
+      .select(`*, agencia:${TABLES.agencias}!cap_manager_clientes_agencia_id_fkey(*)`)
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('agencias')
+      .from(TABLES.agencias)
       .select('*')
       .order('nome', { ascending: true }),
   ])

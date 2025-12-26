@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,15 +11,15 @@ export async function GET() {
     }
 
     const { data: projetos, error } = await supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select(`
         *,
         clientes:cliente_id(id, nome),
-        trader:usuarios!projetos_trader_id_fkey(id, nome),
-        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        trader:${TABLES.usuarios}!cap_manager_projetos_trader_id_fkey(id, nome),
+        colaborador:${TABLES.usuarios}!cap_manager_projetos_colaborador_id_fkey(id, nome),
         pis:pi_id(id, identificador, valor_bruto),
         agencias:agencia_id(id, nome),
-        estrategias(*)
+        estrategias:${TABLES.estrategias}(*)
       `)
       .order('created_at', { ascending: false })
 
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     const { data: projeto, error } = await supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .insert({
         cliente_id: data.cliente_id,
         nome: data.nome,
@@ -72,11 +72,11 @@ export async function POST(request: Request) {
       .select(`
         *,
         clientes:cliente_id(id, nome),
-        trader:usuarios!projetos_trader_id_fkey(id, nome),
-        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        trader:${TABLES.usuarios}!cap_manager_projetos_trader_id_fkey(id, nome),
+        colaborador:${TABLES.usuarios}!cap_manager_projetos_colaborador_id_fkey(id, nome),
         pis:pi_id(id, identificador, valor_bruto),
         agencias:agencia_id(id, nome),
-        estrategias(*)
+        estrategias:${TABLES.estrategias}(*)
       `)
       .single()
 
@@ -110,7 +110,7 @@ export async function PUT(request: Request) {
     console.log('PUT /api/projetos - Dados recebidos:', JSON.stringify(data, null, 2))
 
     const { data: projeto, error } = await supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .update({
         cliente_id: data.cliente_id,
         nome: data.nome,
@@ -130,11 +130,11 @@ export async function PUT(request: Request) {
       .select(`
         *,
         clientes:cliente_id(id, nome),
-        trader:usuarios!projetos_trader_id_fkey(id, nome),
-        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        trader:${TABLES.usuarios}!cap_manager_projetos_trader_id_fkey(id, nome),
+        colaborador:${TABLES.usuarios}!cap_manager_projetos_colaborador_id_fkey(id, nome),
         pis:pi_id(id, identificador, valor_bruto),
         agencias:agencia_id(id, nome),
-        estrategias(*)
+        estrategias:${TABLES.estrategias}(*)
       `)
       .single()
 
@@ -166,7 +166,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .delete()
       .eq('id', parseInt(id))
 

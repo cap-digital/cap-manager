@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
     }
 
     const { data: tarefas, error } = await supabaseAdmin
-      .from('tarefas')
+      .from(TABLES.tarefas)
       .select(`
         *,
         projetos:projeto_id (*,
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     const { data: tarefa, error } = await supabaseAdmin
-      .from('tarefas')
+      .from(TABLES.tarefas)
       .insert(insertData)
       .select(`
         *,
@@ -99,7 +99,7 @@ export async function PATCH(request: Request) {
     if (updateData.responsavel_id !== undefined) supabaseUpdateData.responsavel_id = updateData.responsavel_id
 
     const { data: tarefa, error } = await supabaseAdmin
-      .from('tarefas')
+      .from(TABLES.tarefas)
       .update(supabaseUpdateData)
       .eq('id', id)
       .select(`
@@ -138,7 +138,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('tarefas')
+      .from(TABLES.tarefas)
       .delete()
       .eq('id', Number(id))
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,8 +11,8 @@ export async function GET() {
     }
 
     const { data: agencias, error } = await supabaseAdmin
-      .from('agencias')
-      .select('*, clientes:clientes(count)')
+      .from(TABLES.agencias)
+      .select(`*, clientes:${TABLES.clientes}(count)`)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     const { data: agencia, error } = await supabaseAdmin
-      .from('agencias')
+      .from(TABLES.agencias)
       .insert({
         nome: data.nome,
         cnpj: data.cnpj || null,
@@ -85,7 +85,7 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     const { data: agencia, error } = await supabaseAdmin
-      .from('agencias')
+      .from(TABLES.agencias)
       .update({
         nome: data.nome,
         cnpj: data.cnpj || null,
@@ -124,7 +124,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('agencias')
+      .from(TABLES.agencias)
       .delete()
       .eq('id', parseInt(id))
 

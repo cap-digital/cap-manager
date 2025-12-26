@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -11,8 +11,8 @@ export async function GET() {
     }
 
     const { data: clientes, error } = await supabaseAdmin
-      .from('clientes')
-      .select('*, agencias(*), projetos(count)')
+      .from(TABLES.clientes)
+      .select(`*, agencias:${TABLES.agencias}(*), projetos:${TABLES.projetos}(count)`)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     const { data: cliente, error } = await supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .insert({
         nome: data.nome,
         agencia_id: data.agencia_id || null,
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         tipo_cobranca: data.tipo_cobranca || 'td',
         ativo: true,
       })
-      .select('*, agencias(*)')
+      .select(`*, agencias:${TABLES.agencias}(*)`)
       .single()
 
     if (error) {
@@ -94,7 +94,7 @@ export async function PUT(request: Request) {
     const data = await request.json()
 
     const { data: cliente, error } = await supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .update({
         nome: data.nome,
         agencia_id: data.agencia_id || null,
@@ -105,7 +105,7 @@ export async function PUT(request: Request) {
         tipo_cobranca: data.tipo_cobranca || 'td',
       })
       .eq('id', parseInt(id))
-      .select('*, agencias(*)')
+      .select(`*, agencias:${TABLES.agencias}(*)`)
       .single()
 
     if (error) {
@@ -140,7 +140,7 @@ export async function DELETE(request: Request) {
     }
 
     const { error } = await supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .delete()
       .eq('id', parseInt(id))
 

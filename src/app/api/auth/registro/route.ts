@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     // Verificar se email já existe
     const { data: existingUser, error: findError } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('*')
       .eq('email', email)
       .single()
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
     // Criar usuário como trader (cargo padrão)
     const { data: usuario, error: createError } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .insert({
         email,
         senha: hashedPassword,

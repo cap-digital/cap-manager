@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 
 export async function GET(
   request: Request,
@@ -15,7 +15,7 @@ export async function GET(
 
     const { id } = await params
     const { data: usuario, error } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, email, nome, role, whatsapp, ativo, created_at')
       .eq('id', parseInt(id))
       .single()
@@ -70,7 +70,7 @@ export async function PUT(
     if (data.ativo !== undefined) updateData.ativo = data.ativo
 
     const { data: usuario, error } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .update(updateData)
       .eq('id', parseInt(id))
       .select('id, email, nome, role, whatsapp, ativo')
@@ -102,7 +102,7 @@ export async function DELETE(
 
     // Soft delete - apenas desativa o usuário
     const { error } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .update({ ativo: false })
       .eq('id', parseInt(id))
 

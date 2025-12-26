@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,18 +23,18 @@ export default async function DashboardPage() {
     projetosRecentesResult,
     tarefasUrgentesResult,
   ] = await Promise.all([
-    supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }),
-    supabaseAdmin.from('agencias').select('id', { count: 'exact', head: true }),
-    supabaseAdmin.from('projetos').select('id', { count: 'exact', head: true }),
-    supabaseAdmin.from('tarefas').select('id', { count: 'exact', head: true }).neq('status', 'done'),
+    supabaseAdmin.from(TABLES.clientes).select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from(TABLES.agencias).select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from(TABLES.projetos).select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from(TABLES.tarefas).select('id', { count: 'exact', head: true }).neq('status', 'done'),
     supabaseAdmin
-      .from('projetos')
-      .select('*, cliente:clientes(nome)')
+      .from(TABLES.projetos)
+      .select(`*, cliente:${TABLES.clientes}(nome)`)
       .order('created_at', { ascending: false })
       .limit(5),
     supabaseAdmin
-      .from('tarefas')
-      .select('*, cliente:clientes(nome), projeto:projetos(nome)')
+      .from(TABLES.tarefas)
+      .select(`*, cliente:${TABLES.clientes}(nome), projeto:${TABLES.projetos}(nome)`)
       .in('prioridade', ['alta', 'urgente'])
       .neq('status', 'done')
       .order('created_at', { ascending: false })
