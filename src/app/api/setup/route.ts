@@ -21,11 +21,16 @@ export async function GET() {
     return NextResponse.json({
       hasAdmin: (count ?? 0) > 0,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao verificar admin:', error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Erro ao verificar configuração', details: errorMessage, hasAdmin: true },
+      {
+        error: 'Erro ao verificar configuração',
+        details: error?.message || error?.code || JSON.stringify(error),
+        code: error?.code,
+        hint: error?.hint,
+        hasAdmin: true
+      },
       { status: 500 }
     )
   }
