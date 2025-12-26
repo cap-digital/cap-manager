@@ -3,6 +3,131 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// Função para calcular todos os valores da estratégia
+interface CalculoInput {
+  valorBruto: number
+  porcentagemAgencia: number
+  porcentagemPlataforma: number
+  entregaContratada: number | null
+  gastoAteMomento: number | null
+  entregueAteMomento: number | null
+  kpi: string | null
+  dataInicio: Date | null
+  tipoCobranca: string
+  dataFimProjeto: Date | null
+}
+
+function calcularValoresEstrategia(input: CalculoInput) {
+  const isFee = input.tipoCobranca === 'fee'
+  const valorBruto = input.valorBruto || 0
+  const porcentagemAgencia = isFee ? 0 : (input.porcentagemAgencia || 0)
+  const porcentagemPlataforma = isFee ? 100 : (input.porcentagemPlataforma || 0)
+  const entregaContratada = input.entregaContratada || 0
+  const gastoAteMomento = input.gastoAteMomento || 0
+  const entregueAteMomento = input.entregueAteMomento || 0
+
+  // Valor Líquido: TD = Bruto - (Bruto * %Agência), FEE = Bruto
+  const valorLiquido = isFee ? valorBruto : valorBruto - (valorBruto * porcentagemAgencia / 100)
+
+  // Valor Plataforma: TD = Líquido * %Plataforma, FEE = Bruto
+  const valorPlataforma = isFee ? valorBruto : valorLiquido * (porcentagemPlataforma / 100)
+
+  // Coeficiente: Valor Plataforma / Valor Bruto (TD apenas)
+  const coeficiente = !isFee && valorBruto > 0 ? valorPlataforma / valorBruto : null
+
+  // Dias da estratégia: data_fim projeto - data_inicio estratégia
+  let diasEstrategia: number | null = null
+  if (input.dataFimProjeto && input.dataInicio) {
+    const fim = new Date(input.dataFimProjeto)
+    const inicio = new Date(input.dataInicio)
+    diasEstrategia = Math.ceil((fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24))
+    if (diasEstrategia < 0) diasEstrategia = null
+  }
+
+  // Dias até acabar
+  let diasAteAcabar: number | null = null
+  if (input.dataFimProjeto) {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    const fim = new Date(input.dataFimProjeto)
+    diasAteAcabar = Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+    if (diasAteAcabar < 0) diasAteAcabar = 0
+  }
+
+  // Valor por Dia Plataforma
+  const valorPorDiaPlataforma = diasEstrategia && diasEstrategia > 0 ? valorPlataforma / diasEstrategia : null
+
+  // % Entrega Contratada
+  const percentualEntrega = entregaContratada > 0 && entregueAteMomento > 0
+    ? (entregueAteMomento / entregaContratada) * 100
+    : null
+
+  // Custo por Resultado: Gasto até o momento / Entregue até o momento
+  const custoResultado = entregueAteMomento > 0 && gastoAteMomento > 0
+    ? gastoAteMomento / entregueAteMomento
+    : null
+
+  // Estimativa de Resultado: Valor Plataforma / (Gasto até o momento / Entregue até o momento)
+  const estimativaResultado = custoResultado && custoResultado > 0
+    ? valorPlataforma / custoResultado
+    : null
+
+  // Estimativa de Sucesso: Estimativa de Resultado / Entrega Contratada (em %)
+  const estimativaSucesso = estimativaResultado && entregaContratada > 0
+    ? (estimativaResultado / entregaContratada) * 100
+    : null
+
+  // Valor Restante: Valor Plataforma - Gasto até o momento
+  const valorRestante = valorPlataforma - gastoAteMomento
+
+  // Restante por Dia: Valor Restante / Dias até acabar
+  const restantePorDia = diasAteAcabar && diasAteAcabar > 0 ? valorRestante / diasAteAcabar : null
+
+  // Meta Custo por Resultado: Valor Plataforma / (Entrega Contratada / (KPI=CPM ? 1000 : 1))
+  const divisorKpi = input.kpi === 'CPM' ? 1000 : 1
+  const metaCustoResultado = entregaContratada > 0
+    ? valorPlataforma / (entregaContratada / divisorKpi)
+    : null
+
+  // Gasto até o momento Bruto: Gasto / Coeficiente (TD apenas)
+  const gastoAteMomentoBruto = coeficiente && coeficiente > 0
+    ? gastoAteMomento / coeficiente
+    : null
+
+  // Valor Restante Bruto: Valor Bruto - Gasto até o momento Bruto
+  const valorRestanteBruto = gastoAteMomentoBruto !== null
+    ? valorBruto - gastoAteMomentoBruto
+    : null
+
+  // Pode abaixar a margem? TD apenas: Estimativa Sucesso > 150%
+  const podeAbaixarMargem = !isFee && estimativaSucesso !== null
+    ? estimativaSucesso > 150
+    : null
+
+  // Pode aumentar a margem? TD apenas: Estimativa Sucesso < 100%
+  const podeAumentarMargem = !isFee && estimativaSucesso !== null
+    ? estimativaSucesso < 100
+    : null
+
+  return {
+    valorLiquido: valorLiquido || null,
+    valorPlataforma: valorPlataforma || null,
+    coeficiente,
+    valorPorDiaPlataforma,
+    percentualEntrega,
+    custoResultado,
+    estimativaResultado,
+    estimativaSucesso,
+    valorRestante: valorRestante || null,
+    restantePorDia,
+    metaCustoResultado,
+    gastoAteMomentoBruto,
+    valorRestanteBruto,
+    podeAbaixarMargem,
+    podeAumentarMargem,
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,7 +141,7 @@ export async function GET(request: Request) {
     const estrategias = await prisma.estrategia.findMany({
       where: projetoId ? { projetoId: parseInt(projetoId) } : undefined,
       include: {
-        projeto: { select: { id: true, nome: true } },
+        projeto: { select: { id: true, nome: true, tipoCobranca: true, dataFim: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -37,6 +162,32 @@ export async function POST(request: Request) {
 
     const data = await request.json()
 
+    // Buscar dados do projeto para cálculos
+    const projeto = await prisma.projeto.findUnique({
+      where: { id: data.projeto_id },
+      select: { tipoCobranca: true, dataFim: true }
+    })
+
+    if (!projeto) {
+      return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+    }
+
+    const dataInicio = data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null
+
+    // Calcular todos os valores
+    const valoresCalculados = calcularValoresEstrategia({
+      valorBruto: data.valor_bruto || 0,
+      porcentagemAgencia: data.porcentagem_agencia || 0,
+      porcentagemPlataforma: data.porcentagem_plataforma || 0,
+      entregaContratada: data.entrega_contratada || null,
+      gastoAteMomento: data.gasto_ate_momento || null,
+      entregueAteMomento: data.entregue_ate_momento || null,
+      kpi: data.kpi || null,
+      dataInicio,
+      tipoCobranca: projeto.tipoCobranca,
+      dataFimProjeto: projeto.dataFim,
+    })
+
     const estrategia = await prisma.estrategia.create({
       data: {
         projetoId: data.projeto_id,
@@ -47,19 +198,19 @@ export async function POST(request: Request) {
         estrategia: data.estrategia || null,
         kpi: data.kpi || null,
         status: data.status || 'planejada',
-        dataInicio: data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null,
+        dataInicio,
         valorBruto: data.valor_bruto || 0,
         porcentagemAgencia: data.porcentagem_agencia || 0,
         porcentagemPlataforma: data.porcentagem_plataforma || 0,
         entregaContratada: data.entrega_contratada || null,
-        estimativaResultado: data.estimativa_resultado || null,
-        estimativaSucesso: data.estimativa_sucesso || null,
         gastoAteMomento: data.gasto_ate_momento || null,
         entregueAteMomento: data.entregue_ate_momento || null,
         dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00') : null,
+        // Valores calculados
+        ...valoresCalculados,
       },
       include: {
-        projeto: { select: { id: true, nome: true } },
+        projeto: { select: { id: true, nome: true, tipoCobranca: true, dataFim: true } },
       },
     })
 
@@ -85,16 +236,34 @@ export async function PUT(request: Request) {
     }
 
     const data = await request.json()
-    console.log('PUT /api/estrategias - Data recebida:', JSON.stringify(data, null, 2))
 
-    // Verificar se a estratégia existe
+    // Verificar se a estratégia existe e buscar dados do projeto
     const existente = await prisma.estrategia.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: parseInt(id) },
+      include: {
+        projeto: { select: { tipoCobranca: true, dataFim: true } }
+      }
     })
 
     if (!existente) {
       return NextResponse.json({ error: 'Estrategia nao encontrada' }, { status: 404 })
     }
+
+    const dataInicio = data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null
+
+    // Calcular todos os valores
+    const valoresCalculados = calcularValoresEstrategia({
+      valorBruto: data.valor_bruto || 0,
+      porcentagemAgencia: data.porcentagem_agencia || 0,
+      porcentagemPlataforma: data.porcentagem_plataforma || 0,
+      entregaContratada: data.entrega_contratada || null,
+      gastoAteMomento: data.gasto_ate_momento || null,
+      entregueAteMomento: data.entregue_ate_momento || null,
+      kpi: data.kpi || null,
+      dataInicio,
+      tipoCobranca: existente.projeto.tipoCobranca,
+      dataFimProjeto: existente.projeto.dataFim,
+    })
 
     const updateData = {
       plataforma: data.plataforma,
@@ -104,29 +273,25 @@ export async function PUT(request: Request) {
       estrategia: data.estrategia || null,
       kpi: data.kpi || null,
       status: data.status,
-      dataInicio: data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null,
+      dataInicio,
       valorBruto: data.valor_bruto || 0,
       porcentagemAgencia: data.porcentagem_agencia || 0,
       porcentagemPlataforma: data.porcentagem_plataforma || 0,
       entregaContratada: data.entrega_contratada || null,
-      estimativaResultado: data.estimativa_resultado || null,
-      estimativaSucesso: data.estimativa_sucesso || null,
       gastoAteMomento: data.gasto_ate_momento || null,
       entregueAteMomento: data.entregue_ate_momento || null,
       dataAtualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00') : null,
+      // Valores calculados
+      ...valoresCalculados,
     }
-
-    console.log('PUT /api/estrategias - Update data:', JSON.stringify(updateData, null, 2))
 
     const estrategia = await prisma.estrategia.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: {
-        projeto: { select: { id: true, nome: true } },
+        projeto: { select: { id: true, nome: true, tipoCobranca: true, dataFim: true } },
       },
     })
-
-    console.log('PUT /api/estrategias - Sucesso:', estrategia.id)
 
     return NextResponse.json(estrategia)
   } catch (error) {

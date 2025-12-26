@@ -149,20 +149,36 @@ model Estrategia {
   status                StatusEstrategia @default(planejada)
   dataInicio            DateTime?        @map("data_inicio") @db.Date // Data de início da estratégia
 
-  // Valores financeiros
+  // Valores financeiros de entrada
   valorBruto            Decimal          @default(0) @map("valor_bruto") @db.Decimal(12, 2)
-  porcentagemAgencia    Decimal          @default(0) @map("porcentagem_agencia") @db.Decimal(5, 2) // % Agencia fixa por estrategia
-  porcentagemPlataforma Decimal          @default(0) @map("porcentagem_plataforma") @db.Decimal(5, 2) // % Plataforma variavel
-  // Campos calculados no frontend:
-  // valorLiquido = valorBruto - (valorBruto * porcentagemAgencia / 100)
-  // valorPlataforma = valorLiquido * porcentagemPlataforma / 100
-  // valorPorDiaPlataforma = valorPlataforma / diasTotaisProjeto
-  // valorRestante = valorPlataforma - gastoAteMomento
+  porcentagemAgencia    Decimal          @default(0) @map("porcentagem_agencia") @db.Decimal(5, 2) // % Agencia (TD apenas)
+  porcentagemPlataforma Decimal          @default(0) @map("porcentagem_plataforma") @db.Decimal(5, 2) // % Plataforma (TD apenas)
 
-  // Estimativas
+  // Valores calculados (salvos no banco)
+  valorLiquido          Decimal?         @map("valor_liquido") @db.Decimal(12, 2) // TD: Bruto - (Bruto * %Agência), FEE: Bruto
+  valorPlataforma       Decimal?         @map("valor_plataforma") @db.Decimal(12, 2) // TD: Líquido * %Plataforma, FEE: Bruto
+  coeficiente           Decimal?         @map("coeficiente") @db.Decimal(8, 6) // Valor Plataforma / Valor Bruto (TD apenas)
+  valorPorDiaPlataforma Decimal?         @map("valor_por_dia_plataforma") @db.Decimal(12, 2) // Valor Plataforma / Dias Estratégia
+  valorRestante         Decimal?         @map("valor_restante") @db.Decimal(12, 2) // Valor Plataforma - Gasto até o momento
+  restantePorDia        Decimal?         @map("restante_por_dia") @db.Decimal(12, 2) // Valor Restante / Dias até acabar
+
+  // Entrega e estimativas
   entregaContratada     Decimal?         @map("entrega_contratada") @db.Decimal(12, 2)
-  estimativaResultado   Decimal?         @map("estimativa_resultado") @db.Decimal(12, 2)
-  estimativaSucesso     Decimal?         @map("estimativa_sucesso") @db.Decimal(5, 2) // % estimativa de sucesso
+  percentualEntrega     Decimal?         @map("percentual_entrega") @db.Decimal(8, 4) // % (Entregue / Contratada) * 100
+  estimativaResultado   Decimal?         @map("estimativa_resultado") @db.Decimal(12, 2) // Valor Plataforma / Custo por Resultado
+  estimativaSucesso     Decimal?         @map("estimativa_sucesso") @db.Decimal(8, 4) // % Estimativa Resultado / Entrega Contratada
+
+  // Custos
+  metaCustoResultado    Decimal?         @map("meta_custo_resultado") @db.Decimal(12, 2) // Valor Plataforma / (Entrega / divisor KPI)
+  custoResultado        Decimal?         @map("custo_resultado") @db.Decimal(12, 2) // Gasto até o momento / Entregue até o momento
+
+  // Valores brutos calculados (TD apenas)
+  gastoAteMomentoBruto  Decimal?         @map("gasto_ate_momento_bruto") @db.Decimal(12, 2) // Gasto / Coeficiente
+  valorRestanteBruto    Decimal?         @map("valor_restante_bruto") @db.Decimal(12, 2) // Valor Bruto - Gasto Bruto
+
+  // Indicadores de margem (TD apenas)
+  podeAbaixarMargem     Boolean?         @map("pode_abaixar_margem") // Estimativa Sucesso > 150%
+  podeAumentarMargem    Boolean?         @map("pode_aumentar_margem") // Estimativa Sucesso < 100%
 
   // Acompanhamento em destaque para o trader
   gastoAteMomento       Decimal?         @map("gasto_ate_momento") @db.Decimal(12, 2)

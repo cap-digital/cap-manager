@@ -78,11 +78,25 @@ interface SimplifiedEstrategia {
   porcentagem_agencia: number
   porcentagem_plataforma: number
   entrega_contratada: number | null
-  estimativa_resultado: number | null
-  estimativa_sucesso: number | null
   gasto_ate_momento: number | null
   entregue_ate_momento: number | null
   data_atualizacao: string | null
+  // Valores calculados
+  valor_liquido: number | null
+  valor_plataforma: number | null
+  coeficiente: number | null
+  valor_por_dia_plataforma: number | null
+  valor_restante: number | null
+  restante_por_dia: number | null
+  percentual_entrega: number | null
+  estimativa_resultado: number | null
+  estimativa_sucesso: number | null
+  meta_custo_resultado: number | null
+  custo_resultado: number | null
+  gasto_ate_momento_bruto: number | null
+  valor_restante_bruto: number | null
+  pode_abaixar_margem: boolean | null
+  pode_aumentar_margem: boolean | null
   created_at: string
   updated_at: string
 }
@@ -307,6 +321,115 @@ export function ProjetoDetalhesClient({
     return { valorLiquido, valorPlataforma, valorPorDia, percentualEntrega, valorRestante, custoResultado }
   }
 
+  // Calcula valores completos para exibição no formulário de estratégia
+  const calcularValoresFormulario = () => {
+    const isFee = projeto.tipo_cobranca === 'fee'
+    const valorBruto = parseFloat(estrategiaForm.valor_bruto) || 0
+    const porcentagemAgencia = isFee ? 0 : (parseFloat(estrategiaForm.porcentagem_agencia) || 0)
+    const porcentagemPlataforma = isFee ? 100 : (parseFloat(estrategiaForm.porcentagem_plataforma) || 0)
+    const entregaContratada = parseFloat(estrategiaForm.entrega_contratada) || 0
+    const gastoAteMomento = parseFloat(estrategiaForm.gasto_ate_momento) || 0
+    const entregueAteMomento = parseFloat(estrategiaForm.entregue_ate_momento) || 0
+    const kpi = estrategiaForm.kpi
+
+    // Valor Líquido: TD = Bruto - (Bruto * %Agência), FEE = Bruto
+    const valorLiquido = isFee ? valorBruto : valorBruto - (valorBruto * porcentagemAgencia / 100)
+
+    // Valor Plataforma: TD = Líquido * %Plataforma, FEE = Bruto
+    const valorPlataforma = isFee ? valorBruto : valorLiquido * (porcentagemPlataforma / 100)
+
+    // Coeficiente: Valor Plataforma / Valor Bruto (TD apenas)
+    const coeficiente = !isFee && valorBruto > 0 ? valorPlataforma / valorBruto : null
+
+    // Dias da estratégia: data_fim projeto - data_inicio estratégia
+    let diasEstrategia: number | null = null
+    if (projeto.data_fim && estrategiaForm.data_inicio) {
+      const fim = new Date(projeto.data_fim)
+      const inicio = new Date(estrategiaForm.data_inicio)
+      diasEstrategia = Math.ceil((fim.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24))
+      if (diasEstrategia < 0) diasEstrategia = null
+    }
+
+    // Dias até acabar
+    const diasAteAcabar = getDiasAteAcabar(projeto.data_fim)
+
+    // Valor por Dia Plataforma
+    const valorPorDiaPlataforma = diasEstrategia && diasEstrategia > 0 ? valorPlataforma / diasEstrategia : null
+
+    // % Entrega Contratada
+    const percentualEntrega = entregaContratada > 0 && entregueAteMomento > 0
+      ? (entregueAteMomento / entregaContratada) * 100
+      : null
+
+    // Custo por Resultado: Gasto até o momento / Entregue até o momento
+    const custoResultado = entregueAteMomento > 0 && gastoAteMomento > 0
+      ? gastoAteMomento / entregueAteMomento
+      : null
+
+    // Estimativa de Resultado: Valor Plataforma / (Gasto até o momento / Entregue até o momento)
+    const estimativaResultado = custoResultado && custoResultado > 0
+      ? valorPlataforma / custoResultado
+      : null
+
+    // Estimativa de Sucesso: Estimativa de Resultado / Entrega Contratada
+    const estimativaSucesso = estimativaResultado && entregaContratada > 0
+      ? (estimativaResultado / entregaContratada) * 100
+      : null
+
+    // Valor Restante: Valor Plataforma - Gasto até o momento
+    const valorRestante = valorPlataforma - gastoAteMomento
+
+    // Restante por Dia: Valor Restante / Dias até acabar
+    const restantePorDia = diasAteAcabar && diasAteAcabar > 0 ? valorRestante / diasAteAcabar : null
+
+    // Meta Custo por Resultado: Valor Plataforma / (Entrega Contratada / (KPI=CPM ? 1000 : 1))
+    const divisorKpi = kpi === 'CPM' ? 1000 : 1
+    const metaCustoResultado = entregaContratada > 0
+      ? valorPlataforma / (entregaContratada / divisorKpi)
+      : null
+
+    // Gasto até o momento Bruto: Gasto até o momento / (Valor Plataforma / Valor Bruto) = Gasto / Coeficiente
+    const gastoAteMomentoBruto = coeficiente && coeficiente > 0
+      ? gastoAteMomento / coeficiente
+      : null
+
+    // Valor Restante Bruto: Valor Bruto - Gasto até o momento Bruto
+    const valorRestanteBruto = gastoAteMomentoBruto !== null
+      ? valorBruto - gastoAteMomentoBruto
+      : null
+
+    // Pode abaixar a margem? TD apenas: Estimativa Sucesso > 150%
+    const podeAbaixarMargem = !isFee && estimativaSucesso !== null
+      ? estimativaSucesso > 150
+      : null
+
+    // Pode aumentar a margem? TD apenas: Estimativa Sucesso < 100%
+    const podeAumentarMargem = !isFee && estimativaSucesso !== null
+      ? estimativaSucesso < 100
+      : null
+
+    return {
+      valorLiquido,
+      valorPlataforma,
+      coeficiente,
+      diasEstrategia,
+      diasAteAcabar,
+      valorPorDiaPlataforma,
+      percentualEntrega,
+      custoResultado,
+      estimativaResultado,
+      estimativaSucesso,
+      valorRestante,
+      restantePorDia,
+      metaCustoResultado,
+      gastoAteMomentoBruto,
+      valorRestanteBruto,
+      podeAbaixarMargem,
+      podeAumentarMargem,
+      isFee,
+    }
+  }
+
   // Verifica se a estratégia precisa de atualização baseada no grupo de revisão
   const verificarAlertaAtualizacao = (estrategia: SimplifiedEstrategia) => {
     if (!estrategia.data_inicio) return null
@@ -487,11 +610,25 @@ export function ProjetoDetalhesClient({
       porcentagem_agencia: Number(apiData.porcentagemAgencia) || 0,
       porcentagem_plataforma: Number(apiData.porcentagemPlataforma) || 0,
       entrega_contratada: apiData.entregaContratada ? Number(apiData.entregaContratada) : null,
-      estimativa_resultado: apiData.estimativaResultado ? Number(apiData.estimativaResultado) : null,
-      estimativa_sucesso: apiData.estimativaSucesso ? Number(apiData.estimativaSucesso) : null,
       gasto_ate_momento: apiData.gastoAteMomento ? Number(apiData.gastoAteMomento) : null,
       entregue_ate_momento: apiData.entregueAteMomento ? Number(apiData.entregueAteMomento) : null,
       data_atualizacao: apiData.dataAtualizacao ? String(apiData.dataAtualizacao).split('T')[0] : null,
+      // Valores calculados
+      valor_liquido: apiData.valorLiquido ? Number(apiData.valorLiquido) : null,
+      valor_plataforma: apiData.valorPlataforma ? Number(apiData.valorPlataforma) : null,
+      coeficiente: apiData.coeficiente ? Number(apiData.coeficiente) : null,
+      valor_por_dia_plataforma: apiData.valorPorDiaPlataforma ? Number(apiData.valorPorDiaPlataforma) : null,
+      valor_restante: apiData.valorRestante ? Number(apiData.valorRestante) : null,
+      restante_por_dia: apiData.restantePorDia ? Number(apiData.restantePorDia) : null,
+      percentual_entrega: apiData.percentualEntrega ? Number(apiData.percentualEntrega) : null,
+      estimativa_resultado: apiData.estimativaResultado ? Number(apiData.estimativaResultado) : null,
+      estimativa_sucesso: apiData.estimativaSucesso ? Number(apiData.estimativaSucesso) : null,
+      meta_custo_resultado: apiData.metaCustoResultado ? Number(apiData.metaCustoResultado) : null,
+      custo_resultado: apiData.custoResultado ? Number(apiData.custoResultado) : null,
+      gasto_ate_momento_bruto: apiData.gastoAteMomentoBruto ? Number(apiData.gastoAteMomentoBruto) : null,
+      valor_restante_bruto: apiData.valorRestanteBruto ? Number(apiData.valorRestanteBruto) : null,
+      pode_abaixar_margem: apiData.podeAbaixarMargem as boolean | null,
+      pode_aumentar_margem: apiData.podeAumentarMargem as boolean | null,
       created_at: String(apiData.createdAt),
       updated_at: String(apiData.updatedAt),
     })
@@ -1212,15 +1349,19 @@ export function ProjetoDetalhesClient({
                 <Input type="number" step="0.01" value={estrategiaForm.valor_bruto} onChange={e => setEstrategiaForm(p => ({ ...p, valor_bruto: e.target.value }))} />
               </div>
 
-              <div className="space-y-2">
-                <Label>% Agência</Label>
-                <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
-              </div>
+              {projeto.tipo_cobranca === 'td' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>% Agência</Label>
+                    <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
+                  </div>
 
-              <div className="space-y-2">
-                <Label>% Plataforma</Label>
-                <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
-              </div>
+                  <div className="space-y-2">
+                    <Label>% Plataforma</Label>
+                    <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label>Entrega Contratada</Label>
@@ -1264,6 +1405,115 @@ export function ProjetoDetalhesClient({
                   </div>
                 </div>
               </div>
+
+              {/* Seção de Valores Calculados */}
+              {(() => {
+                const calc = calcularValoresFormulario()
+                const hasValues = parseFloat(estrategiaForm.valor_bruto) > 0
+
+                if (!hasValues) return null
+
+                return (
+                  <div className="md:col-span-3 border-t pt-4 mt-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Valores Calculados
+                    </p>
+
+                    {/* Linha 1: Valores Básicos */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Valor Líquido</p>
+                        <p className="font-semibold text-green-600">{formatCurrency(calc.valorLiquido)}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Valor Plataforma</p>
+                        <p className="font-semibold">{formatCurrency(calc.valorPlataforma)}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Valor/Dia</p>
+                        <p className="font-semibold">{calc.valorPorDiaPlataforma ? formatCurrency(calc.valorPorDiaPlataforma) : '-'}</p>
+                      </div>
+                      {!calc.isFee && calc.coeficiente && (
+                        <div className="p-3 bg-muted/50 rounded-lg">
+                          <p className="text-xs text-muted-foreground">Coeficiente</p>
+                          <p className="font-semibold">{calc.coeficiente.toFixed(4)}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Linha 2: Entrega e Estimativas */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">% Entrega</p>
+                        <p className="font-semibold">{calc.percentualEntrega ? `${calc.percentualEntrega.toFixed(1)}%` : '-'}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Estimativa Resultado</p>
+                        <p className="font-semibold">{calc.estimativaResultado ? calc.estimativaResultado.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Estimativa Sucesso</p>
+                        <p className={`font-semibold ${calc.estimativaSucesso && calc.estimativaSucesso >= 100 ? 'text-green-600' : calc.estimativaSucesso ? 'text-red-600' : ''}`}>
+                          {calc.estimativaSucesso ? `${calc.estimativaSucesso.toFixed(1)}%` : '-'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Meta Custo/Resultado</p>
+                        <p className="font-semibold">{calc.metaCustoResultado ? formatCurrency(calc.metaCustoResultado) : '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Linha 3: Valores Restantes e Custos */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Valor Restante</p>
+                        <p className={`font-semibold ${calc.valorRestante < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                          {formatCurrency(calc.valorRestante)}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Restante/Dia</p>
+                        <p className="font-semibold">{calc.restantePorDia ? formatCurrency(calc.restantePorDia) : '-'}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Custo/Resultado</p>
+                        <p className="font-semibold">{calc.custoResultado ? formatCurrency(calc.custoResultado) : '-'}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">Dias Restantes</p>
+                        <p className="font-semibold">{calc.diasAteAcabar !== null ? calc.diasAteAcabar : '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Linha 4: Valores Brutos e Indicadores de Margem (TD apenas) */}
+                    {!calc.isFee && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <p className="text-xs text-muted-foreground">Gasto Bruto</p>
+                          <p className="font-semibold text-amber-700">{calc.gastoAteMomentoBruto ? formatCurrency(calc.gastoAteMomentoBruto) : '-'}</p>
+                        </div>
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <p className="text-xs text-muted-foreground">Restante Bruto</p>
+                          <p className="font-semibold text-amber-700">{calc.valorRestanteBruto ? formatCurrency(calc.valorRestanteBruto) : '-'}</p>
+                        </div>
+                        <div className={`p-3 rounded-lg border ${calc.podeAbaixarMargem ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                          <p className="text-xs text-muted-foreground">Pode Abaixar Margem?</p>
+                          <p className={`font-semibold ${calc.podeAbaixarMargem ? 'text-green-600' : 'text-red-600'}`}>
+                            {calc.podeAbaixarMargem === null ? '-' : calc.podeAbaixarMargem ? 'SIM' : 'NÃO'}
+                          </p>
+                        </div>
+                        <div className={`p-3 rounded-lg border ${calc.podeAumentarMargem ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                          <p className="text-xs text-muted-foreground">Pode Aumentar Margem?</p>
+                          <p className={`font-semibold ${calc.podeAumentarMargem ? 'text-green-600' : 'text-red-600'}`}>
+                            {calc.podeAumentarMargem === null ? '-' : calc.podeAumentarMargem ? 'SIM' : 'NÃO'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
 
             <DialogFooter>
