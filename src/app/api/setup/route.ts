@@ -4,12 +4,17 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
   try {
+    // Log para debug
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'definida' : 'NÃO DEFINIDA')
+    console.log('Service Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'definida' : 'NÃO DEFINIDA')
+
     const { count, error } = await supabaseAdmin
       .from('usuarios')
       .select('id', { count: 'exact', head: true })
       .eq('role', 'admin')
 
     if (error) {
+      console.error('Erro Supabase:', error)
       throw error
     }
 
@@ -18,10 +23,9 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Erro ao verificar admin:', error)
-    // Em caso de erro de conexão, assumir que pode ter admin
-    // para não redirecionar erroneamente para setup
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Erro ao verificar configuração', hasAdmin: true },
+      { error: 'Erro ao verificar configuração', details: errorMessage, hasAdmin: true },
       { status: 500 }
     )
   }

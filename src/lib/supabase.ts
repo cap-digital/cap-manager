@@ -1,18 +1,41 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Validação das variáveis de ambiente
+if (!supabaseUrl) {
+  console.error('NEXT_PUBLIC_SUPABASE_URL não está definida')
+}
+if (!supabaseAnonKey) {
+  console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY não está definida')
+}
+if (!supabaseServiceKey) {
+  console.error('SUPABASE_SERVICE_ROLE_KEY não está definida')
+}
 
 // Cliente público (para uso no frontend)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  db: { schema: 'cap_manager' }
-})
+export const supabase = createClient(
+  supabaseUrl || '',
+  supabaseAnonKey || '',
+  {
+    db: { schema: 'cap_manager' }
+  }
+)
 
 // Cliente admin (para uso no backend - bypass RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  db: { schema: 'cap_manager' }
-})
+export const supabaseAdmin = createClient(
+  supabaseUrl || '',
+  supabaseServiceKey || '',
+  {
+    db: { schema: 'cap_manager' },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 // Tipos para o banco de dados
 export type Role = 'admin' | 'trader' | 'gestor' | 'cliente'
