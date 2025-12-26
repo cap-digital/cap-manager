@@ -784,8 +784,8 @@ export function ProjetoDetalhesClient({
         </Card>
 
         {/* Card Dias Restantes */}
-        <Card className={diasAteAcabar !== null && diasAteAcabar <= 7 && diasAteAcabar >= 0 ? 'bg-red-50 border-red-200' : diasAteAcabar !== null && diasAteAcabar < 0 ? 'bg-gray-50' : ''}>
-          <CardContent className="p-4 text-center">
+        <Card className={`h-full ${diasAteAcabar !== null && diasAteAcabar <= 7 && diasAteAcabar >= 0 ? 'bg-red-50 border-red-200' : diasAteAcabar !== null && diasAteAcabar < 0 ? 'bg-gray-50' : ''}`}>
+          <CardContent className="p-4 h-full flex flex-col items-center justify-center">
             <p className="text-xs text-muted-foreground mb-1">Dias Restantes</p>
             {diasAteAcabar !== null ? (
               <>
