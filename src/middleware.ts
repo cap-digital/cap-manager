@@ -9,12 +9,15 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  console.log('[MIDDLEWARE] pathname:', pathname, 'token:', token ? 'exists' : 'null')
+
   // Rotas públicas
   const publicRoutes = ['/login', '/registro', '/setup', '/api/setup', '/api/auth']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   // Se não está logado e não é rota pública, redireciona para login
   if (!token && !isPublicRoute) {
+    console.log('[MIDDLEWARE] No token, redirecting to login')
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -22,6 +25,7 @@ export async function middleware(request: NextRequest) {
 
   // Se está logado e tentando acessar login, redireciona para dashboard
   if (token && pathname === '/login') {
+    console.log('[MIDDLEWARE] Has token on login page, redirecting to /')
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

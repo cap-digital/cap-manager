@@ -17,7 +17,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Senha', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[AUTH] authorize called with email:', credentials?.email)
+
         if (!credentials?.email || !credentials?.password) {
+          console.log('[AUTH] Missing credentials')
           throw new Error('Email e senha são obrigatórios')
         }
 
@@ -28,10 +31,14 @@ export const authOptions: NextAuthOptions = {
           .single()
 
         if (error || !user) {
+          console.log('[AUTH] User not found:', error)
           throw new Error('Usuário não encontrado')
         }
 
+        console.log('[AUTH] User found:', user.id, user.email, 'ativo:', user.ativo)
+
         if (!user.ativo) {
+          console.log('[AUTH] User inactive')
           throw new Error('Usuário inativo')
         }
 
@@ -41,8 +48,11 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!isValidPassword) {
+          console.log('[AUTH] Invalid password')
           throw new Error('Senha incorreta')
         }
+
+        console.log('[AUTH] Login successful for user:', user.id)
 
         return {
           id: user.id.toString(),
@@ -55,6 +65,8 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+      console.log('[AUTH] signIn callback - provider:', account?.provider, 'user:', user.email)
+
       // Para login com Google, criar ou atualizar usuário no banco
       if (account?.provider === 'google' && user.email) {
         const { data: existingUser } = await supabaseAdmin
@@ -93,9 +105,12 @@ export const authOptions: NextAuthOptions = {
           }
         }
       }
+      console.log('[AUTH] signIn callback returning true')
       return true
     },
     async jwt({ token, user, account }) {
+      console.log('[AUTH] jwt callback - user:', user?.email, 'token.id:', token.id)
+
       if (user) {
         // Para login com Google, buscar dados do banco
         if (account?.provider === 'google' && user.email) {
@@ -114,9 +129,12 @@ export const authOptions: NextAuthOptions = {
           token.role = user.role
         }
       }
+      console.log('[AUTH] jwt callback returning token with id:', token.id, 'role:', token.role)
       return token
     },
     async session({ session, token }) {
+      console.log('[AUTH] session callback - token.id:', token.id)
+
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
