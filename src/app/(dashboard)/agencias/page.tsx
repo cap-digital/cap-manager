@@ -1,10 +1,10 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { AgenciasClient } from './agencias-client'
 
 export default async function AgenciasPage() {
   const { data: agencias } = await supabaseAdmin
-    .from('agencias')
+    .from(TABLES.agencias)
     .select('*')
     .order('nome', { ascending: true })
 

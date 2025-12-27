@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { ProjetoDetalhesClient } from './projeto-detalhes-client'
 
@@ -17,12 +17,12 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
 
   const [projetoRes, usuariosRes, pisRes, agenciasRes, clientesRes] = await Promise.all([
     supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select(`
         *,
         clientes:cliente_id(id, nome),
-        trader:usuarios!projetos_trader_id_fkey(id, nome),
-        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome),
+        colaborador:cap_manager_usuarios!cap_manager_projetos_colaborador_id_fkey(id, nome),
         pis:pi_id(id, identificador, valor_bruto),
         agencias:agencia_id(id, nome),
         estrategias(*)
@@ -30,20 +30,20 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
       .eq('id', projetoId)
       .single(),
     supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .select('id, identificador, valor_bruto')
       .order('identificador', { ascending: true }),
     supabaseAdmin
-      .from('agencias')
+      .from(TABLES.agencias)
       .select('id, nome')
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),

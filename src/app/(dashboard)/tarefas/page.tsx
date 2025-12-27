@@ -1,24 +1,24 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { TarefasKanban } from './tarefas-kanban'
 
 export default async function TarefasPage() {
   const [tarefasRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
     supabaseAdmin
-      .from('tarefas')
-      .select('*, projetos:projeto_id(id, nome), clientes:cliente_id(id, nome), responsavel:usuarios!tarefas_responsavel_id_fkey(id, nome)')
+      .from(TABLES.tarefas)
+      .select('*, projetos:projeto_id(id, nome), clientes:cliente_id(id, nome), responsavel:cap_manager_usuarios!cap_manager_tarefas_responsavel_id_fkey(id, nome)')
       .order('ordem', { ascending: true }),
     supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select('id, nome')
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),

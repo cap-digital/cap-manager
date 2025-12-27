@@ -1,15 +1,15 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { UTMGenerator } from './utm-generator'
 
 export default async function UTMPage() {
   const [projetosRes, utmConfigsRes] = await Promise.all([
     supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select('id, nome, clientes:cliente_id(nome)')
       .order('created_at', { ascending: false }),
     supabaseAdmin
-      .from('utm_configs')
+      .from(TABLES.utm_configs)
       .select('*, projetos:projeto_id(id, nome)')
       .order('created_at', { ascending: false })
       .limit(20),

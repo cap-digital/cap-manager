@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MainContent } from '@/components/layout/main-content'
 
@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   // Buscar dados do usuário
   const userId = parseInt(session.user.id)
   const { data: userData } = await supabaseAdmin
-    .from('usuarios')
+    .from(TABLES.usuarios)
     .select('*')
     .eq('id', userId)
     .single()

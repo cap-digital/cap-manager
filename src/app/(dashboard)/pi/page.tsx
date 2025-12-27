@@ -1,19 +1,19 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { PiClient } from './pi-client'
 
 export default async function PiPage() {
   const [pisRes, agenciasRes, clientesRes] = await Promise.all([
     supabaseAdmin
-      .from('pis')
+      .from(TABLES.pis)
       .select('*, agencias(*), clientes(*), projetos(count)')
       .order('created_at', { ascending: false }),
     supabaseAdmin
-      .from('agencias')
+      .from(TABLES.agencias)
       .select('id, nome')
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .select('id, nome, agencia_id')
       .order('nome', { ascending: true }),
   ])

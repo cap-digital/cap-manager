@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -14,7 +14,7 @@ export default async function UsuariosPage() {
   }
 
   const { data: usuarios } = await supabaseAdmin
-    .from('usuarios')
+    .from(TABLES.usuarios)
     .select('id, email, nome, role, whatsapp, ativo, created_at')
     .order('nome', { ascending: true })
 

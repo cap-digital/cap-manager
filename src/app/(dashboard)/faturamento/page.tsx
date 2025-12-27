@@ -1,26 +1,26 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { SimpleKanban } from '@/components/kanban/simple-kanban'
 
 export default async function FaturamentoPage() {
   const [cardsRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
     supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .select('*')
       .eq('area', 'faturamento')
       .order('ordem', { ascending: true }),
     supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select('id, nome')
       .eq('tipo_cobranca', 'td') // Só projetos TD vão para faturamento
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),

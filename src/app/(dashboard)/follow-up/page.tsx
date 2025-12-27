@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Header } from '@/components/layout/header'
@@ -36,7 +36,7 @@ export default async function FollowUpPage() {
   let currentUser = null
   if (session?.user?.email) {
     const { data } = await supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('*')
       .eq('email', session.user.email)
       .single()
@@ -49,23 +49,23 @@ export default async function FollowUpPage() {
   // Buscar projetos ativos com grupo de revisão definido que devem ser revisados hoje
   const [projetosRes, revisoesRes, tradersRes] = await Promise.all([
     supabaseAdmin
-      .from('projetos')
+      .from(TABLES.projetos)
       .select(`
         *,
         clientes:cliente_id(id, nome),
-        trader:usuarios!projetos_trader_id_fkey(id, nome),
-        colaborador:usuarios!projetos_colaborador_id_fkey(id, nome),
+        trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome),
+        colaborador:cap_manager_usuarios!cap_manager_projetos_colaborador_id_fkey(id, nome),
         estrategias(*)
       `)
       .eq('status', 'ativo')
       .in('grupo_revisao', gruposHoje)
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('revisoes_diarias')
-      .select('projeto_id, revisado, data_revisao, revisado_por:usuarios!revisoes_diarias_revisado_por_id_fkey(id, nome)')
+      .from(TABLES.revisoes_diarias)
+      .select('projeto_id, revisado, data_revisao, revisado_por:cap_manager_usuarios!cap_manager_revisoes_diarias_revisado_por_id_fkey(id, nome)')
       .eq('data_agendada', hoje),
     supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),

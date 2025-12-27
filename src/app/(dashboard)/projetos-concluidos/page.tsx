@@ -1,11 +1,11 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { ProjetosConcluidosClient } from './projetos-concluidos-client'
 
 export default async function ProjetosConcluidosPage() {
   // Buscar cards de projetos concluídos
   const { data: cards } = await supabaseAdmin
-    .from('cards_kanban')
+    .from(TABLES.cards_kanban)
     .select('*')
     .eq('area', 'projetos_concluidos')
     .order('ordem', { ascending: true })
@@ -19,7 +19,7 @@ export default async function ProjetosConcluidosPage() {
   let faturamentoCards: { id: number; status: string }[] = []
   if (faturamentoCardIds.length > 0) {
     const { data } = await supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .select('id, status')
       .in('id', faturamentoCardIds)
     faturamentoCards = data || []

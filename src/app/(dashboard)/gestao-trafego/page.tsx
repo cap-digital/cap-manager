@@ -1,25 +1,25 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { GestaoTrafegoKanban } from './gestao-trafego-kanban'
 
 export default async function GestaoTrafegoPage() {
   const [cardsRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
     supabaseAdmin
-      .from('cards_kanban')
+      .from(TABLES.cards_kanban)
       .select('*')
       .eq('area', 'gestao_trafego')
       .order('ordem', { ascending: true }),
     supabaseAdmin
-      .from('projetos')
-      .select('*, clientes:cliente_id(id, nome), trader:usuarios!projetos_trader_id_fkey(id, nome)')
+      .from(TABLES.projetos)
+      .select('*, clientes:cliente_id(id, nome), trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome)')
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('clientes')
+      .from(TABLES.clientes)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),
     supabaseAdmin
-      .from('usuarios')
+      .from(TABLES.usuarios)
       .select('id, nome')
       .eq('ativo', true)
       .order('nome', { ascending: true }),
