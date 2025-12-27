@@ -6,7 +6,7 @@ export default async function GestaoprojetosPage() {
   const [tarefasRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
     supabaseAdmin
       .from(TABLES.tarefas)
-      .select('*, projetos:projeto_id(id, nome), clientes:cliente_id(id, nome), responsavel:cap_manager_usuarios!cap_manager_tarefas_responsavel_id_fkey(id, nome)')
+      .select('*, projetos:cap_manager_projetos!cap_manager_tarefas_projeto_id_fkey(id, nome), clientes:cap_manager_clientes!cap_manager_projetos_cliente_id_fkey(id, nome), responsavel:cap_manager_usuarios!cap_manager_tarefas_responsavel_id_fkey(id, nome)')
       .order('ordem', { ascending: true }),
     supabaseAdmin
       .from(TABLES.projetos)

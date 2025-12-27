@@ -52,10 +52,10 @@ export default async function FollowUpPage() {
       .from(TABLES.projetos)
       .select(`
         *,
-        clientes:cliente_id(id, nome),
+        clientes:cap_manager_clientes!cap_manager_projetos_cliente_id_fkey(id, nome),
         trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome),
         colaborador:cap_manager_usuarios!cap_manager_projetos_colaborador_id_fkey(id, nome),
-        estrategias(*)
+        estrategias:cap_manager_estrategias(*)
       `)
       .eq('status', 'ativo')
       .in('grupo_revisao', gruposHoje)

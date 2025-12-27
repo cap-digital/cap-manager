@@ -20,12 +20,12 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
       .from(TABLES.projetos)
       .select(`
         *,
-        clientes:cliente_id(id, nome),
+        clientes:cap_manager_clientes!cap_manager_projetos_cliente_id_fkey(id, nome),
         trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome),
         colaborador:cap_manager_usuarios!cap_manager_projetos_colaborador_id_fkey(id, nome),
-        pis:pi_id(id, identificador, valor_bruto),
-        agencias:agencia_id(id, nome),
-        estrategias(*)
+        pis:cap_manager_pis!cap_manager_projetos_pi_id_fkey(id, identificador, valor_bruto),
+        agencias:cap_manager_agencias!cap_manager_projetos_agencia_id_fkey(id, nome),
+        estrategias:cap_manager_estrategias(*)
       `)
       .eq('id', projetoId)
       .single(),

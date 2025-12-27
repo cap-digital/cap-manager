@@ -6,11 +6,11 @@ export default async function UTMPage() {
   const [projetosRes, utmConfigsRes] = await Promise.all([
     supabaseAdmin
       .from(TABLES.projetos)
-      .select('id, nome, clientes:cliente_id(nome)')
+      .select('id, nome, clientes:cap_manager_clientes!cap_manager_projetos_cliente_id_fkey(nome)')
       .order('created_at', { ascending: false }),
     supabaseAdmin
       .from(TABLES.utm_configs)
-      .select('*, projetos:projeto_id(id, nome)')
+      .select('*, projetos:cap_manager_projetos!cap_manager_tarefas_projeto_id_fkey(id, nome)')
       .order('created_at', { ascending: false })
       .limit(20),
   ])

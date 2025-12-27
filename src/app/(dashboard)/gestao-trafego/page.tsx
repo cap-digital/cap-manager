@@ -11,7 +11,7 @@ export default async function GestaoTrafegoPage() {
       .order('ordem', { ascending: true }),
     supabaseAdmin
       .from(TABLES.projetos)
-      .select('*, clientes:cliente_id(id, nome), trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome)')
+      .select('*, clientes:cap_manager_clientes!cap_manager_projetos_cliente_id_fkey(id, nome), trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome)')
       .order('nome', { ascending: true }),
     supabaseAdmin
       .from(TABLES.clientes)
