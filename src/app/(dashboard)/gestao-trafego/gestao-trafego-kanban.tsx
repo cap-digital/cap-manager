@@ -114,11 +114,14 @@ const prioridadeColors = {
   urgente: 'bg-red-100 text-red-700',
 }
 
+import { SubtaskList } from './subtask-list'
+
 function SortableCard({
   card,
   projetos,
   usuarios,
   onEdit,
+  onView,
   onDelete,
   onConcluirProjeto,
 }: {
@@ -126,6 +129,7 @@ function SortableCard({
   projetos: Projeto[]
   usuarios: { id: number; nome: string }[]
   onEdit: (card: CardKanban) => void
+  onView: (card: CardKanban) => void
   onDelete: (id: number) => void
   onConcluirProjeto: (card: CardKanban) => void
 }) {
@@ -155,9 +159,10 @@ function SortableCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'bg-card border rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing',
+        'bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all',
         isDragging && 'opacity-50'
       )}
+      onClick={() => onView(card)}
       {...attributes}
       {...listeners}
     >
@@ -314,6 +319,7 @@ export function GestaoTrafegoKanban({
   const [activeCard, setActiveCard] = useState<CardKanban | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<CardKanban | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const [formData, setFormData] = useState({
     titulo: '',
@@ -446,6 +452,9 @@ export function GestaoTrafegoKanban({
         ...cardData,
         updated_at: new Date().toISOString(),
       } : c))
+
+      // If saving in edit mode, go back to view mode if it was editing an existing card
+      setIsEditMode(false)
     } else {
       const response = await fetch('/api/cards-kanban', {
         method: 'POST',
@@ -492,6 +501,7 @@ export function GestaoTrafegoKanban({
       link_relatorio: card.link_relatorio || '',
       data_vencimento: card.data_vencimento || '',
     })
+    setIsEditMode(true)
     setIsDialogOpen(true)
   }
 
@@ -567,6 +577,7 @@ export function GestaoTrafegoKanban({
       data_vencimento: '',
     })
     setEditingCard(null)
+    setIsEditMode(false)
     setIsDialogOpen(false)
   }
 
@@ -648,177 +659,259 @@ export function GestaoTrafegoKanban({
         </div>
         <div className="flex items-center gap-3">
           <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open)
+            if (!open) resetForm()
+          }}>
             <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
+              <Button onClick={() => {
+                resetForm()
+                setIsEditMode(true)
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Task
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCard ? 'Editar Task' : 'Nova Task'}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Titulo *</Label>
-                  <Input
-                    value={formData.titulo}
-                    onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                    placeholder="Titulo da task"
-                  />
-                </div>
-                <div>
-                  <Label>Descricao</Label>
-                  <Textarea
-                    value={formData.descricao}
-                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                    placeholder="Descricao da task"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Prioridade</Label>
-                    <Select
-                      value={formData.prioridade}
-                      onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="baixa">Baixa</SelectItem>
-                        <SelectItem value="media">Media</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="urgente">Urgente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Prazo</Label>
-                    <Input
-                      type="date"
-                      value={formData.data_vencimento}
-                      onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Vinculacao</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Projeto</Label>
-                      <Select
-                        value={formData.projeto_id}
-                        onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o projeto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projetos.map((p) => (
-                            <SelectItem key={p.id} value={p.id.toString()}>
-                              {p.nome} {p.tipo_cobranca === 'fee' ? '(FEE)' : '(TD)'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              {!isEditMode && editingCard ? (
+                <div className="space-y-6">
+                  <DialogHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <DialogTitle className="text-xl">{editingCard.titulo}</DialogTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge className={prioridadeColors[editingCard.prioridade]}>{editingCard.prioridade}</Badge>
+                          <Badge variant="outline">{columns.find(c => c.id === editingCard.status)?.label}</Badge>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Trader</Label>
-                      <Select
-                        value={formData.trader_id}
-                        onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o trader" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuarios.map((u) => (
-                            <SelectItem key={u.id} value={u.id.toString()}>
-                              {u.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  </DialogHeader>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      {editingCard.descricao && (
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-medium text-muted-foreground">Descricao</h4>
+                          <p className="text-sm whitespace-pre-wrap">{editingCard.descricao}</p>
+                        </div>
+                      )}
+
+                      {(editingCard.projeto_id || editingCard.cliente_id) && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-muted-foreground">Vinculacao</h4>
+                          <div className="flex flex-col gap-1">
+                            {editingCard.projeto_id && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Folder className="h-4 w-4 text-muted-foreground" />
+                                <span>{projetos.find(p => p.id === editingCard.projeto_id)?.nome}</span>
+                              </div>
+                            )}
+                            {editingCard.trader_id && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <span>{usuarios.find(u => u.id === editingCard.trader_id)?.nome}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {editingCard.data_vencimento && (
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-medium text-muted-foreground">Prazo</h4>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>{new Date(editingCard.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Subtarefas
+                      </h4>
+                      <SubtaskList tarefaId={editingCard.id} />
                     </div>
                   </div>
-                </div>
 
-                {/* Campos de Relatório - sempre visíveis na edição para facilitar */}
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Relatorio</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button variant="destructive" onClick={() => handleDelete(editingCard.id)}>
+                      Excluir
+                    </Button>
+                    <Button onClick={() => setIsEditMode(true)}>
+                      Editar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCard ? 'Editar Task' : 'Nova Task'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
                     <div>
-                      <Label>Responsavel pelo Relatorio</Label>
-                      <Select
-                        value={formData.responsavel_relatorio_id}
-                        onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Quem fara o relatorio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuarios.map((u) => (
-                            <SelectItem key={u.id} value={u.id.toString()}>
-                              {u.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Titulo *</Label>
+                      <Input
+                        value={formData.titulo}
+                        onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                        placeholder="Titulo da task"
+                      />
                     </div>
                     <div>
-                      <Label>Responsavel pela Revisao</Label>
-                      <Select
-                        value={formData.responsavel_revisao_id}
-                        onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Quem revisara" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuarios.map((u) => (
-                            <SelectItem key={u.id} value={u.id.toString()}>
-                              {u.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Descricao</Label>
+                      <Textarea
+                        value={formData.descricao}
+                        onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                        placeholder="Descricao da task"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Prioridade</Label>
+                        <Select
+                          value={formData.prioridade}
+                          onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="baixa">Baixa</SelectItem>
+                            <SelectItem value="media">Media</SelectItem>
+                            <SelectItem value="alta">Alta</SelectItem>
+                            <SelectItem value="urgente">Urgente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Prazo</Label>
+                        <Input
+                          type="date"
+                          value={formData.data_vencimento}
+                          onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3">Vinculacao</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Projeto</Label>
+                          <Select
+                            value={formData.projeto_id}
+                            onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o projeto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {projetos.map((p) => (
+                                <SelectItem key={p.id} value={p.id.toString()}>
+                                  {p.nome} {p.tipo_cobranca === 'fee' ? '(FEE)' : '(TD)'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Trader</Label>
+                          <Select
+                            value={formData.trader_id}
+                            onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o trader" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {usuarios.map((u) => (
+                                <SelectItem key={u.id} value={u.id.toString()}>
+                                  {u.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Campos de Relatório - sempre visíveis na edição para facilitar */}
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3">Relatorio</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Responsavel pelo Relatorio</Label>
+                          <Select
+                            value={formData.responsavel_relatorio_id}
+                            onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Quem fara o relatorio" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {usuarios.map((u) => (
+                                <SelectItem key={u.id} value={u.id.toString()}>
+                                  {u.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Responsavel pela Revisao</Label>
+                          <Select
+                            value={formData.responsavel_revisao_id}
+                            onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Quem revisara" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {usuarios.map((u) => (
+                                <SelectItem key={u.id} value={u.id.toString()}>
+                                  {u.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <Label>Link do Relatorio</Label>
+                        <Input
+                          value={formData.link_relatorio}
+                          onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 mt-4">
+                        <Checkbox
+                          id="revisao_ok"
+                          checked={formData.revisao_relatorio_ok}
+                          onCheckedChange={(c) => setFormData({ ...formData, revisao_relatorio_ok: !!c })}
+                        />
+                        <Label htmlFor="revisao_ok" className="cursor-pointer">
+                          Revisao do relatorio aprovada
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button variant="outline" onClick={() => editingCard ? setIsEditMode(false) : setIsDialogOpen(false)} type="button">
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSubmit}>
+                        {editingCard ? 'Salvar Alteracoes' : 'Criar Task'}
+                      </Button>
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <Label>Link do Relatorio</Label>
-                    <Input
-                      value={formData.link_relatorio}
-                      onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
-                      placeholder="https://..."
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Checkbox
-                      id="revisao_ok"
-                      checked={formData.revisao_relatorio_ok}
-                      onCheckedChange={(checked) => setFormData({ ...formData, revisao_relatorio_ok: checked as boolean })}
-                    />
-                    <Label htmlFor="revisao_ok" className="cursor-pointer">
-                      Revisao do relatorio aprovada
-                    </Label>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={resetForm}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleSubmit}>
-                    {editingCard ? 'Salvar' : 'Criar'}
-                  </Button>
-                </div>
-              </div>
+                </>
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -889,7 +982,29 @@ export function GestaoTrafegoKanban({
                             card={card}
                             projetos={projetos}
                             usuarios={usuarios}
-                            onEdit={handleEdit}
+                            onEdit={(card) => {
+                              setEditingCard(card)
+                              setFormData({
+                                titulo: card.titulo,
+                                descricao: card.descricao || '',
+                                prioridade: card.prioridade,
+                                projeto_id: card.projeto_id?.toString() || '',
+                                cliente_id: card.cliente_id?.toString() || '',
+                                trader_id: card.trader_id?.toString() || '',
+                                responsavel_relatorio_id: card.responsavel_relatorio_id?.toString() || '',
+                                responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
+                                revisao_relatorio_ok: card.revisao_relatorio_ok,
+                                link_relatorio: card.link_relatorio || '',
+                                data_vencimento: card.data_vencimento || '',
+                              })
+                              setIsEditMode(true)
+                              setIsDialogOpen(true)
+                            }}
+                            onView={(card) => {
+                              setEditingCard(card)
+                              setIsEditMode(false)
+                              setIsDialogOpen(true)
+                            }}
                             onDelete={handleDelete}
                             onConcluirProjeto={handleConcluirProjeto}
                           />
