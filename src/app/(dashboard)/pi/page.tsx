@@ -6,7 +6,7 @@ export default async function PiPage() {
   const [pisRes, agenciasRes, clientesRes] = await Promise.all([
     supabaseAdmin
       .from(TABLES.pis)
-      .select('*, agencias(*), clientes(*), projetos(count)')
+      .select(`*, agencias:${TABLES.agencias}(*), clientes:${TABLES.clientes}(*), projetos:${TABLES.projetos}(count)`)
       .order('created_at', { ascending: false }),
     supabaseAdmin
       .from(TABLES.agencias)
