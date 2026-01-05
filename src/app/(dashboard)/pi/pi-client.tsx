@@ -104,9 +104,9 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
   const router = useRouter()
   const { toast } = useToast()
 
-  // Filtrar clientes pela agência selecionada
+  // Filtrar clientes pela agência selecionada (mas sempre mostrar todos se não houver agência)
   const filteredClientes = formData.agencia_id
-    ? clientes.filter(c => c.agencia_id === formData.agencia_id)
+    ? clientes.filter(c => c.agencia_id === formData.agencia_id || !c.agencia_id)
     : clientes
 
   const filteredPis = pis.filter(pi =>
@@ -217,11 +217,11 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
               ? {
                 ...p,
                 identificador: data.identificador,
-                valor_bruto: Number(data.valorBruto),
-                agencia_id: data.agenciaId,
-                agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome } : null,
-                cliente_id: data.clienteId,
-                cliente: data.cliente ? { id: data.cliente.id, nome: data.cliente.nome, agencia_id: data.cliente.agenciaId } : null,
+                valor_bruto: Number(data.valor_bruto),
+                agencia_id: data.agencia_id,
+                agencia: data.agencias ? { id: data.agencias.id, nome: data.agencias.nome } : null,
+                cliente_id: data.cliente_id,
+                cliente: data.clientes ? { id: data.clientes.id, nome: data.clientes.nome, agencia_id: data.clientes.agencia_id } : null,
               }
               : p
           )
@@ -242,19 +242,19 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
 
         // Adicionar novo PI ao estado local imediatamente
         setPis(prev => [
-          ...prev,
           {
             id: data.id,
             identificador: data.identificador,
-            valor_bruto: Number(data.valorBruto),
-            agencia_id: data.agenciaId,
-            agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome } : null,
-            cliente_id: data.clienteId,
-            cliente: data.cliente ? { id: data.cliente.id, nome: data.cliente.nome, agencia_id: data.cliente.agenciaId } : null,
+            valor_bruto: Number(data.valor_bruto),
+            agencia_id: data.agencia_id,
+            agencia: data.agencias ? { id: data.agencias.id, nome: data.agencias.nome } : null,
+            cliente_id: data.cliente_id,
+            cliente: data.clientes ? { id: data.clientes.id, nome: data.clientes.nome, agencia_id: data.clientes.agencia_id } : null,
             projetos_count: 0,
-            created_at: data.createdAt,
-            updated_at: data.updatedAt,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
           },
+          ...prev, // Add to start of list
         ])
         toast({ title: 'PI criado com sucesso!' })
       }
