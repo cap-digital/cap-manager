@@ -77,7 +77,7 @@ const campanhaSubCategory: NavSubCategory = {
   name: 'Campanha',
   icon: Megaphone,
   items: [
-    { name: 'Gestão de Tarefas', href: '/gestao-trafego', icon: TrendingUp },
+    { name: 'Campanhas', href: '/gestao-trafego', icon: TrendingUp },
     { name: 'Faturamento', href: '/faturamento', icon: DollarSign },
   ],
 }

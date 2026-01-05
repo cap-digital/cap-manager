@@ -56,7 +56,7 @@ import {
   Building2,
   Users,
 } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, maskCurrency, parseCurrency } from '@/lib/utils'
 import type { Agencia, Cliente } from '@/types'
 
 interface SimplifiedAgencia {
@@ -128,7 +128,7 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
     const identificadorSemPrefixo = pi.identificador.replace(/^PI\s*-\s*/i, '')
     setFormData({
       identificador: identificadorSemPrefixo,
-      valor_bruto: pi.valor_bruto.toString(),
+      valor_bruto: formatCurrency(pi.valor_bruto),
       agencia_id: pi.agencia_id,
       cliente_id: pi.cliente_id,
     })
@@ -169,8 +169,8 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
       return
     }
 
-    const valorBruto = parseFloat(formData.valor_bruto)
-    if (!formData.valor_bruto || isNaN(valorBruto) || valorBruto <= 0) {
+    const valorBruto = parseCurrency(formData.valor_bruto)
+    if (!formData.valor_bruto || valorBruto <= 0) {
       toast({
         variant: 'destructive',
         title: 'Erro',
@@ -191,7 +191,7 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
 
     const payload = {
       identificador,
-      valor_bruto: parseFloat(formData.valor_bruto) || 0,
+      valor_bruto: parseCurrency(formData.valor_bruto),
       agencia_id: formData.agencia_id,
       cliente_id: formData.cliente_id,
     }
@@ -215,14 +215,14 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
           prev.map(p =>
             p.id === editingPi.id
               ? {
-                  ...p,
-                  identificador: data.identificador,
-                  valor_bruto: Number(data.valorBruto),
-                  agencia_id: data.agenciaId,
-                  agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome } : null,
-                  cliente_id: data.clienteId,
-                  cliente: data.cliente ? { id: data.cliente.id, nome: data.cliente.nome, agencia_id: data.cliente.agenciaId } : null,
-                }
+                ...p,
+                identificador: data.identificador,
+                valor_bruto: Number(data.valorBruto),
+                agencia_id: data.agenciaId,
+                agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome } : null,
+                cliente_id: data.clienteId,
+                cliente: data.cliente ? { id: data.cliente.id, nome: data.cliente.nome, agencia_id: data.cliente.agenciaId } : null,
+              }
               : p
           )
         )
@@ -413,16 +413,14 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valor_bruto">Valor Bruto Total (R$) *</Label>
+                  <Label htmlFor="valor_bruto">Valor Bruto Total *</Label>
                   <Input
                     id="valor_bruto"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
+                    type="text"
+                    placeholder="R$ 0,00"
                     value={formData.valor_bruto}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, valor_bruto: e.target.value }))
+                      setFormData(prev => ({ ...prev, valor_bruto: maskCurrency(e.target.value) }))
                     }
                     required
                   />

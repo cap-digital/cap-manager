@@ -167,7 +167,12 @@ export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGenera
         utm_content: '',
       })
       setGeneratedUrl('')
-      router.refresh()
+      // Refresh lista de UTMs
+      const response2 = await fetch('/api/utms')
+      if (response2.ok) {
+        const data = await response2.json()
+        setUtmConfigs(data)
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({
@@ -199,7 +204,6 @@ export function UTMGenerator({ projetos, utmConfigs: initialConfigs }: UTMGenera
 
       setUtmConfigs(prev => prev.filter(u => u.id !== id))
       toast({ title: 'UTM excluída!' })
-      router.refresh()
     } catch {
       toast({
         variant: 'destructive',

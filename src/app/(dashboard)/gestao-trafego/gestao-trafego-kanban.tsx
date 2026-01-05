@@ -649,178 +649,178 @@ export function GestaoTrafegoKanban({
         <div className="flex items-center gap-3">
           <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingCard ? 'Editar Task' : 'Nova Task'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Titulo *</Label>
-                <Input
-                  value={formData.titulo}
-                  onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                  placeholder="Titulo da task"
-                />
-              </div>
-              <div>
-                <Label>Descricao</Label>
-                <Textarea
-                  value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  placeholder="Descricao da task"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <DialogTrigger asChild>
+              <Button onClick={() => resetForm()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCard ? 'Editar Task' : 'Nova Task'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
                 <div>
-                  <Label>Prioridade</Label>
-                  <Select
-                    value={formData.prioridade}
-                    onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Media</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="urgente">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Titulo *</Label>
+                  <Input
+                    value={formData.titulo}
+                    onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                    placeholder="Titulo da task"
+                  />
                 </div>
                 <div>
-                  <Label>Data Vencimento</Label>
-                  <Input
-                    type="date"
-                    value={formData.data_vencimento}
-                    onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                  <Label>Descricao</Label>
+                  <Textarea
+                    value={formData.descricao}
+                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                    placeholder="Descricao da task"
                   />
                 </div>
-              </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Vinculacao</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Projeto</Label>
+                    <Label>Prioridade</Label>
                     <Select
-                      value={formData.projeto_id}
-                      onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
+                      value={formData.prioridade}
+                      onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o projeto" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {projetos.map((p) => (
-                          <SelectItem key={p.id} value={p.id.toString()}>
-                            {p.nome} {p.tipo_cobranca === 'fee' ? '(FEE)' : '(TD)'}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="baixa">Baixa</SelectItem>
+                        <SelectItem value="media">Media</SelectItem>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="urgente">Urgente</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>Trader</Label>
-                    <Select
-                      value={formData.trader_id}
-                      onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o trader" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuarios.map((u) => (
-                          <SelectItem key={u.id} value={u.id.toString()}>
-                            {u.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Prazo</Label>
+                    <Input
+                      type="date"
+                      value={formData.data_vencimento}
+                      onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* Campos de Relatório - sempre visíveis na edição para facilitar */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Relatorio</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Responsavel pelo Relatorio</Label>
-                    <Select
-                      value={formData.responsavel_relatorio_id}
-                      onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Quem fara o relatorio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuarios.map((u) => (
-                          <SelectItem key={u.id} value={u.id.toString()}>
-                            {u.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Vinculacao</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Projeto</Label>
+                      <Select
+                        value={formData.projeto_id}
+                        onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o projeto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projetos.map((p) => (
+                            <SelectItem key={p.id} value={p.id.toString()}>
+                              {p.nome} {p.tipo_cobranca === 'fee' ? '(FEE)' : '(TD)'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Trader</Label>
+                      <Select
+                        value={formData.trader_id}
+                        onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o trader" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuarios.map((u) => (
+                            <SelectItem key={u.id} value={u.id.toString()}>
+                              {u.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label>Responsavel pela Revisao</Label>
-                    <Select
-                      value={formData.responsavel_revisao_id}
-                      onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Quem revisara" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuarios.map((u) => (
-                          <SelectItem key={u.id} value={u.id.toString()}>
-                            {u.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
-                <div className="mt-4">
-                  <Label>Link do Relatorio</Label>
-                  <Input
-                    value={formData.link_relatorio}
-                    onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="flex items-center space-x-2 mt-4">
-                  <Checkbox
-                    id="revisao_ok"
-                    checked={formData.revisao_relatorio_ok}
-                    onCheckedChange={(checked) => setFormData({ ...formData, revisao_relatorio_ok: checked as boolean })}
-                  />
-                  <Label htmlFor="revisao_ok" className="cursor-pointer">
-                    Revisao do relatorio aprovada
-                  </Label>
-                </div>
-              </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={resetForm}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSubmit}>
-                  {editingCard ? 'Salvar' : 'Criar'}
-                </Button>
+                {/* Campos de Relatório - sempre visíveis na edição para facilitar */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Relatorio</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Responsavel pelo Relatorio</Label>
+                      <Select
+                        value={formData.responsavel_relatorio_id}
+                        onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Quem fara o relatorio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuarios.map((u) => (
+                            <SelectItem key={u.id} value={u.id.toString()}>
+                              {u.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Responsavel pela Revisao</Label>
+                      <Select
+                        value={formData.responsavel_revisao_id}
+                        onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Quem revisara" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuarios.map((u) => (
+                            <SelectItem key={u.id} value={u.id.toString()}>
+                              {u.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label>Link do Relatorio</Label>
+                    <Input
+                      value={formData.link_relatorio}
+                      onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 mt-4">
+                    <Checkbox
+                      id="revisao_ok"
+                      checked={formData.revisao_relatorio_ok}
+                      onCheckedChange={(checked) => setFormData({ ...formData, revisao_relatorio_ok: checked as boolean })}
+                    />
+                    <Label htmlFor="revisao_ok" className="cursor-pointer">
+                      Revisao do relatorio aprovada
+                    </Label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={resetForm}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSubmit}>
+                    {editingCard ? 'Salvar' : 'Criar'}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

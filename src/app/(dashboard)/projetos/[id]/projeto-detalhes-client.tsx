@@ -165,6 +165,7 @@ const plataformaOptions: { value: Plataforma; label: string }[] = [
 const estrategiaOptions = [
   'Tráfego',
   'Conversão',
+  'Engajamento',
   'Mensagens Iniciadas',
   'Compras',
   'Adição ao Carrinho',
@@ -189,6 +190,7 @@ const kpiOptions = [
   'CPM',
   'CPL',
   'CPV',
+  'CPE',
 ]
 
 export function ProjetoDetalhesClient({
@@ -902,188 +904,87 @@ export function ProjetoDetalhesClient({
         </CardHeader>
         <CardContent>
           {projeto.estrategias.length > 0 ? (
-            <div className="space-y-4">
-              {projeto.estrategias.map(estrategia => {
-                const calc = calcularValoresEstrategia(estrategia)
-                const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label || estrategia.plataforma
-                const alertaAtualizacao = verificarAlertaAtualizacao(estrategia)
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 font-medium">ID Conta</th>
+                    <th className="text-left p-2 font-medium">Conta</th>
+                    <th className="text-left p-2 font-medium">Plataforma</th>
+                    <th className="text-left p-2 font-medium">Estratégia</th>
+                    <th className="text-left p-2 font-medium">KPI</th>
+                    <th className="text-left p-2 font-medium">Status</th>
+                    <th className="text-right p-2 font-medium">Valor</th>
+                    <th className="text-right p-2 font-medium">Gasto</th>
+                    <th className="text-right p-2 font-medium">Restante</th>
+                    <th className="p-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projeto.estrategias.map(estrategia => {
+                    const calc = calcularValoresEstrategia(estrategia)
+                    const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label?.split(' ')[0] || estrategia.plataforma
+                    const alertaAtualizacao = verificarAlertaAtualizacao(estrategia)
 
-                return (
-                  <Card key={estrategia.id} className={`border-l-4 ${alertaAtualizacao ? 'border-l-destructive bg-red-50/50' : 'border-l-primary'}`}>
-                    {/* Alerta de atualização pendente */}
-                    {alertaAtualizacao && (
-                      <div className="bg-red-100 border-b border-red-200 px-4 py-2 flex items-center gap-2 text-red-700 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="font-medium">Atualização pendente:</span>
-                        <span>{alertaAtualizacao.mensagem}</span>
-                      </div>
-                    )}
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <CardTitle className="text-base capitalize">{plataformaLabel}</CardTitle>
-                            {getEstrategiaStatusBadge(estrategia.status)}
-                            {estrategia.data_inicio && (
-                              <Badge variant="outline" className="text-xs gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {formatDate(estrategia.data_inicio)}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {estrategia.estrategia && `${estrategia.estrategia} • `}
-                            {estrategia.kpi && `KPI: ${estrategia.kpi}`}
-                          </p>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                              setEditingEstrategia(estrategia)
-                              setEstrategiaForm({
-                                plataforma: estrategia.plataforma,
-                                nome_conta: estrategia.nome_conta || '',
-                                id_conta: estrategia.id_conta || '',
-                                campaign_id: estrategia.campaign_id || '',
-                                estrategia: estrategia.estrategia || '',
-                                kpi: estrategia.kpi || '',
-                                status: estrategia.status,
-                                data_inicio: estrategia.data_inicio || '',
-                                valor_bruto: estrategia.valor_bruto.toString(),
-                                porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
-                                porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
-                                entrega_contratada: estrategia.entrega_contratada?.toString() || '',
-                                gasto_ate_momento: estrategia.gasto_ate_momento?.toString() || '',
-                                entregue_ate_momento: estrategia.entregue_ate_momento?.toString() || '',
-                                data_atualizacao: estrategia.data_atualizacao || '',
-                              })
-                              setIsEstrategiaOpen(true)
-                            }}>
-                              <Pencil className="h-4 w-4 mr-2" />Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteEstrategia(estrategia.id.toString())} className="text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" />Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {/* Conta Info */}
-                      {(estrategia.nome_conta || estrategia.id_conta || estrategia.campaign_id) && (
-                        <div className="mb-4 p-3 bg-muted rounded-lg text-sm">
-                          {estrategia.nome_conta && <p><strong>Conta:</strong> {estrategia.nome_conta}</p>}
-                          {estrategia.id_conta && <p><strong>ID Conta:</strong> {estrategia.id_conta}</p>}
-                          {estrategia.campaign_id && <p><strong>Campaign ID:</strong> {estrategia.campaign_id}</p>}
-                        </div>
-                      )}
-
-                      {/* Valores Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Valor Bruto</p>
-                          <p className="font-semibold text-green-600">{formatCurrency(estrategia.valor_bruto)}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">% Agência</p>
-                          <p className="font-semibold">{estrategia.porcentagem_agencia}%</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">% Plataforma</p>
-                          <p className="font-semibold">{estrategia.porcentagem_plataforma}%</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Valor Líquido</p>
-                          <p className="font-semibold">{formatCurrency(calc.valorLiquido)}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Por Dia</p>
-                          <p className="font-semibold">{calc.valorPorDia ? formatCurrency(calc.valorPorDia) : '-'}</p>
-                        </div>
-                      </div>
-
-                      {/* Acompanhamento */}
-                      {(estrategia.entrega_contratada || estrategia.gasto_ate_momento !== null || estrategia.entregue_ate_momento !== null) && (
-                        <div className="mt-4 pt-4 border-t">
-                          <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4" />
-                            Acompanhamento
-                          </p>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            {estrategia.entrega_contratada && (
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">Entrega Contratada</p>
-                                <p className="font-semibold">{estrategia.entrega_contratada.toLocaleString('pt-BR')}</p>
-                              </div>
-                            )}
-                            {estrategia.entregue_ate_momento !== null && (
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">Entregue</p>
-                                <p className="font-semibold">{estrategia.entregue_ate_momento.toLocaleString('pt-BR')}</p>
-                                {calc.percentualEntrega !== null && (
-                                  <p className="text-xs text-muted-foreground">{calc.percentualEntrega.toFixed(1)}%</p>
-                                )}
-                              </div>
-                            )}
-                            {estrategia.gasto_ate_momento !== null && (
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">Gasto</p>
-                                <p className="font-semibold text-amber-600">{formatCurrency(estrategia.gasto_ate_momento)}</p>
-                              </div>
-                            )}
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground">Restante</p>
-                              <p className={`font-semibold ${calc.valorRestante < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                                {formatCurrency(calc.valorRestante)}
-                              </p>
-                            </div>
-                            {calc.custoResultado !== null && (
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">Custo/Resultado</p>
-                                <p className="font-semibold">{formatCurrency(calc.custoResultado)}</p>
-                              </div>
-                            )}
-                          </div>
-                          {estrategia.data_atualizacao && (
-                            <p className="text-xs text-muted-foreground mt-3">
-                              Última atualização: {formatDate(estrategia.data_atualizacao)}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Estimativas (se houver) */}
-                      {(estrategia.estimativa_resultado || estrategia.estimativa_sucesso) && (
-                        <div className="mt-4 pt-4 border-t">
-                          <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                            <Target className="h-4 w-4" />
-                            Estimativas
-                          </p>
-                          <div className="grid grid-cols-2 gap-4">
-                            {estrategia.estimativa_resultado && (
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">Estimativa de Resultado</p>
-                                <p className="font-semibold">{estrategia.estimativa_resultado.toLocaleString('pt-BR')}</p>
-                              </div>
-                            )}
-                            {estrategia.estimativa_sucesso && (
-                              <div className="space-y-1">
-                                <p className="text-xs text-muted-foreground">Estimativa de Sucesso</p>
-                                <p className="font-semibold">{estrategia.estimativa_sucesso}%</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                    return (
+                      <tr key={estrategia.id} className={`border-t hover:bg-muted/30 ${alertaAtualizacao ? 'bg-red-50' : ''}`}>
+                        <td className="p-2 font-mono text-xs">{estrategia.id_conta || '-'}</td>
+                        <td className="p-2 max-w-[150px] truncate" title={estrategia.nome_conta || ''}>
+                          {estrategia.nome_conta || '-'}
+                        </td>
+                        <td className="p-2 capitalize">{plataformaLabel}</td>
+                        <td className="p-2">{estrategia.estrategia || '-'}</td>
+                        <td className="p-2">{estrategia.kpi || '-'}</td>
+                        <td className="p-2">{getEstrategiaStatusBadge(estrategia.status)}</td>
+                        <td className="p-2 text-right font-semibold text-green-600">{formatCurrency(estrategia.valor_bruto)}</td>
+                        <td className="p-2 text-right text-amber-600">
+                          {estrategia.gasto_ate_momento !== null ? formatCurrency(estrategia.gasto_ate_momento) : '-'}
+                        </td>
+                        <td className={`p-2 text-right font-semibold ${calc.valorRestante < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                          {formatCurrency(calc.valorRestante)}
+                        </td>
+                        <td className="p-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => {
+                                setEditingEstrategia(estrategia)
+                                setEstrategiaForm({
+                                  plataforma: estrategia.plataforma,
+                                  nome_conta: estrategia.nome_conta || '',
+                                  id_conta: estrategia.id_conta || '',
+                                  campaign_id: estrategia.campaign_id || '',
+                                  estrategia: estrategia.estrategia || '',
+                                  kpi: estrategia.kpi || '',
+                                  status: estrategia.status,
+                                  data_inicio: estrategia.data_inicio || '',
+                                  valor_bruto: estrategia.valor_bruto.toString(),
+                                  porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
+                                  porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
+                                  entrega_contratada: estrategia.entrega_contratada?.toString() || '',
+                                  gasto_ate_momento: estrategia.gasto_ate_momento?.toString() || '',
+                                  entregue_ate_momento: estrategia.entregue_ate_momento?.toString() || '',
+                                  data_atualizacao: estrategia.data_atualizacao || '',
+                                })
+                                setIsEstrategiaOpen(true)
+                              }}>
+                                <Pencil className="h-4 w-4 mr-2" />Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteEstrategia(estrategia.id.toString())} className="text-destructive">
+                                <Trash2 className="h-4 w-4 mr-2" />Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="text-center py-12 border rounded-lg">

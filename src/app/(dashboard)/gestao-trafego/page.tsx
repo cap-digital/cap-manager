@@ -62,7 +62,7 @@ export default async function GestaoTrafegoPage() {
 
   return (
     <div>
-      <Header title="Gestao de Trafego" subtitle="Gerencie suas campanhas de trafego com Kanban" />
+      <Header title="Campanhas" subtitle="Gerencie suas campanhas com Kanban e subtasks" />
       <div className="p-4 lg:p-8">
         <GestaoTrafegoKanban
           cards={cardsFormatted}

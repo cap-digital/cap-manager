@@ -174,16 +174,16 @@ export function ClientesClient({
           prev.map(c =>
             c.id === editingCliente.id
               ? {
-                  ...c,
-                  nome: data.nome,
-                  agencia_id: data.agenciaId,
-                  agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome, cnpj: null, telefone: null, email: null, contato: null, created_at: '', updated_at: '' } : null,
-                  contato: data.contato,
-                  cnpj: data.cnpj,
-                  email: data.email,
-                  whatsapp: data.whatsapp,
-                  tipo_cobranca: data.tipoCobranca,
-                }
+                ...c,
+                nome: data.nome,
+                agencia_id: data.agenciaId,
+                agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome, cnpj: null, telefone: null, email: null, contato: null, created_at: '', updated_at: '' } : null,
+                contato: data.contato,
+                cnpj: data.cnpj,
+                email: data.email,
+                whatsapp: data.whatsapp,
+                tipo_cobranca: data.tipoCobranca,
+              }
               : c
           )
         )
@@ -246,7 +246,6 @@ export function ClientesClient({
 
       setClientes(prev => prev.filter(c => c.id !== id))
       toast({ title: 'Cliente excluído com sucesso!' })
-      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({

@@ -89,6 +89,35 @@ export function maskCNPJ(value: string): string {
   return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}/${cleaned.slice(8, 12)}-${cleaned.slice(12)}`
 }
 
+// Máscara de moeda enquanto digita (R$ 10.000,00)
+export function maskCurrency(value: string): string {
+  // Remove tudo que não é número
+  let cleaned = value.replace(/\D/g, '')
+
+  if (!cleaned) return ''
+
+  // Converte para número e divide por 100 para considerar centavos
+  const numericValue = parseInt(cleaned, 10) / 100
+
+  // Formata como moeda brasileira
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(numericValue)
+}
+
+// Converte string formatada de moeda para número
+export function parseCurrency(value: string): number {
+  if (!value) return 0
+  // Remove R$, espaços, pontos (separador de milhar) e substitui vírgula por ponto
+  const cleaned = value
+    .replace(/R\$\s?/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .trim()
+  return parseFloat(cleaned) || 0
+}
+
 export function generateUTM(params: {
   url: string
   source: string

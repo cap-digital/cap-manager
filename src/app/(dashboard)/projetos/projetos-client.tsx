@@ -189,6 +189,7 @@ const plataformaOptions: { value: Plataforma; label: string }[] = [
 const estrategiaOptions = [
   'Tráfego',
   'Conversão',
+  'Engajamento',
   'Mensagens Iniciadas',
   'Compras',
   'Adição ao Carrinho',
@@ -202,6 +203,7 @@ const kpiOptions = [
   'CPM',
   'CPL',
   'CPV',
+  'CPE',
 ]
 
 export function ProjetosClient({
@@ -483,11 +485,11 @@ export function ProjetosClient({
         setProjetos(prev => prev.map(p =>
           p.id === currentProjetoId
             ? {
-                ...p,
-                estrategias: p.estrategias.map(e =>
-                  e.id === editingEstrategia.id ? { ...e, ...updatedEstrategia } : e
-                )
-              }
+              ...p,
+              estrategias: p.estrategias.map(e =>
+                e.id === editingEstrategia.id ? { ...e, ...updatedEstrategia } : e
+              )
+            }
             : p
         ))
 
@@ -505,10 +507,10 @@ export function ProjetosClient({
         setProjetos(prev => prev.map(p =>
           p.id === currentProjetoId
             ? {
-                ...p,
-                estrategias: [...p.estrategias, novaEstrategia],
-                estrategias_count: p.estrategias_count + 1
-              }
+              ...p,
+              estrategias: [...p.estrategias, novaEstrategia],
+              estrategias_count: p.estrategias_count + 1
+            }
             : p
         ))
 
@@ -733,480 +735,480 @@ export function ProjetosClient({
       <Dialog open={isOpen} onOpenChange={open => { setIsOpen(open); if (!open) resetForm() }}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           {/* Step Indicator */}
-            <div className="flex items-center gap-4 mb-4">
-              <div className={`flex items-center gap-2 ${step === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 1 ? 'bg-primary text-white' : 'bg-muted'}`}>1</div>
-                <span className="font-medium">Dados do Projeto</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <div className={`flex items-center gap-2 ${step === 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 2 ? 'bg-primary text-white' : 'bg-muted'}`}>2</div>
-                <span className="font-medium">Estrategias</span>
-              </div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className={`flex items-center gap-2 ${step === 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 1 ? 'bg-primary text-white' : 'bg-muted'}`}>1</div>
+              <span className="font-medium">Dados do Projeto</span>
             </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <div className={`flex items-center gap-2 ${step === 2 ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 2 ? 'bg-primary text-white' : 'bg-muted'}`}>2</div>
+              <span className="font-medium">Estrategias</span>
+            </div>
+          </div>
 
-            {step === 1 ? (
-              <form onSubmit={handleSubmitProjeto}>
-                <DialogHeader>
-                  <DialogTitle>{editingProjeto ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
-                  <DialogDescription>Preencha os dados basicos do projeto</DialogDescription>
-                </DialogHeader>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Nome do Cliente *</Label>
-                    <SearchableSelect
-                      options={clientes.map(c => ({ value: c.id.toString(), label: c.nome }))}
-                      value={formData.cliente_id?.toString() || ''}
-                      onValueChange={v => setFormData(p => ({ ...p, cliente_id: v ? parseInt(v) : null }))}
-                      placeholder="Selecione um cliente"
-                      searchPlaceholder="Buscar cliente..."
-                      emptyMessage="Nenhum cliente encontrado."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>TD ou FEE *</Label>
-                    <Select value={formData.tipo_cobranca} onValueChange={v => setFormData(p => ({ ...p, tipo_cobranca: v as TipoCobranca }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {tipoCobrancaOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* PI - Apenas para TD */}
-                  {formData.tipo_cobranca === 'td' && (
-                    <div className="space-y-2">
-                      <Label>PI - Autorizacao</Label>
-                      <SearchableSelect
-                        options={pis.map(pi => ({
-                          value: pi.id.toString(),
-                          label: pi.identificador,
-                          description: formatCurrency(pi.valor_bruto)
-                        }))}
-                        value={formData.pi_id?.toString() || ''}
-                        onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}
-                        placeholder="Selecione um PI"
-                        searchPlaceholder="Buscar PI..."
-                        emptyMessage="Nenhum PI encontrado."
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Nome do Projeto *</Label>
-                    <Input value={formData.nome} onChange={e => setFormData(p => ({ ...p, nome: e.target.value }))} required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={formData.status} onValueChange={v => setFormData(p => ({ ...p, status: v as StatusProjeto }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {statusProjetoOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Data de Início</Label>
-                    <div className="flex items-center gap-2">
-                      <Input type="date" value={formData.data_inicio} onChange={e => setFormData(p => ({ ...p, data_inicio: e.target.value }))} className="flex-1" />
-                      {formData.data_inicio && <span className="text-sm text-muted-foreground whitespace-nowrap">{formatDateInput(formData.data_inicio)}</span>}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Data de Fim</Label>
-                    <div className="flex items-center gap-2">
-                      <Input type="date" value={formData.data_fim} onChange={e => setFormData(p => ({ ...p, data_fim: e.target.value }))} className="flex-1" />
-                      {formData.data_fim && <span className="text-sm text-muted-foreground whitespace-nowrap">{formatDateInput(formData.data_fim)}</span>}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Qtde Dias de Veiculacao</Label>
-                    <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
-                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">{calcularDiasVeiculacao !== null ? `${calcularDiasVeiculacao} dias` : '-'}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Dias Ate Acabar</Label>
-                    <div className={`flex items-center h-10 px-3 rounded-md border ${calcularDiasAteAcabar !== null && calcularDiasAteAcabar <= 7 ? 'bg-red-100 border-red-300' : 'bg-muted'}`}>
-                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className={`text-sm ${calcularDiasAteAcabar !== null && calcularDiasAteAcabar <= 7 ? 'text-red-600 font-medium' : ''}`}>
-                        {calcularDiasAteAcabar !== null ? (calcularDiasAteAcabar < 0 ? 'Encerrada' : `${calcularDiasAteAcabar} dias`) : '-'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Agência - Apenas para TD */}
-                  {formData.tipo_cobranca === 'td' && (
-                    <div className="space-y-2">
-                      <Label>Agencia</Label>
-                      <Select value={formData.agencia_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, agencia_id: v ? parseInt(v) : null }))}>
-                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          {agencias.map(a => <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label>Link Proposta</Label>
-                    <Input value={formData.link_proposta} onChange={e => setFormData(p => ({ ...p, link_proposta: e.target.value }))} placeholder="https://..." />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>URL Destino</Label>
-                    <Input value={formData.url_destino} onChange={e => setFormData(p => ({ ...p, url_destino: e.target.value }))} placeholder="https://..." />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Trader (Responsável)</Label>
-                    <Select value={formData.trader_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, trader_id: v ? parseInt(v) : null }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Colaborador</Label>
-                    <Select value={formData.colaborador_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, colaborador_id: v ? parseInt(v) : null }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Grupo de Revisão (Follow-up)</Label>
-                    <Select value={formData.grupo_revisao || ''} onValueChange={v => setFormData(p => ({ ...p, grupo_revisao: v ? v as GrupoRevisao : null }))}>
-                      <SelectTrigger><SelectValue placeholder="Selecione o grupo" /></SelectTrigger>
-                      <SelectContent>
-                        {grupoRevisaoOptions.map(g => (
-                          <SelectItem key={g.value} value={g.value}>
-                            <div className="flex flex-col">
-                              <span>{g.label}</span>
-                              <span className="text-xs text-muted-foreground">{g.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Define os dias de revisão do projeto na página de Follow-ups</p>
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => { setIsOpen(false); resetForm() }}>Cancelar</Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {editingProjeto ? 'Salvar e Continuar' : 'Criar e Continuar'}
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </DialogFooter>
-              </form>
-            ) : (
-              <div>
-                <DialogHeader>
-                  <DialogTitle>Estrategias do Projeto</DialogTitle>
-                  <DialogDescription>Adicione as linhas de estrategia de midia para este projeto</DialogDescription>
-                </DialogHeader>
-
-                <div className="py-4">
-                  {/* Indicador de Valor do PI (apenas para TD) */}
-                  {currentProjeto && currentProjeto.tipo_cobranca === 'td' && currentProjeto.pi && (
-                    <div className="mb-4 p-4 rounded-lg bg-muted">
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">PI: {currentProjeto.pi.identificador}</p>
-                          <p className="text-lg font-semibold">Valor Total: {formatCurrency(currentProjeto.pi.valor_bruto)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Valor Alocado nas Estratégias</p>
-                          <p className="text-lg font-semibold">{formatCurrency(currentProjeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0))}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Valor Restante</p>
-                          {(() => {
-                            const valorAlocado = currentProjeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0)
-                            const valorRestante = currentProjeto.pi.valor_bruto - valorAlocado
-                            const isNegativo = valorRestante < 0
-                            return (
-                              <p className={`text-lg font-semibold ${isNegativo ? 'text-red-600' : valorRestante > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                                {formatCurrency(valorRestante)}
-                                {valorRestante > 0 && <span className="text-sm font-normal ml-2">(adicione mais estratégias)</span>}
-                                {isNegativo && <span className="text-sm font-normal ml-2">(excedeu o PI!)</span>}
-                              </p>
-                            )
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center mb-4">
-                    <Button variant="ghost" onClick={() => setStep(1)}>
-                      <ArrowLeft className="h-4 w-4 mr-2" />Voltar aos Dados
-                    </Button>
-                    <Button onClick={() => { resetEstrategiaForm(); setIsEstrategiaOpen(true) }}>
-                      <Plus className="h-4 w-4 mr-2" />Nova Estratégia
-                    </Button>
-                  </div>
-
-                  {currentProjeto && currentProjeto.estrategias.length > 0 ? (
-                    <div className="border rounded-lg overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Plataforma</TableHead>
-                            <TableHead>Estrategia</TableHead>
-                            <TableHead>KPI</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Valor Bruto</TableHead>
-                            <TableHead className="text-right">% Ag.</TableHead>
-                            <TableHead className="text-right">% Plat.</TableHead>
-                            <TableHead className="text-right">Valor Liq.</TableHead>
-                            <TableHead className="text-right">Gasto</TableHead>
-                            <TableHead></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentProjeto.estrategias.map(e => {
-                            const calc = calcularValoresEstrategia(e)
-                            return (
-                              <TableRow key={e.id}>
-                                <TableCell className="font-medium capitalize">{e.plataforma}</TableCell>
-                                <TableCell>{e.estrategia || '-'}</TableCell>
-                                <TableCell>{e.kpi || '-'}</TableCell>
-                                <TableCell>
-                                  <Badge variant={statusEstrategiaOptions.find(s => s.value === e.status)?.color as 'default'}>
-                                    {statusEstrategiaOptions.find(s => s.value === e.status)?.label}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">{formatCurrency(e.valor_bruto)}</TableCell>
-                                <TableCell className="text-right">{e.porcentagem_agencia}%</TableCell>
-                                <TableCell className="text-right">{e.porcentagem_plataforma}%</TableCell>
-                                <TableCell className="text-right">{formatCurrency(calc.valorLiquido)}</TableCell>
-                                <TableCell className="text-right">{e.gasto_ate_momento !== null ? formatCurrency(e.gasto_ate_momento) : '-'}</TableCell>
-                                <TableCell>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => {
-                                        setEditingEstrategia(e)
-                                        setEstrategiaForm({
-                                          plataforma: e.plataforma,
-                                          nome_conta: e.nome_conta || '',
-                                          id_conta: e.id_conta || '',
-                                          campaign_id: e.campaign_id || '',
-                                          estrategia: e.estrategia || '',
-                                          kpi: e.kpi || '',
-                                          status: e.status,
-                                          valor_bruto: e.valor_bruto.toString(),
-                                          porcentagem_agencia: e.porcentagem_agencia.toString(),
-                                          porcentagem_plataforma: e.porcentagem_plataforma.toString(),
-                                          entrega_contratada: e.entrega_contratada?.toString() || '',
-                                          estimativa_resultado: e.estimativa_resultado?.toString() || '',
-                                          estimativa_sucesso: e.estimativa_sucesso?.toString() || '',
-                                          gasto_ate_momento: e.gasto_ate_momento?.toString() || '',
-                                          entregue_ate_momento: e.entregue_ate_momento?.toString() || '',
-                                          data_atualizacao: e.data_atualizacao || '',
-                                        })
-                                        setIsEstrategiaOpen(true)
-                                      }}>
-                                        <Pencil className="h-4 w-4 mr-2" />Editar
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleDeleteEstrategia(e.id.toString())} className="text-destructive">
-                                        <Trash2 className="h-4 w-4 mr-2" />Excluir
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 border rounded-lg">
-                      <Layers className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                      <h3 className="mt-4 text-lg font-semibold">Nenhuma estrategia</h3>
-                      <p className="text-muted-foreground">Adicione estrategias de midia para este projeto</p>
-                    </div>
-                  )}
-                </div>
-
-                <DialogFooter>
-                  <Button onClick={() => { setIsOpen(false); resetForm() }}>Finalizar</Button>
-                </DialogFooter>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Estrategia */}
-        <Dialog open={isEstrategiaOpen} onOpenChange={open => { setIsEstrategiaOpen(open); if (!open) resetEstrategiaForm() }}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <form onSubmit={handleSubmitEstrategia}>
+          {step === 1 ? (
+            <form onSubmit={handleSubmitProjeto}>
               <DialogHeader>
-                <DialogTitle>{editingEstrategia ? 'Editar Estratégia' : 'Nova Estratégia'}</DialogTitle>
+                <DialogTitle>{editingProjeto ? 'Editar Projeto' : 'Novo Projeto'}</DialogTitle>
+                <DialogDescription>Preencha os dados basicos do projeto</DialogDescription>
               </DialogHeader>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
                 <div className="space-y-2">
-                  <Label>Plataforma *</Label>
-                  <Select value={estrategiaForm.plataforma} onValueChange={v => setEstrategiaForm(p => ({ ...p, plataforma: v as Plataforma }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <Label>Nome do Cliente *</Label>
+                  <SearchableSelect
+                    options={clientes.map(c => ({ value: c.id.toString(), label: c.nome }))}
+                    value={formData.cliente_id?.toString() || ''}
+                    onValueChange={v => setFormData(p => ({ ...p, cliente_id: v ? parseInt(v) : null }))}
+                    placeholder="Selecione um cliente"
+                    searchPlaceholder="Buscar cliente..."
+                    emptyMessage="Nenhum cliente encontrado."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>TD ou FEE *</Label>
+                  <Select value={formData.tipo_cobranca} onValueChange={v => setFormData(p => ({ ...p, tipo_cobranca: v as TipoCobranca }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {plataformaOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                      {tipoCobrancaOptions.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {estrategiaForm.plataforma && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Nome da Conta *</Label>
-                      <Input
-                        value={estrategiaForm.nome_conta}
-                        onChange={e => setEstrategiaForm(p => ({ ...p, nome_conta: e.target.value }))}
-                        placeholder="Ex: Cliente ABC - Conta Principal"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>ID da Conta *</Label>
-                      <Input
-                        value={estrategiaForm.id_conta}
-                        onChange={e => setEstrategiaForm(p => ({ ...p, id_conta: e.target.value }))}
-                        placeholder="Ex: 123456789"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Campaign ID</Label>
-                      <Input
-                        value={estrategiaForm.campaign_id}
-                        onChange={e => setEstrategiaForm(p => ({ ...p, campaign_id: e.target.value }))}
-                        placeholder="ID da campanha na plataforma"
-                      />
-                    </div>
-                  </>
+                {/* PI - Apenas para TD */}
+                {formData.tipo_cobranca === 'td' && (
+                  <div className="space-y-2">
+                    <Label>PI - Autorizacao</Label>
+                    <SearchableSelect
+                      options={pis.map(pi => ({
+                        value: pi.id.toString(),
+                        label: pi.identificador,
+                        description: formatCurrency(pi.valor_bruto)
+                      }))}
+                      value={formData.pi_id?.toString() || ''}
+                      onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}
+                      placeholder="Selecione um PI"
+                      searchPlaceholder="Buscar PI..."
+                      emptyMessage="Nenhum PI encontrado."
+                    />
+                  </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label>Estratégia *</Label>
-                  <Select value={estrategiaForm.estrategia} onValueChange={v => setEstrategiaForm(p => ({ ...p, estrategia: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {estrategiaOptions.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>KPI *</Label>
-                  <Select value={estrategiaForm.kpi} onValueChange={v => setEstrategiaForm(p => ({ ...p, kpi: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {kpiOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Nome do Projeto *</Label>
+                  <Input value={formData.nome} onChange={e => setFormData(p => ({ ...p, nome: e.target.value }))} required />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={estrategiaForm.status} onValueChange={v => setEstrategiaForm(p => ({ ...p, status: v as StatusEstrategia }))}>
+                  <Select value={formData.status} onValueChange={v => setFormData(p => ({ ...p, status: v as StatusProjeto }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {statusEstrategiaOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                      {statusProjetoOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Valor Bruto (R$)</Label>
-                  <Input type="number" step="0.01" value={estrategiaForm.valor_bruto} onChange={e => setEstrategiaForm(p => ({ ...p, valor_bruto: e.target.value }))} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>% Agência</Label>
-                  <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>% Plataforma</Label>
-                  <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Entrega Contratada</Label>
-                  <Input type="number" step="0.01" value={estrategiaForm.entrega_contratada} onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))} />
-                </div>
-
-                {/* Campos de Acompanhamento em destaque */}
-                <div className="md:col-span-3 border-t pt-4 mt-2">
-                  <p className="text-sm font-medium text-muted-foreground mb-3">Acompanhamento (atualizado pelo trader)</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Gasto até o Momento (R$)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={estrategiaForm.gasto_ate_momento}
-                        onChange={e => setEstrategiaForm(p => ({ ...p, gasto_ate_momento: e.target.value }))}
-                        className="border-amber-300 focus:border-amber-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Entregue até o Momento</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={estrategiaForm.entregue_ate_momento}
-                        onChange={e => setEstrategiaForm(p => ({ ...p, entregue_ate_momento: e.target.value }))}
-                        className="border-amber-300 focus:border-amber-500"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Data de Atualização</Label>
-                      <Input
-                        type="date"
-                        value={estrategiaForm.data_atualizacao}
-                        onChange={e => setEstrategiaForm(p => ({ ...p, data_atualizacao: e.target.value }))}
-                        className="border-amber-300 focus:border-amber-500"
-                      />
-                    </div>
+                  <Label>Data de Início</Label>
+                  <div className="flex items-center gap-2">
+                    <Input type="date" value={formData.data_inicio} onChange={e => setFormData(p => ({ ...p, data_inicio: e.target.value }))} className="flex-1" />
+                    {formData.data_inicio && <span className="text-sm text-muted-foreground whitespace-nowrap">{formatDateInput(formData.data_inicio)}</span>}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Data de Fim</Label>
+                  <div className="flex items-center gap-2">
+                    <Input type="date" value={formData.data_fim} onChange={e => setFormData(p => ({ ...p, data_fim: e.target.value }))} className="flex-1" />
+                    {formData.data_fim && <span className="text-sm text-muted-foreground whitespace-nowrap">{formatDateInput(formData.data_fim)}</span>}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Qtde Dias de Veiculacao</Label>
+                  <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
+                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="text-sm">{calcularDiasVeiculacao !== null ? `${calcularDiasVeiculacao} dias` : '-'}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Dias Ate Acabar</Label>
+                  <div className={`flex items-center h-10 px-3 rounded-md border ${calcularDiasAteAcabar !== null && calcularDiasAteAcabar <= 7 ? 'bg-red-100 border-red-300' : 'bg-muted'}`}>
+                    <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className={`text-sm ${calcularDiasAteAcabar !== null && calcularDiasAteAcabar <= 7 ? 'text-red-600 font-medium' : ''}`}>
+                      {calcularDiasAteAcabar !== null ? (calcularDiasAteAcabar < 0 ? 'Encerrada' : `${calcularDiasAteAcabar} dias`) : '-'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Agência - Apenas para TD */}
+                {formData.tipo_cobranca === 'td' && (
+                  <div className="space-y-2">
+                    <Label>Agencia</Label>
+                    <Select value={formData.agencia_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, agencia_id: v ? parseInt(v) : null }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {agencias.map(a => <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Link Proposta</Label>
+                  <Input value={formData.link_proposta} onChange={e => setFormData(p => ({ ...p, link_proposta: e.target.value }))} placeholder="https://..." />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>URL Destino</Label>
+                  <Input value={formData.url_destino} onChange={e => setFormData(p => ({ ...p, url_destino: e.target.value }))} placeholder="https://..." />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Trader (Responsável)</Label>
+                  <Select value={formData.trader_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, trader_id: v ? parseInt(v) : null }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Colaborador</Label>
+                  <Select value={formData.colaborador_id?.toString() || ''} onValueChange={v => setFormData(p => ({ ...p, colaborador_id: v ? parseInt(v) : null }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {traders.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Grupo de Revisão (Follow-up)</Label>
+                  <Select value={formData.grupo_revisao || ''} onValueChange={v => setFormData(p => ({ ...p, grupo_revisao: v ? v as GrupoRevisao : null }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o grupo" /></SelectTrigger>
+                    <SelectContent>
+                      {grupoRevisaoOptions.map(g => (
+                        <SelectItem key={g.value} value={g.value}>
+                          <div className="flex flex-col">
+                            <span>{g.label}</span>
+                            <span className="text-xs text-muted-foreground">{g.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Define os dias de revisão do projeto na página de Follow-ups</p>
                 </div>
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => { setIsEstrategiaOpen(false); resetEstrategiaForm() }}>Cancelar</Button>
-                <Button type="submit" disabled={isLoading || !estrategiaForm.plataforma || !estrategiaForm.nome_conta || !estrategiaForm.id_conta}>
+                <Button type="button" variant="outline" onClick={() => { setIsOpen(false); resetForm() }}>Cancelar</Button>
+                <Button type="submit" disabled={isLoading}>
                   {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {editingEstrategia ? 'Salvar' : 'Adicionar'}
+                  {editingProjeto ? 'Salvar e Continuar' : 'Criar e Continuar'}
+                  <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
               </DialogFooter>
             </form>
-          </DialogContent>
-        </Dialog>
+          ) : (
+            <div>
+              <DialogHeader>
+                <DialogTitle>Estrategias do Projeto</DialogTitle>
+                <DialogDescription>Adicione as linhas de estrategia de midia para este projeto</DialogDescription>
+              </DialogHeader>
+
+              <div className="py-4">
+                {/* Indicador de Valor do PI (apenas para TD) */}
+                {currentProjeto && currentProjeto.tipo_cobranca === 'td' && currentProjeto.pi && (
+                  <div className="mb-4 p-4 rounded-lg bg-muted">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">PI: {currentProjeto.pi.identificador}</p>
+                        <p className="text-lg font-semibold">Valor Total: {formatCurrency(currentProjeto.pi.valor_bruto)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor Alocado nas Estratégias</p>
+                        <p className="text-lg font-semibold">{formatCurrency(currentProjeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0))}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor Restante</p>
+                        {(() => {
+                          const valorAlocado = currentProjeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0)
+                          const valorRestante = currentProjeto.pi.valor_bruto - valorAlocado
+                          const isNegativo = valorRestante < 0
+                          return (
+                            <p className={`text-lg font-semibold ${isNegativo ? 'text-red-600' : valorRestante > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                              {formatCurrency(valorRestante)}
+                              {valorRestante > 0 && <span className="text-sm font-normal ml-2">(adicione mais estratégias)</span>}
+                              {isNegativo && <span className="text-sm font-normal ml-2">(excedeu o PI!)</span>}
+                            </p>
+                          )
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center mb-4">
+                  <Button variant="ghost" onClick={() => setStep(1)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />Voltar aos Dados
+                  </Button>
+                  <Button onClick={() => { resetEstrategiaForm(); setIsEstrategiaOpen(true) }}>
+                    <Plus className="h-4 w-4 mr-2" />Nova Estratégia
+                  </Button>
+                </div>
+
+                {currentProjeto && currentProjeto.estrategias.length > 0 ? (
+                  <div className="border rounded-lg overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Plataforma</TableHead>
+                          <TableHead>Estrategia</TableHead>
+                          <TableHead>KPI</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Valor Bruto</TableHead>
+                          <TableHead className="text-right">% Ag.</TableHead>
+                          <TableHead className="text-right">% Plat.</TableHead>
+                          <TableHead className="text-right">Valor Liq.</TableHead>
+                          <TableHead className="text-right">Gasto</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentProjeto.estrategias.map(e => {
+                          const calc = calcularValoresEstrategia(e)
+                          return (
+                            <TableRow key={e.id}>
+                              <TableCell className="font-medium capitalize">{e.plataforma}</TableCell>
+                              <TableCell>{e.estrategia || '-'}</TableCell>
+                              <TableCell>{e.kpi || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant={statusEstrategiaOptions.find(s => s.value === e.status)?.color as 'default'}>
+                                  {statusEstrategiaOptions.find(s => s.value === e.status)?.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">{formatCurrency(e.valor_bruto)}</TableCell>
+                              <TableCell className="text-right">{e.porcentagem_agencia}%</TableCell>
+                              <TableCell className="text-right">{e.porcentagem_plataforma}%</TableCell>
+                              <TableCell className="text-right">{formatCurrency(calc.valorLiquido)}</TableCell>
+                              <TableCell className="text-right">{e.gasto_ate_momento !== null ? formatCurrency(e.gasto_ate_momento) : '-'}</TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => {
+                                      setEditingEstrategia(e)
+                                      setEstrategiaForm({
+                                        plataforma: e.plataforma,
+                                        nome_conta: e.nome_conta || '',
+                                        id_conta: e.id_conta || '',
+                                        campaign_id: e.campaign_id || '',
+                                        estrategia: e.estrategia || '',
+                                        kpi: e.kpi || '',
+                                        status: e.status,
+                                        valor_bruto: e.valor_bruto.toString(),
+                                        porcentagem_agencia: e.porcentagem_agencia.toString(),
+                                        porcentagem_plataforma: e.porcentagem_plataforma.toString(),
+                                        entrega_contratada: e.entrega_contratada?.toString() || '',
+                                        estimativa_resultado: e.estimativa_resultado?.toString() || '',
+                                        estimativa_sucesso: e.estimativa_sucesso?.toString() || '',
+                                        gasto_ate_momento: e.gasto_ate_momento?.toString() || '',
+                                        entregue_ate_momento: e.entregue_ate_momento?.toString() || '',
+                                        data_atualizacao: e.data_atualizacao || '',
+                                      })
+                                      setIsEstrategiaOpen(true)
+                                    }}>
+                                      <Pencil className="h-4 w-4 mr-2" />Editar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDeleteEstrategia(e.id.toString())} className="text-destructive">
+                                      <Trash2 className="h-4 w-4 mr-2" />Excluir
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 border rounded-lg">
+                    <Layers className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                    <h3 className="mt-4 text-lg font-semibold">Nenhuma estrategia</h3>
+                    <p className="text-muted-foreground">Adicione estrategias de midia para este projeto</p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button onClick={() => { setIsOpen(false); resetForm() }}>Finalizar</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Estrategia */}
+      <Dialog open={isEstrategiaOpen} onOpenChange={open => { setIsEstrategiaOpen(open); if (!open) resetEstrategiaForm() }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <form onSubmit={handleSubmitEstrategia}>
+            <DialogHeader>
+              <DialogTitle>{editingEstrategia ? 'Editar Estratégia' : 'Nova Estratégia'}</DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+              <div className="space-y-2">
+                <Label>Plataforma *</Label>
+                <Select value={estrategiaForm.plataforma} onValueChange={v => setEstrategiaForm(p => ({ ...p, plataforma: v as Plataforma }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {plataformaOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {estrategiaForm.plataforma && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Nome da Conta *</Label>
+                    <Input
+                      value={estrategiaForm.nome_conta}
+                      onChange={e => setEstrategiaForm(p => ({ ...p, nome_conta: e.target.value }))}
+                      placeholder="Ex: Cliente ABC - Conta Principal"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>ID da Conta *</Label>
+                    <Input
+                      value={estrategiaForm.id_conta}
+                      onChange={e => setEstrategiaForm(p => ({ ...p, id_conta: e.target.value }))}
+                      placeholder="Ex: 123456789"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Campaign ID</Label>
+                    <Input
+                      value={estrategiaForm.campaign_id}
+                      onChange={e => setEstrategiaForm(p => ({ ...p, campaign_id: e.target.value }))}
+                      placeholder="ID da campanha na plataforma"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-2">
+                <Label>Estratégia *</Label>
+                <Select value={estrategiaForm.estrategia} onValueChange={v => setEstrategiaForm(p => ({ ...p, estrategia: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {estrategiaOptions.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>KPI *</Label>
+                <Select value={estrategiaForm.kpi} onValueChange={v => setEstrategiaForm(p => ({ ...p, kpi: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {kpiOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={estrategiaForm.status} onValueChange={v => setEstrategiaForm(p => ({ ...p, status: v as StatusEstrategia }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statusEstrategiaOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Valor Bruto (R$)</Label>
+                <Input type="number" step="0.01" value={estrategiaForm.valor_bruto} onChange={e => setEstrategiaForm(p => ({ ...p, valor_bruto: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>% Agência</Label>
+                <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>% Plataforma</Label>
+                <Input type="number" step="0.01" max="100" placeholder="0" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Entrega Contratada</Label>
+                <Input type="number" step="0.01" value={estrategiaForm.entrega_contratada} onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))} />
+              </div>
+
+              {/* Campos de Acompanhamento em destaque */}
+              <div className="md:col-span-3 border-t pt-4 mt-2">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Acompanhamento (atualizado pelo trader)</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Gasto até o Momento (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={estrategiaForm.gasto_ate_momento}
+                      onChange={e => setEstrategiaForm(p => ({ ...p, gasto_ate_momento: e.target.value }))}
+                      className="border-amber-300 focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Entregue até o Momento</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={estrategiaForm.entregue_ate_momento}
+                      onChange={e => setEstrategiaForm(p => ({ ...p, entregue_ate_momento: e.target.value }))}
+                      className="border-amber-300 focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Data de Atualização</Label>
+                    <Input
+                      type="date"
+                      value={estrategiaForm.data_atualizacao}
+                      onChange={e => setEstrategiaForm(p => ({ ...p, data_atualizacao: e.target.value }))}
+                      className="border-amber-300 focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setIsEstrategiaOpen(false); resetEstrategiaForm() }}>Cancelar</Button>
+              <Button type="submit" disabled={isLoading || !estrategiaForm.plataforma || !estrategiaForm.nome_conta || !estrategiaForm.id_conta}>
+                {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {editingEstrategia ? 'Salvar' : 'Adicionar'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Projetos List */}
       <Tabs defaultValue="grid" className="space-y-4">
@@ -1217,7 +1219,7 @@ export function ProjetosClient({
 
         <TabsContent value="grid">
           {projetosAgrupados.length > 0 ? (
-            <Accordion type="multiple" defaultValue={projetosAgrupados.map(g => `cliente-${g.cliente.id}`)} className="space-y-2">
+            <Accordion type="multiple" defaultValue={[]} className="space-y-2">
               {projetosAgrupados.map(grupo => (
                 <AccordionItem key={grupo.cliente.id} value={`cliente-${grupo.cliente.id}`} className="border rounded-lg px-4">
                   <AccordionTrigger className="hover:no-underline">

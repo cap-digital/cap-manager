@@ -33,7 +33,6 @@ export const supabaseAdmin = createClient(
   }
 )
 
-// Nomes das tabelas com prefixo
 export const TABLES = {
   usuarios: 'cap_manager_usuarios',
   agencias: 'cap_manager_agencias',
@@ -42,6 +41,8 @@ export const TABLES = {
   projetos: 'cap_manager_projetos',
   estrategias: 'cap_manager_estrategias',
   tarefas: 'cap_manager_tarefas',
+  subtarefas: 'cap_manager_subtarefas',
+  subtarefa_logs: 'cap_manager_subtarefa_logs',
   cards_kanban: 'cap_manager_cards_kanban',
   utm_configs: 'cap_manager_utm_configs',
   revisoes_diarias: 'cap_manager_revisoes_diarias',
@@ -61,6 +62,7 @@ export type PrioridadeTarefa = 'baixa' | 'media' | 'alta' | 'urgente'
 export type TipoFollowUp = 'nota' | 'alerta' | 'atualizacao' | 'reuniao'
 export type TipoAlerta = 'cobranca' | 'campanha' | 'tarefa' | 'sistema'
 export type AreaKanban = 'gestao_trafego' | 'faturamento' | 'dashboards' | 'gtm' | 'sites_lp' | 'projetos_concluidos'
+export type AcaoSubtarefa = 'criada' | 'atualizada' | 'concluida' | 'reaberta'
 
 export interface Usuario {
   id: number
@@ -266,4 +268,26 @@ export interface CardKanban {
   ordem: number
   created_at: string
   updated_at: string
+}
+
+export interface Subtarefa {
+  id: number
+  tarefa_id: number
+  titulo: string
+  responsavel_id?: number | null
+  data_finalizacao?: string | null
+  concluida: boolean
+  created_at: string
+  updated_at: string
+  responsavel?: Usuario | null
+}
+
+export interface SubtarefaLog {
+  id: number
+  subtarefa_id: number
+  usuario_id?: number | null
+  acao: AcaoSubtarefa
+  descricao?: string | null
+  created_at: string
+  usuario?: Usuario | null
 }

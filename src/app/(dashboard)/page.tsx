@@ -148,20 +148,21 @@ export default async function DashboardPage() {
               {projetosRecentes && projetosRecentes.length > 0 ? (
                 <div className="space-y-4">
                   {projetosRecentes.map((projeto) => (
-                    <div
-                      key={projeto.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium">{projeto.nome}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {projeto.cliente?.nome || 'Sem cliente'}
-                        </p>
+                    <Link key={projeto.id} href={`/projetos/${projeto.id}`}>
+                      <div
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        <div>
+                          <p className="font-medium">{projeto.nome}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {projeto.cliente?.nome || 'Sem cliente'}
+                          </p>
+                        </div>
+                        <Badge variant={statusColors[projeto.status] as 'default' | 'secondary' | 'destructive'}>
+                          {projeto.status}
+                        </Badge>
                       </div>
-                      <Badge variant={statusColors[projeto.status] as 'default' | 'secondary' | 'destructive'}>
-                        {projeto.status}
-                      </Badge>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
