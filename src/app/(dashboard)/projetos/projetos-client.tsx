@@ -95,6 +95,19 @@ export function ProjetosClient({
     return matchesSearch && matchesStatus && matchesTrader && matchesAgencia && matchesPi && matchesDataInicio && matchesDataFim
   })
 
+  // Agrupar projetos por cliente
+  const projetosPorCliente = filteredProjetos.reduce((acc, projeto) => {
+    const clienteNome = projeto.cliente?.nome || 'Sem Cliente'
+    if (!acc[clienteNome]) {
+      acc[clienteNome] = []
+    }
+    acc[clienteNome].push(projeto)
+    return acc
+  }, {} as Record<string, SimplifiedProjeto[]>)
+
+  // Ordenar clientes alfabeticamente
+  const clientesOrdenados = Object.keys(projetosPorCliente).sort()
+
   const openEditDialog = (projeto: SimplifiedProjeto) => {
     setEditingProjeto(projeto)
     setIsOpen(true)
@@ -287,90 +300,105 @@ export function ProjetosClient({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {filteredProjetos.map(projeto => {
-          const dias = getDiasAteAcabar(projeto.data_fim)
+      <div className="space-y-8">
+        {clientesOrdenados.map(clienteNome => {
+          const projetosDoCliente = projetosPorCliente[clienteNome]
           return (
-            <Card key={projeto.id} className="hover:shadow-md transition-shadow relative group">
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="outline" size="sm" onClick={() => openEditDialog(projeto)}>
-                  <Pencil className="h-4 w-4 mr-2" /> Editar
-                </Button>
+            <div key={clienteNome} className="space-y-4">
+              {/* Cabeçalho do Cliente */}
+              <div className="flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">{clienteNome}</h2>
+                <Badge variant="secondary">{projetosDoCliente.length} projeto(s)</Badge>
               </div>
 
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {projeto.nome}
-                      {getStatusBadge(projeto.status)}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                      <Building2 className="h-3 w-3" />
-                      {projeto.cliente?.nome || 'Sem cliente'}
-                      {projeto.agencia && (
-                        <>
-                          <span className="mx-1">•</span>
-                          {projeto.agencia.nome}
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  {projeto.pi && (
-                    <div className="text-right">
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {projeto.pi.identificador}
-                      </Badge>
-                      <p className="text-xs font-medium mt-1">{formatCurrency(projeto.pi.valor_bruto)}</p>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-2">
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">Trader</p>
-                    <p className="font-medium flex items-center gap-1">
-                      <User className="h-3 w-3" /> {projeto.trader?.nome || '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">Periodo</p>
-                    <p className="font-medium flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {projeto.data_inicio ? formatDate(projeto.data_inicio) : '?'} - {projeto.data_fim ? formatDate(projeto.data_fim) : '?'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">Estrategias</p>
-                    <p className="font-medium">{projeto.estrategias_count}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">Status Prazo</p>
-                    {dias !== null && (
-                      <span className={`font-medium ${dias < 7 ? 'text-red-500' : 'text-green-600'}`}>
-                        {dias < 0 ? 'Expirado' : `${dias} dias restantes`}
-                      </span>
-                    )}
-                    {dias === null && <span>-</span>}
-                  </div>
-                </div>
+              {/* Projetos do Cliente */}
+              <div className="grid grid-cols-1 gap-4 pl-8">
+                {projetosDoCliente.map(projeto => {
+                  const dias = getDiasAteAcabar(projeto.data_fim)
+                  return (
+                    <Card key={projeto.id} className="hover:shadow-md transition-shadow relative group">
+                      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(projeto)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editar
+                        </Button>
+                      </div>
 
-                {/* Quick actions for links */}
-                <div className="flex gap-3 mt-4 pt-4 border-t">
-                  {projeto.link_proposta && (
-                    <a href={projeto.link_proposta} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
-                      <ExternalLink className="h-3 w-3" /> Ver Proposta
-                    </a>
-                  )}
-                  {projeto.url_destino && (
-                    <a href={projeto.url_destino} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
-                      <ExternalLink className="h-3 w-3" /> Ver URL Destino
-                    </a>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              {projeto.nome}
+                              {getStatusBadge(projeto.status)}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                              {projeto.agencia && (
+                                <>
+                                  <Building2 className="h-3 w-3" />
+                                  {projeto.agencia.nome}
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          {projeto.pi && (
+                            <div className="text-right">
+                              <Badge variant="outline" className="font-mono text-xs">
+                                {projeto.pi.identificador}
+                              </Badge>
+                              <p className="text-xs font-medium mt-1">{formatCurrency(projeto.pi.valor_bruto)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-2">
+                          <div>
+                            <p className="text-muted-foreground text-xs uppercase">Trader</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <User className="h-3 w-3" /> {projeto.trader?.nome || '-'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs uppercase">Periodo</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {projeto.data_inicio ? formatDate(projeto.data_inicio) : '?'} - {projeto.data_fim ? formatDate(projeto.data_fim) : '?'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs uppercase">Estrategias</p>
+                            <p className="font-medium">{projeto.estrategias_count}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs uppercase">Status Prazo</p>
+                            {dias !== null && (
+                              <span className={`font-medium ${dias < 7 ? 'text-red-500' : 'text-green-600'}`}>
+                                {dias < 0 ? 'Expirado' : `${dias} dias restantes`}
+                              </span>
+                            )}
+                            {dias === null && <span>-</span>}
+                          </div>
+                        </div>
+
+                        {/* Quick actions for links */}
+                        <div className="flex gap-3 mt-4 pt-4 border-t">
+                          {projeto.link_proposta && (
+                            <a href={projeto.link_proposta} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
+                              <ExternalLink className="h-3 w-3" /> Ver Proposta
+                            </a>
+                          )}
+                          {projeto.url_destino && (
+                            <a href={projeto.url_destino} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
+                              <ExternalLink className="h-3 w-3" /> Ver URL Destino
+                            </a>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </div>
