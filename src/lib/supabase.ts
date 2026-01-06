@@ -274,6 +274,9 @@ export interface Subtarefa {
   id: number
   tarefa_id: number
   titulo: string
+  descricao?: string | null
+  prioridade: 'baixa' | 'media' | 'alta' | 'urgente'
+  data_vencimento?: string | null
   responsavel_id?: number | null
   data_finalizacao?: string | null
   concluida: boolean

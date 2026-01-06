@@ -59,6 +59,9 @@ export async function POST(request: Request) {
             .insert({
                 tarefa_id: data.tarefa_id,
                 titulo: data.titulo,
+                descricao: data.descricao || null,
+                prioridade: data.prioridade || 'media',
+                data_vencimento: data.data_vencimento || null,
                 responsavel_id: data.responsavel_id || null,
                 data_finalizacao: data.data_finalizacao || null,
                 concluida: false,
@@ -114,6 +117,9 @@ export async function PATCH(request: Request) {
         // Prepare update
         const supabaseUpdateData: Record<string, unknown> = {}
         if (updateData.titulo !== undefined) supabaseUpdateData.titulo = updateData.titulo
+        if (updateData.descricao !== undefined) supabaseUpdateData.descricao = updateData.descricao
+        if (updateData.prioridade !== undefined) supabaseUpdateData.prioridade = updateData.prioridade
+        if (updateData.data_vencimento !== undefined) supabaseUpdateData.data_vencimento = updateData.data_vencimento
         if (updateData.responsavel_id !== undefined) supabaseUpdateData.responsavel_id = updateData.responsavel_id
         if (updateData.data_finalizacao !== undefined) supabaseUpdateData.data_finalizacao = updateData.data_finalizacao
         if (updateData.concluida !== undefined) supabaseUpdateData.concluida = updateData.concluida

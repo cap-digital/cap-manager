@@ -732,7 +732,7 @@ export function GestaoTrafegoKanban({
                         <CheckCircle2 className="h-4 w-4" />
                         Subtarefas
                       </h4>
-                      <SubtaskList tarefaId={editingCard.id} />
+                      <SubtaskList tarefaId={editingCard.id} usuarios={usuarios} />
                     </div>
                   </div>
 
