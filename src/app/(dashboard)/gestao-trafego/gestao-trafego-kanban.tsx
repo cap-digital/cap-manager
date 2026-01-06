@@ -58,6 +58,7 @@ import Link from 'next/link'
 import { ViewToggle, ViewMode } from '@/components/kanban/view-toggle'
 import { ListView } from '@/components/kanban/list-view'
 import { TableView } from '@/components/kanban/table-view'
+import { TaskDetailsLayout } from '@/components/task-view/task-details-layout'
 
 interface CardKanban {
   id: number
@@ -94,6 +95,7 @@ interface GestaoTrafegoKanbanProps {
   projetos: Projeto[]
   clientes: { id: number; nome: string }[]
   usuarios: { id: number; nome: string }[]
+  usuarioLogadoId: number
 }
 
 // Colunas do fluxo Gestão de Tráfego
@@ -313,6 +315,7 @@ export function GestaoTrafegoKanban({
   projetos,
   clientes,
   usuarios,
+  usuarioLogadoId,
 }: GestaoTrafegoKanbanProps) {
   const router = useRouter()
   const [cards, setCards] = useState<CardKanban[]>(initialCards)
@@ -672,85 +675,33 @@ export function GestaoTrafegoKanban({
                 Nova Task
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className={cn(
+              "p-0 gap-0 overflow-hidden",
+              !isEditMode && "max-w-[1200px] h-[85vh] bg-transparent border-0 shadow-none sm:max-w-[1200px]"
+            )}>
               {!isEditMode && editingCard ? (
-                <div className="space-y-6">
-                  <DialogHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <DialogTitle className="text-xl">{editingCard.titulo}</DialogTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge className={prioridadeColors[editingCard.prioridade]}>{editingCard.prioridade}</Badge>
-                          <Badge variant="outline">{columns.find(c => c.id === editingCard.status)?.label}</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </DialogHeader>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      {editingCard.descricao && (
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-medium text-muted-foreground">Descricao</h4>
-                          <p className="text-sm whitespace-pre-wrap">{editingCard.descricao}</p>
-                        </div>
-                      )}
-
-                      {(editingCard.projeto_id || editingCard.cliente_id) && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-muted-foreground">Vinculacao</h4>
-                          <div className="flex flex-col gap-1">
-                            {editingCard.projeto_id && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Folder className="h-4 w-4 text-muted-foreground" />
-                                <span>{projetos.find(p => p.id === editingCard.projeto_id)?.nome}</span>
-                              </div>
-                            )}
-                            {editingCard.trader_id && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <span>{usuarios.find(u => u.id === editingCard.trader_id)?.nome}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {editingCard.data_vencimento && (
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-medium text-muted-foreground">Prazo</h4>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{new Date(editingCard.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-muted/30 rounded-lg p-4 space-y-4">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Subtarefas
-                      </h4>
-                      <SubtaskList tarefaId={editingCard.id} usuarios={usuarios} />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button variant="destructive" onClick={() => handleDelete(editingCard.id)}>
-                      Excluir
-                    </Button>
-                    <Button onClick={() => setIsEditMode(true)}>
-                      Editar
-                    </Button>
-                  </div>
-                </div>
+                <TaskDetailsLayout
+                  card={editingCard}
+                  projeto={projetos.find(p => p.id === editingCard.projeto_id)}
+                  traderNome={usuarios.find(u => u.id === editingCard.trader_id)?.nome}
+                  usuarios={usuarios}
+                  usuarioLogadoId={usuarioLogadoId}
+                  onClose={() => setIsDialogOpen(false)}
+                  onEdit={() => handleEdit(editingCard)}
+                />
               ) : (
-                <>
+                <div className="bg-background w-full h-full md:max-w-2xl md:max-h-[90vh] md:h-auto overflow-y-auto p-6 rounded-lg shadow-lg mx-auto">
                   <DialogHeader>
-                    <DialogTitle>
-                      {editingCard ? 'Editar Task' : 'Nova Task'}
-                    </DialogTitle>
+                    <div className="flex items-center justify-between">
+                      <DialogTitle>
+                        {editingCard ? 'Editar Task' : 'Nova Task'}
+                      </DialogTitle>
+                      {editingCard && (
+                        <Button variant="ghost" size="sm" onClick={() => setIsEditMode(false)}>
+                          Voltar
+                        </Button>
+                      )}
+                    </div>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div>
@@ -845,13 +796,21 @@ export function GestaoTrafegoKanban({
                       <h4 className="font-medium mb-3">Relatorio</h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Responsavel pelo Relatorio</Label>
+                          <Label>Link do Relatorio</Label>
+                          <Input
+                            value={formData.link_relatorio}
+                            onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
+                            placeholder="https://..."
+                          />
+                        </div>
+                        <div>
+                          <Label>Responsavel Relatorio</Label>
                           <Select
                             value={formData.responsavel_relatorio_id}
                             onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Quem fara o relatorio" />
+                              <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
                               {usuarios.map((u) => (
@@ -862,14 +821,21 @@ export function GestaoTrafegoKanban({
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Campos de Revisão - sempre visíveis na edição */}
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3">Revisao</h4>
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label>Responsavel pela Revisao</Label>
+                          <Label>Responsavel Revisao</Label>
                           <Select
                             value={formData.responsavel_revisao_id}
                             onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Quem revisara" />
+                              <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
                               {usuarios.map((u) => (
@@ -880,37 +846,31 @@ export function GestaoTrafegoKanban({
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-                      <div className="mt-4">
-                        <Label>Link do Relatorio</Label>
-                        <Input
-                          value={formData.link_relatorio}
-                          onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
-                          placeholder="https://..."
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2 mt-4">
-                        <Checkbox
-                          id="revisao_ok"
-                          checked={formData.revisao_relatorio_ok}
-                          onCheckedChange={(c) => setFormData({ ...formData, revisao_relatorio_ok: !!c })}
-                        />
-                        <Label htmlFor="revisao_ok" className="cursor-pointer">
-                          Revisao do relatorio aprovada
-                        </Label>
+                        <div className="flex items-center gap-2 pt-8">
+                          <Checkbox
+                            id="revisao_ok"
+                            checked={formData.revisao_relatorio_ok}
+                            onCheckedChange={(c) => setFormData({ ...formData, revisao_relatorio_ok: !!c })}
+                          />
+                          <Label htmlFor="revisao_ok" className="cursor-pointer">
+                            Revisao do relatorio aprovada
+                          </Label>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button variant="outline" onClick={() => editingCard ? setIsEditMode(false) : setIsDialogOpen(false)} type="button">
-                        Cancelar
-                      </Button>
+                    <div className="flex justify-end gap-2 pt-4 border-t">
+                      {editingCard && (
+                        <Button type="button" variant="outline" onClick={() => setIsEditMode(false)} type="button">
+                          Cancelar
+                        </Button>
+                      )}
                       <Button onClick={handleSubmit}>
                         {editingCard ? 'Salvar Alteracoes' : 'Criar Task'}
                       </Button>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </DialogContent>
           </Dialog>

@@ -48,6 +48,7 @@ export const TABLES = {
   revisoes_diarias: 'cap_manager_revisoes_diarias',
   follow_ups: 'cap_manager_follow_ups',
   alertas: 'cap_manager_alertas',
+  comentarios_tarefa: 'cap_manager_comentarios_tarefa',
 } as const
 
 // Tipos para o banco de dados
@@ -291,6 +292,15 @@ export interface SubtarefaLog {
   usuario_id?: number | null
   acao: AcaoSubtarefa
   descricao?: string | null
+  created_at: string
+  usuario?: Usuario | null
+}
+
+export interface Comentario {
+  id: number
+  tarefa_id: number
+  usuario_id: number
+  conteudo: string
   created_at: string
   usuario?: Usuario | null
 }

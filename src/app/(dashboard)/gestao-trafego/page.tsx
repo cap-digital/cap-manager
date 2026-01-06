@@ -1,8 +1,17 @@
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { GestaoTrafegoKanban } from './gestao-trafego-kanban'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export default async function GestaoTrafegoPage() {
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    redirect('/login')
+  }
+
   const [cardsRes, projetosRes, clientesRes, usuariosRes] = await Promise.all([
     supabaseAdmin
       .from(TABLES.cards_kanban)
@@ -69,6 +78,7 @@ export default async function GestaoTrafegoPage() {
           projetos={projetosFormatted}
           clientes={clientes}
           usuarios={usuarios}
+          usuarioLogadoId={parseInt(session.user.id)}
         />
       </div>
     </div>
