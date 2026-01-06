@@ -1,30 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-// Validação das variáveis de ambiente
-if (!supabaseUrl) {
-  console.error('NEXT_PUBLIC_SUPABASE_URL não está definida')
-}
-if (!supabaseAnonKey) {
-  console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY não está definida')
-}
-if (!supabaseServiceKey) {
-  console.error('SUPABASE_SERVICE_ROLE_KEY não está definida')
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Cliente público (para uso no frontend)
 export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
+  supabaseUrl,
+  supabaseAnonKey
 )
 
 // Cliente admin (para uso no backend - bypass RLS)
 export const supabaseAdmin = createClient(
-  supabaseUrl || '',
-  supabaseServiceKey || '',
+  supabaseUrl,
+  supabaseServiceKey,
   {
     auth: {
       autoRefreshToken: false,

@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { Alerta } from '@/lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
