@@ -76,7 +76,7 @@ const columns = [
   { id: 'backlog', label: 'Backlog', color: 'bg-slate-500' },
   { id: 'para_fazer', label: 'Para Fazer', color: 'bg-blue-500' },
   { id: 'em_execucao', label: 'Em Execucao', color: 'bg-yellow-500' },
-  { id: 'projeto_finalizado', label: 'Projeto Finalizado', color: 'bg-purple-500' },
+  { id: 'projeto_finalizado', label: 'Campanha Finalizada', color: 'bg-purple-500' },
   { id: 'relatorio_a_fazer', label: 'Relatorio A Fazer', color: 'bg-orange-500' },
   { id: 'relatorio_em_revisao', label: 'Relatorio em Revisao', color: 'bg-pink-500' },
   { id: 'relatorio_finalizado', label: 'Relatorio Finalizado', color: 'bg-green-500' },
@@ -639,7 +639,7 @@ export function GestaoTrafegoKanban({
             </DialogTrigger>
             <DialogContent className={cn(
               "p-0 gap-0 overflow-hidden",
-              !isEditMode && "max-w-[1200px] h-[85vh] bg-transparent border-0 shadow-none sm:max-w-[1200px]"
+              !isEditMode && "max-w-4xl h-[85vh] bg-transparent border-0 shadow-none"
             )}>
               {!isEditMode && editingCard ? (
                 <TaskDetailsLayout
@@ -652,7 +652,7 @@ export function GestaoTrafegoKanban({
                   onEdit={() => handleEdit(editingCard)}
                 />
               ) : (
-                <div className="bg-background w-full h-full md:max-w-2xl md:max-h-[90vh] md:h-auto overflow-y-auto p-6 rounded-lg shadow-lg mx-auto">
+                <div className="bg-background w-full h-full md:h-auto overflow-y-auto p-6 rounded-lg shadow-lg mx-auto">
                   <DialogHeader>
                     <div className="flex items-center justify-between">
                       <DialogTitle>
@@ -665,172 +665,178 @@ export function GestaoTrafegoKanban({
                       )}
                     </div>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <Label>Titulo *</Label>
-                      <Input
-                        value={formData.titulo}
-                        onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                        placeholder="Titulo da task"
-                      />
-                    </div>
-                    <div>
-                      <Label>Descricao</Label>
-                      <Textarea
-                        value={formData.descricao}
-                        onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                        placeholder="Descricao da task"
-                      />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                    {/* Coluna 1: Dados Principais */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Titulo *</Label>
+                        <Input
+                          value={formData.titulo}
+                          onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                          placeholder="Titulo da task"
+                        />
+                      </div>
+                      <div>
+                        <Label>Descricao</Label>
+                        <Textarea
+                          value={formData.descricao}
+                          onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                          placeholder="Descricao da task"
+                          className="min-h-[120px]"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Prioridade</Label>
+                          <Select
+                            value={formData.prioridade}
+                            onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="baixa">Baixa</SelectItem>
+                              <SelectItem value="media">Media</SelectItem>
+                              <SelectItem value="alta">Alta</SelectItem>
+                              <SelectItem value="urgente">Urgente</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Prazo</Label>
+                          <Input
+                            type="date"
+                            value={formData.data_vencimento}
+                            onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                          />
+                        </div>
+                      </div>
                     </div>
 
+                    {/* Coluna 2: Vinculações e Detalhes */}
+                    <div className="space-y-4">
+                      <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                        <h4 className="font-medium text-sm text-muted-foreground uppercase">Vinculacao</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <Label>Projeto</Label>
+                            <Select
+                              value={formData.projeto_id}
+                              onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o projeto" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {projetos.map((p) => (
+                                  <SelectItem key={p.id} value={p.id.toString()}>
+                                    {p.nome} {p.tipo_cobranca === 'fee' ? '(FEE)' : '(TD)'}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Trader</Label>
+                            <Select
+                              value={formData.trader_id}
+                              onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o trader" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {usuarios.map((u) => (
+                                  <SelectItem key={u.id} value={u.id.toString()}>
+                                    {u.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Campos de Relatório - sempre visíveis na edição para facilitar */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-3">Relatorio</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Prioridade</Label>
+                        <Label>Link do Relatorio</Label>
+                        <Input
+                          value={formData.link_relatorio}
+                          onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div>
+                        <Label>Responsavel Relatorio</Label>
                         <Select
-                          value={formData.prioridade}
-                          onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
+                          value={formData.responsavel_relatorio_id}
+                          onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
                         >
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Selecione..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="baixa">Baixa</SelectItem>
-                            <SelectItem value="media">Media</SelectItem>
-                            <SelectItem value="alta">Alta</SelectItem>
-                            <SelectItem value="urgente">Urgente</SelectItem>
+                            {usuarios.map((u) => (
+                              <SelectItem key={u.id} value={u.id.toString()}>
+                                {u.nome}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Campos de Revisão - sempre visíveis na edição */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium mb-3">Revisao</h4>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Prazo</Label>
-                        <Input
-                          type="date"
-                          value={formData.data_vencimento}
-                          onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                        <Label>Responsavel Revisao</Label>
+                        <Select
+                          value={formData.responsavel_revisao_id}
+                          onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {usuarios.map((u) => (
+                              <SelectItem key={u.id} value={u.id.toString()}>
+                                {u.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2 pt-8">
+                        <Checkbox
+                          id="revisao_ok"
+                          checked={formData.revisao_relatorio_ok}
+                          onCheckedChange={(c) => setFormData({ ...formData, revisao_relatorio_ok: !!c })}
                         />
+                        <Label htmlFor="revisao_ok" className="cursor-pointer">
+                          Revisao do relatorio aprovada
+                        </Label>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-3">Vinculacao</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Projeto</Label>
-                          <Select
-                            value={formData.projeto_id}
-                            onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o projeto" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {projetos.map((p) => (
-                                <SelectItem key={p.id} value={p.id.toString()}>
-                                  {p.nome} {p.tipo_cobranca === 'fee' ? '(FEE)' : '(TD)'}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label>Trader</Label>
-                          <Select
-                            value={formData.trader_id}
-                            onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o trader" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {usuarios.map((u) => (
-                                <SelectItem key={u.id} value={u.id.toString()}>
-                                  {u.nome}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Campos de Relatório - sempre visíveis na edição para facilitar */}
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-3">Relatorio</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Link do Relatorio</Label>
-                          <Input
-                            value={formData.link_relatorio}
-                            onChange={(e) => setFormData({ ...formData, link_relatorio: e.target.value })}
-                            placeholder="https://..."
-                          />
-                        </div>
-                        <div>
-                          <Label>Responsavel Relatorio</Label>
-                          <Select
-                            value={formData.responsavel_relatorio_id}
-                            onValueChange={(v) => setFormData({ ...formData, responsavel_relatorio_id: v })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {usuarios.map((u) => (
-                                <SelectItem key={u.id} value={u.id.toString()}>
-                                  {u.nome}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Campos de Revisão - sempre visíveis na edição */}
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-3">Revisao</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Responsavel Revisao</Label>
-                          <Select
-                            value={formData.responsavel_revisao_id}
-                            onValueChange={(v) => setFormData({ ...formData, responsavel_revisao_id: v })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {usuarios.map((u) => (
-                                <SelectItem key={u.id} value={u.id.toString()}>
-                                  {u.nome}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center gap-2 pt-8">
-                          <Checkbox
-                            id="revisao_ok"
-                            checked={formData.revisao_relatorio_ok}
-                            onCheckedChange={(c) => setFormData({ ...formData, revisao_relatorio_ok: !!c })}
-                          />
-                          <Label htmlFor="revisao_ok" className="cursor-pointer">
-                            Revisao do relatorio aprovada
-                          </Label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-4 border-t">
-                      {editingCard && (
-                        <Button variant="outline" onClick={() => setIsEditMode(false)} type="button">
-                          Cancelar
-                        </Button>
-                      )}
-                      <Button onClick={handleSubmit}>
-                        {editingCard ? 'Salvar Alteracoes' : 'Criar Task'}
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    {editingCard && (
+                      <Button variant="outline" onClick={() => setIsEditMode(false)} type="button">
+                        Cancelar
                       </Button>
-                    </div>
+                    )}
+                    <Button onClick={handleSubmit}>
+                      {editingCard ? 'Salvar Alteracoes' : 'Criar Task'}
+                    </Button>
                   </div>
                 </div>
               )}
@@ -840,120 +846,126 @@ export function GestaoTrafegoKanban({
       </div>
 
       {/* Visualizacao em Lista */}
-      {viewMode === 'list' && (
-        <ListView
-          cards={cards}
-          columns={columns}
-          projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
-          usuarios={usuarios}
-          onEdit={(card) => {
-            const fullCard = cards.find(c => c.id === card.id)
-            if (fullCard) handleEdit(fullCard)
-          }}
-          onDelete={handleDelete}
-          onStatusChange={handleStatusChange}
-        />
-      )}
+      {
+        viewMode === 'list' && (
+          <ListView
+            cards={cards}
+            columns={columns}
+            projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
+            usuarios={usuarios}
+            onEdit={(card) => {
+              const fullCard = cards.find(c => c.id === card.id)
+              if (fullCard) handleEdit(fullCard)
+            }}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+          />
+        )
+      }
 
       {/* Visualizacao em Tabela */}
-      {viewMode === 'table' && (
-        <TableView
-          cards={cards}
-          columns={columns}
-          projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
-          usuarios={usuarios}
-          onEdit={(card) => {
-            const fullCard = cards.find(c => c.id === card.id)
-            if (fullCard) handleEdit(fullCard)
-          }}
-          onDelete={handleDelete}
-          onStatusChange={handleStatusChange}
-        />
-      )}
+      {
+        viewMode === 'table' && (
+          <TableView
+            cards={cards}
+            columns={columns}
+            projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
+            usuarios={usuarios}
+            onEdit={(card) => {
+              const fullCard = cards.find(c => c.id === card.id)
+              if (fullCard) handleEdit(fullCard)
+            }}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+          />
+        )
+      }
 
       {/* Visualizacao Kanban */}
-      {viewMode === 'kanban' && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <ScrollArea className="w-full">
-            <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
-              {columns.map((column) => (
-                <Card key={column.id} className="min-h-[500px] w-[280px] shrink-0">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                      <div className={cn('w-3 h-3 rounded-full', column.color)} />
-                      <span className="truncate">{column.label}</span>
-                      <Badge variant="secondary" className="ml-auto shrink-0">
-                        {getColumnCards(column.id).length}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <DroppableColumn id={column.id}>
-                      <SortableContext
-                        items={getColumnCards(column.id).map(c => c.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {getColumnCards(column.id).map((card) => (
-                          <SortableCard
-                            key={card.id}
-                            card={card}
-                            projetos={projetos}
-                            usuarios={usuarios}
-                            onEdit={(card) => {
-                              setEditingCard(card)
-                              setFormData({
-                                titulo: card.titulo,
-                                descricao: card.descricao || '',
-                                prioridade: card.prioridade,
-                                projeto_id: card.projeto_id?.toString() || '',
-                                cliente_id: card.cliente_id?.toString() || '',
-                                trader_id: card.trader_id?.toString() || '',
-                                responsavel_relatorio_id: card.responsavel_relatorio_id?.toString() || '',
-                                responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
-                                revisao_relatorio_ok: card.revisao_relatorio_ok,
-                                link_relatorio: card.link_relatorio || '',
-                                data_vencimento: card.data_vencimento || '',
-                              })
-                              setIsEditMode(true)
-                              setIsDialogOpen(true)
-                            }}
-                            onView={(card) => {
-                              setEditingCard(card)
-                              setIsEditMode(false)
-                              setIsDialogOpen(true)
-                            }}
-                            onDelete={handleDelete}
-                            onConcluirProjeto={handleConcluirProjeto}
-                          />
-                        ))}
-                      </SortableContext>
-                      {getColumnCards(column.id).length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          Arraste cards aqui
-                        </div>
-                      )}
-                    </DroppableColumn>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-
-          <DragOverlay>
-            {activeCard && (
-              <div className="bg-card border rounded-lg p-3 shadow-lg">
-                <h4 className="font-medium text-sm">{activeCard.titulo}</h4>
+      {
+        viewMode === 'kanban' && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <ScrollArea className="w-full">
+              <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
+                {columns.map((column) => (
+                  <Card key={column.id} className="min-h-[500px] w-[280px] shrink-0">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                        <div className={cn('w-3 h-3 rounded-full', column.color)} />
+                        <span className="truncate">{column.label}</span>
+                        <Badge variant="secondary" className="ml-auto shrink-0">
+                          {getColumnCards(column.id).length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <DroppableColumn id={column.id}>
+                        <SortableContext
+                          items={getColumnCards(column.id).map(c => c.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {getColumnCards(column.id).map((card) => (
+                            <SortableCard
+                              key={card.id}
+                              card={card}
+                              projetos={projetos}
+                              usuarios={usuarios}
+                              onEdit={(card) => {
+                                setEditingCard(card)
+                                setFormData({
+                                  titulo: card.titulo,
+                                  descricao: card.descricao || '',
+                                  prioridade: card.prioridade,
+                                  projeto_id: card.projeto_id?.toString() || '',
+                                  cliente_id: card.cliente_id?.toString() || '',
+                                  trader_id: card.trader_id?.toString() || '',
+                                  responsavel_relatorio_id: card.responsavel_relatorio_id?.toString() || '',
+                                  responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
+                                  revisao_relatorio_ok: card.revisao_relatorio_ok,
+                                  link_relatorio: card.link_relatorio || '',
+                                  data_vencimento: card.data_vencimento || '',
+                                })
+                                setIsEditMode(true)
+                                setIsDialogOpen(true)
+                              }}
+                              onView={(card) => {
+                                setEditingCard(card)
+                                setIsEditMode(false)
+                                setIsDialogOpen(true)
+                              }}
+                              onDelete={handleDelete}
+                              onConcluirProjeto={handleConcluirProjeto}
+                            />
+                          ))}
+                        </SortableContext>
+                        {getColumnCards(column.id).length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            Arraste cards aqui
+                          </div>
+                        )}
+                      </DroppableColumn>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            )}
-          </DragOverlay>
-        </DndContext>
-      )}
-    </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+
+            <DragOverlay>
+              {activeCard && (
+                <div className="bg-card border rounded-lg p-3 shadow-lg">
+                  <h4 className="font-medium text-sm">{activeCard.titulo}</h4>
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        )
+      }
+    </div >
   )
 }

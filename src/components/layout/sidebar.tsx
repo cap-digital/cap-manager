@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/collapsible'
 import { useSidebar } from '@/contexts/sidebar-context'
 
+// Basic NavItem definition
 interface NavItem {
   name: string
   href: string
@@ -70,7 +71,6 @@ const mainNavigation: NavItem[] = [
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'PIs', href: '/pi', icon: FileText },
   { name: 'Projetos', href: '/projetos', icon: Briefcase },
-  { name: 'Suas Campanhas', href: '/suas-campanhas', icon: LayoutDashboard },
 ]
 
 // Subcategorias dentro de Gestão de Projetos
@@ -303,9 +303,10 @@ export function Sidebar({ user }: SidebarProps) {
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {/* Main navigation items */}
-            {mainNavigation.map(item => (
-              <NavLink key={item.name} item={item} />
-            ))}
+            {mainNavigation
+              .map(item => (
+                <NavLink key={item.name} item={item} />
+              ))}
 
             {/* Gestão de Projetos - Categoria Principal */}
             <Collapsible open={gestaoprojetosOpen && !isCollapsed} onOpenChange={() => setGestaoprojetosOpen(!gestaoprojetosOpen)}>

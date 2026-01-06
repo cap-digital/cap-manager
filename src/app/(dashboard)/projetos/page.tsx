@@ -1,6 +1,9 @@
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Header } from '@/components/layout/header'
 import { ProjetosClient } from './projetos-client'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export default async function ProjetosPage() {
   // Automaticamente finalizar projetos com data_fim passada
@@ -11,6 +14,13 @@ export default async function ProjetosPage() {
     .update({ status: 'finalizado' })
     .eq('status', 'ativo')
     .lt('data_fim', hoje)
+
+  const session = await getServerSession(authOptions)
+  if (!session || (session.user as any).role !== 'admin') {
+    redirect('/')
+  }
+
+
 
   const [projetosRes, clientesRes, usuariosRes, pisRes, agenciasRes] = await Promise.all([
     supabaseAdmin

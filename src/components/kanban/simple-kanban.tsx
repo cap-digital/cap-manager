@@ -43,22 +43,8 @@ import { cn } from '@/lib/utils'
 import { ViewToggle, ViewMode } from './view-toggle'
 import { ListView } from './list-view'
 import { TableView } from './table-view'
-
-interface CardKanban {
-  id: number
-  titulo: string
-  descricao: string | null
-  area: string
-  status: string
-  prioridade: 'baixa' | 'media' | 'alta' | 'urgente'
-  cliente_id: number | null
-  projeto_id: number | null
-  trader_id: number | null
-  data_vencimento: string | null
-  ordem: number
-  created_at: string
-  updated_at: string
-}
+import { TaskDetailsLayout } from '@/components/task-view/task-details-layout'
+import { CardKanban, AreaKanban } from '@/lib/supabase'
 
 interface SimpleKanbanProps {
   area: string
@@ -67,6 +53,7 @@ interface SimpleKanbanProps {
   projetos: { id: number; nome: string }[]
   clientes: { id: number; nome: string }[]
   usuarios: { id: number; nome: string }[]
+  usuarioLogadoId: number
 }
 
 // Colunas simples para Inteligência
@@ -90,6 +77,7 @@ function SortableCard({
   clientes,
   usuarios,
   onEdit,
+  onView,
   onDelete,
 }: {
   card: CardKanban
@@ -97,6 +85,7 @@ function SortableCard({
   clientes: { id: number; nome: string }[]
   usuarios: { id: number; nome: string }[]
   onEdit: (card: CardKanban) => void
+  onView: (card: CardKanban) => void
   onDelete: (id: number) => void
 }) {
   const {
@@ -122,9 +111,10 @@ function SortableCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'bg-card border rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing',
+        'bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all',
         isDragging && 'opacity-50'
       )}
+      onClick={() => onView(card)}
       {...attributes}
       {...listeners}
     >
@@ -231,11 +221,13 @@ export function SimpleKanban({
   projetos,
   clientes,
   usuarios,
+  usuarioLogadoId,
 }: SimpleKanbanProps) {
   const [cards, setCards] = useState<CardKanban[]>(initialCards)
   const [activeCard, setActiveCard] = useState<CardKanban | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCard, setEditingCard] = useState<CardKanban | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
   const [formData, setFormData] = useState({
     titulo: '',
@@ -297,7 +289,7 @@ export function SimpleKanban({
     const cardData = {
       titulo: formData.titulo,
       descricao: formData.descricao || null,
-      area: area,
+      area: area as AreaKanban,
       status: editingCard?.status || 'backlog',
       prioridade: formData.prioridade,
       projeto_id: formData.projeto_id ? parseInt(formData.projeto_id) : null,
@@ -312,11 +304,13 @@ export function SimpleKanban({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cardData),
       })
+      const updated = await response.json()
       setCards(cards.map(c => c.id === editingCard.id ? {
         ...c,
         ...cardData,
         updated_at: new Date().toISOString(),
       } : c))
+      setIsEditMode(false)
     } else {
       const response = await fetch('/api/cards-kanban', {
         method: 'POST',
@@ -334,6 +328,10 @@ export function SimpleKanban({
         cliente_id: newCard.clienteId,
         projeto_id: newCard.projetoId,
         trader_id: newCard.traderId,
+        responsavel_relatorio_id: newCard.responsavelRelatorioId,
+        responsavel_revisao_id: newCard.responsavelRevisaoId,
+        revisao_relatorio_ok: newCard.revisaoRelatorioOk,
+        link_relatorio: newCard.linkRelatorio,
         data_vencimento: newCard.dataVencimento?.split('T')[0] || null,
         ordem: newCard.ordem,
         created_at: newCard.createdAt,
@@ -355,6 +353,7 @@ export function SimpleKanban({
       trader_id: card.trader_id?.toString() || '',
       data_vencimento: card.data_vencimento || '',
     })
+    setIsEditMode(true)
     setIsDialogOpen(true)
   }
 
@@ -376,6 +375,7 @@ export function SimpleKanban({
       data_vencimento: '',
     })
     setEditingCard(null)
+    setIsEditMode(false)
     setIsDialogOpen(false)
   }
 
@@ -383,7 +383,6 @@ export function SimpleKanban({
     return cards.filter(c => c.status === columnId).sort((a, b) => a.ordem - b.ordem)
   }
 
-  // Handler para mudanca de status via lista/tabela
   const handleStatusChange = async (cardId: number, newStatus: string) => {
     const card = cards.find(c => c.id === cardId)
     if (!card || card.status === newStatus) return
@@ -400,19 +399,6 @@ export function SimpleKanban({
     })
   }
 
-  // Cards formatados para visualizacao lista/tabela
-  const cardsForView = cards.map(c => ({
-    id: c.id,
-    titulo: c.titulo,
-    descricao: c.descricao,
-    status: c.status,
-    prioridade: c.prioridade,
-    projeto_id: c.projeto_id,
-    cliente_id: c.cliente_id,
-    trader_id: c.trader_id,
-    data_vencimento: c.data_vencimento,
-  }))
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -421,141 +407,172 @@ export function SimpleKanban({
         </p>
         <div className="flex items-center gap-3">
           <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingCard ? 'Editar Task' : 'Nova Task'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Titulo *</Label>
-                <Input
-                  value={formData.titulo}
-                  onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                  placeholder="Titulo da task"
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open)
+            if (!open) resetForm()
+          }}>
+            <DialogTrigger asChild>
+              <Button onClick={() => {
+                resetForm()
+                setIsEditMode(true)
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className={cn(
+              "p-0 gap-0 overflow-hidden",
+              !isEditMode && "max-w-[1200px] h-[85vh] bg-transparent border-0 shadow-none sm:max-w-[1200px]"
+            )}>
+              {!isEditMode && editingCard ? (
+                <TaskDetailsLayout
+                  card={editingCard}
+                  projeto={projetos.find(p => p.id === editingCard.projeto_id) ? {
+                    ...projetos.find(p => p.id === editingCard.projeto_id)!,
+                    tipo_cobranca: 'td' // Default fallback since simple kanban doesn't have this prop usually
+                  } : undefined}
+                  traderNome={usuarios.find(u => u.id === editingCard.trader_id)?.nome}
+                  usuarios={usuarios}
+                  usuarioLogadoId={usuarioLogadoId}
+                  onClose={() => setIsDialogOpen(false)}
+                  onEdit={() => handleEdit(editingCard)}
                 />
-              </div>
-              <div>
-                <Label>Descricao</Label>
-                <Textarea
-                  value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  placeholder="Descricao da task"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Prioridade</Label>
-                  <Select
-                    value={formData.prioridade}
-                    onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Media</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="urgente">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
+              ) : (
+                <div className="bg-background w-full h-full md:max-w-2xl md:max-h-[90vh] md:h-auto overflow-y-auto p-6 rounded-lg shadow-lg mx-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCard ? 'Editar Task' : 'Nova Task'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <Label>Titulo *</Label>
+                      <Input
+                        value={formData.titulo}
+                        onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                        placeholder="Titulo da task"
+                      />
+                    </div>
+                    <div>
+                      <Label>Descricao</Label>
+                      <Textarea
+                        value={formData.descricao}
+                        onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                        placeholder="Descricao da task"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Prioridade</Label>
+                        <Select
+                          value={formData.prioridade}
+                          onValueChange={(v) => setFormData({ ...formData, prioridade: v as any })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="baixa">Baixa</SelectItem>
+                            <SelectItem value="media">Media</SelectItem>
+                            <SelectItem value="alta">Alta</SelectItem>
+                            <SelectItem value="urgente">Urgente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Data Vencimento</Label>
+                        <Input
+                          type="date"
+                          value={formData.data_vencimento}
+                          onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Projeto</Label>
+                      <Select
+                        value={formData.projeto_id}
+                        onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o projeto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projetos.map((p) => (
+                            <SelectItem key={p.id} value={p.id.toString()}>
+                              {p.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Cliente</Label>
+                      <Select
+                        value={formData.cliente_id}
+                        onValueChange={(v) => setFormData({ ...formData, cliente_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clientes.map((c) => (
+                            <SelectItem key={c.id} value={c.id.toString()}>
+                              {c.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Responsavel</Label>
+                      <Select
+                        value={formData.trader_id}
+                        onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o responsavel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuarios.map((u) => (
+                            <SelectItem key={u.id} value={u.id.toString()}>
+                              {u.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={resetForm} type="button">
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSubmit} type="button">
+                        {editingCard ? 'Salvar' : 'Criar'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Data Vencimento</Label>
-                  <Input
-                    type="date"
-                    value={formData.data_vencimento}
-                    onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>Projeto</Label>
-                <Select
-                  value={formData.projeto_id}
-                  onValueChange={(v) => setFormData({ ...formData, projeto_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o projeto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projetos.map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
-                        {p.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Cliente</Label>
-                <Select
-                  value={formData.cliente_id}
-                  onValueChange={(v) => setFormData({ ...formData, cliente_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Responsavel</Label>
-                <Select
-                  value={formData.trader_id}
-                  onValueChange={(v) => setFormData({ ...formData, trader_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o responsavel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuarios.map((u) => (
-                      <SelectItem key={u.id} value={u.id.toString()}>
-                        {u.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={resetForm}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSubmit}>
-                  {editingCard ? 'Salvar' : 'Criar'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       {/* Visualizacao em Lista */}
       {viewMode === 'list' && (
         <ListView
-          cards={cardsForView}
+          cards={cards}
           columns={columns}
           projetos={projetos}
           usuarios={usuarios}
           onEdit={(card) => {
             const fullCard = cards.find(c => c.id === card.id)
-            if (fullCard) handleEdit(fullCard)
+            if (fullCard) {
+              // For listView edit click, we want to open VIEW mode first (details layout)
+              setEditingCard(fullCard)
+              setIsEditMode(false)
+              setIsDialogOpen(true)
+            }
           }}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
@@ -565,14 +582,18 @@ export function SimpleKanban({
       {/* Visualizacao em Tabela */}
       {viewMode === 'table' && (
         <TableView
-          cards={cardsForView}
+          cards={cards}
           columns={columns}
           projetos={projetos}
           clientes={clientes}
           usuarios={usuarios}
           onEdit={(card) => {
             const fullCard = cards.find(c => c.id === card.id)
-            if (fullCard) handleEdit(fullCard)
+            if (fullCard) {
+              setEditingCard(fullCard)
+              setIsEditMode(false)
+              setIsDialogOpen(true)
+            }
           }}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
@@ -612,7 +633,12 @@ export function SimpleKanban({
                           projetos={projetos}
                           clientes={clientes}
                           usuarios={usuarios}
-                          onEdit={handleEdit}
+                          onView={(card) => {
+                            setEditingCard(card)
+                            setIsEditMode(false)
+                            setIsDialogOpen(true)
+                          }}
+                          onEdit={(card) => handleEdit(card)}
                           onDelete={handleDelete}
                         />
                       ))}
