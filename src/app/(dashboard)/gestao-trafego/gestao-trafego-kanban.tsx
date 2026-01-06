@@ -59,40 +59,13 @@ import { ViewToggle, ViewMode } from '@/components/kanban/view-toggle'
 import { ListView } from '@/components/kanban/list-view'
 import { TableView } from '@/components/kanban/table-view'
 import { TaskDetailsLayout } from '@/components/task-view/task-details-layout'
+import { CardKanban, Projeto, AreaKanban } from '@/lib/supabase'
 
-interface CardKanban {
-  id: number
-  titulo: string
-  descricao: string | null
-  area: string
-  status: string
-  prioridade: 'baixa' | 'media' | 'alta' | 'urgente'
-  cliente_id: number | null
-  projeto_id: number | null
-  trader_id: number | null
-  responsavel_relatorio_id: number | null
-  responsavel_revisao_id: number | null
-  revisao_relatorio_ok: boolean
-  link_relatorio: string | null
-  data_vencimento: string | null
-  ordem: number
-  created_at: string
-  updated_at: string
-}
 
-interface Projeto {
-  id: number
-  nome: string
-  tipo_cobranca: string
-  data_fim: string | null
-  revisao_final_ok: boolean
-  cliente: { id: number; nome: string } | null
-  trader: { id: number; nome: string } | null
-}
 
 interface GestaoTrafegoKanbanProps {
   cards: CardKanban[]
-  projetos: Projeto[]
+  projetos: { id: number; nome: string; tipo_cobranca: string }[]
   clientes: { id: number; nome: string }[]
   usuarios: { id: number; nome: string }[]
   usuarioLogadoId: number
@@ -128,7 +101,7 @@ function SortableCard({
   onConcluirProjeto,
 }: {
   card: CardKanban
-  projetos: Projeto[]
+  projetos: { id: number; nome: string; tipo_cobranca: string }[]
   usuarios: { id: number; nome: string }[]
   onEdit: (card: CardKanban) => void
   onView: (card: CardKanban) => void
@@ -430,7 +403,7 @@ export function GestaoTrafegoKanban({
     const cardData = {
       titulo: formData.titulo,
       descricao: formData.descricao || null,
-      area: 'gestao_trafego',
+      area: 'gestao_trafego' as AreaKanban,
       status: editingCard?.status || 'backlog',
       prioridade: formData.prioridade,
       projeto_id: formData.projeto_id ? parseInt(formData.projeto_id) : null,
@@ -638,18 +611,7 @@ export function GestaoTrafegoKanban({
     })
   }
 
-  // Cards formatados para visualização lista/tabela
-  const cardsForView = cards.map(c => ({
-    id: c.id,
-    titulo: c.titulo,
-    descricao: c.descricao,
-    status: c.status,
-    prioridade: c.prioridade,
-    projeto_id: c.projeto_id,
-    cliente_id: c.cliente_id,
-    trader_id: c.trader_id,
-    data_vencimento: c.data_vencimento,
-  }))
+
 
   return (
     <div className="space-y-4">
@@ -861,7 +823,7 @@ export function GestaoTrafegoKanban({
 
                     <div className="flex justify-end gap-2 pt-4 border-t">
                       {editingCard && (
-                        <Button type="button" variant="outline" onClick={() => setIsEditMode(false)} type="button">
+                        <Button variant="outline" onClick={() => setIsEditMode(false)} type="button">
                           Cancelar
                         </Button>
                       )}
@@ -880,7 +842,7 @@ export function GestaoTrafegoKanban({
       {/* Visualizacao em Lista */}
       {viewMode === 'list' && (
         <ListView
-          cards={cardsForView}
+          cards={cards}
           columns={columns}
           projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
           usuarios={usuarios}
@@ -896,7 +858,7 @@ export function GestaoTrafegoKanban({
       {/* Visualizacao em Tabela */}
       {viewMode === 'table' && (
         <TableView
-          cards={cardsForView}
+          cards={cards}
           columns={columns}
           projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
           usuarios={usuarios}

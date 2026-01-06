@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 
 interface TaskDetailsLayoutProps {
     card: CardKanban
-    projeto?: Projeto
+    projeto?: { id: number; nome: string; tipo_cobranca: string }
     traderNome?: string
     usuarios: { id: number; nome: string }[]
     usuarioLogadoId: number

@@ -24,13 +24,13 @@ import Link from 'next/link'
 interface CardKanban {
   id: number
   titulo: string
-  descricao: string | null
+  descricao?: string | null
   status: string
   prioridade: 'baixa' | 'media' | 'alta' | 'urgente'
-  projeto_id: number | null
-  cliente_id: number | null
-  trader_id: number | null
-  data_vencimento: string | null
+  projeto_id?: number | null
+  cliente_id?: number | null
+  trader_id?: number | null
+  data_vencimento?: string | null
 }
 
 interface Column {
