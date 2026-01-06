@@ -173,7 +173,7 @@ export function TaskDetailsLayout({
 
             {/* Right Column - Activity */}
             <div className="w-full md:w-[400px] flex-shrink-0 border-l bg-muted/5">
-                <TaskActivity tarefaId={card.id} usuarioLogadoId={usuarioLogadoId} />
+                <TaskActivity tarefaId={card.id} usuarioLogadoId={usuarioLogadoId} usuarios={usuarios} />
             </div>
         </div>
     )

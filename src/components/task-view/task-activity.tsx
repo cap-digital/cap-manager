@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { CardKanban, Comentario } from '@/lib/supabase'
+import { useState, useEffect, useRef } from 'react'
+import { Comentario } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -12,12 +12,19 @@ import { cn } from '@/lib/utils'
 interface TaskActivityProps {
     tarefaId: number
     usuarioLogadoId: number
+    usuarios: { id: number; nome: string }[]
 }
 
-export function TaskActivity({ tarefaId, usuarioLogadoId }: TaskActivityProps) {
+export function TaskActivity({ tarefaId, usuarioLogadoId, usuarios }: TaskActivityProps) {
     const [comentarios, setComentarios] = useState<Comentario[]>([])
     const [novoComentario, setNovoComentario] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+
+    // Mention state
+    const [showMentions, setShowMentions] = useState(false)
+    const [mentionQuery, setMentionQuery] = useState('')
+    const [cursorPosition, setCursorPosition] = useState(0)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     const fetchComentarios = async () => {
         const res = await fetch(`/api/comentarios?tarefa_id=${tarefaId}`)
@@ -49,8 +56,67 @@ export function TaskActivity({ tarefaId, usuarioLogadoId }: TaskActivityProps) {
         setIsLoading(false)
     }
 
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const value = e.target.value
+        const selectionStart = e.target.selectionStart
+        setNovoComentario(value)
+        setCursorPosition(selectionStart)
+
+        // Check for @
+        const textBeforeCursor = value.slice(0, selectionStart)
+        const lastAt = textBeforeCursor.lastIndexOf('@')
+
+        if (lastAt !== -1) {
+            const textAfterAt = textBeforeCursor.slice(lastAt + 1)
+            // Show mention list if @ is at start or preceded by space, and no spaces in query yet
+            if ((lastAt === 0 || textBeforeCursor[lastAt - 1] === ' ') && !textAfterAt.includes(' ')) {
+                setShowMentions(true)
+                setMentionQuery(textAfterAt)
+                return
+            }
+        }
+        setShowMentions(false)
+    }
+
+    const insertMention = (usuario: { id: number; nome: string }) => {
+        const textBeforeCursor = novoComentario.slice(0, cursorPosition) // Text so far
+        const lastAt = textBeforeCursor.lastIndexOf('@')
+        const prefix = novoComentario.slice(0, lastAt)
+        const suffix = novoComentario.slice(cursorPosition)
+
+        const newValue = `${prefix}@${usuario.nome} ${suffix}`
+        setNovoComentario(newValue)
+        setShowMentions(false)
+
+        // Return focus
+        if (textareaRef.current) {
+            textareaRef.current.focus()
+        }
+    }
+
+    const filteredUsers = usuarios.filter(u =>
+        u.nome.toLowerCase().includes(mentionQuery.toLowerCase())
+    )
+
+    const renderConteudo = (conteudo: string) => {
+        // Simple regex to highlight @Nome
+        // Note: This matches @Word. For perfect matching with user IDs, we'd need a structured format or more complex regex.
+        // For now, highlighting any @Word is a good MVP.
+        const parts = conteudo.split(/(@\w+)/g)
+        return parts.map((part, i) => {
+            if (part.startsWith('@')) {
+                return (
+                    <span key={i} className="text-blue-500 font-semibold bg-blue-500/10 rounded px-1">
+                        {part}
+                    </span>
+                )
+            }
+            return part
+        })
+    }
+
     return (
-        <div className="flex flex-col h-full bg-muted/10 border-l">
+        <div className="flex flex-col h-full bg-muted/10 border-l relative">
             <div className="p-4 border-b bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/20">
                 <h3 className="font-semibold flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
@@ -82,7 +148,7 @@ export function TaskActivity({ tarefaId, usuarioLogadoId }: TaskActivityProps) {
                                     </span>
                                 </div>
                                 <div className="text-sm bg-muted/50 p-2 rounded-md whitespace-pre-wrap">
-                                    {comentario.conteudo}
+                                    {renderConteudo(comentario.conteudo)}
                                 </div>
                             </div>
                         </div>
@@ -90,12 +156,36 @@ export function TaskActivity({ tarefaId, usuarioLogadoId }: TaskActivityProps) {
                 </div>
             </ScrollArea>
 
+            {/* Mention Suggestions Popover */}
+            {showMentions && filteredUsers.length > 0 && (
+                <div className="absolute bottom-[100px] left-4 z-50 w-64 bg-popover text-popover-foreground shadow-md rounded-md border p-1 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="text-xs text-muted-foreground px-2 py-1.5 font-medium border-b mb-1">
+                        Mencionar...
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                        {filteredUsers.map(user => (
+                            <button
+                                key={user.id}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-accent hover:text-accent-foreground rounded-sm text-sm transition-colors text-left"
+                                onClick={() => insertMention(user)}
+                            >
+                                <Avatar className="h-6 w-6">
+                                    <AvatarFallback>{user.nome[0]}</AvatarFallback>
+                                </Avatar>
+                                <span>{user.nome}</span>
+                            </button>
+                        ))}
+                    </ScrollArea>
+                </div>
+            )}
+
             <div className="p-4 border-t bg-background">
                 <div className="flex gap-2">
                     <Textarea
-                        placeholder="Escreva um comentário..."
+                        ref={textareaRef}
+                        placeholder="Escreva um comentário... (@ para mencionar)"
                         value={novoComentario}
-                        onChange={(e) => setNovoComentario(e.target.value)}
+                        onChange={handleTextChange}
                         className="min-h-[80px] resize-none"
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
