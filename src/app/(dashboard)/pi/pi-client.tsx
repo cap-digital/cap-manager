@@ -34,14 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import {
   Plus,
@@ -496,85 +489,74 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
         </Dialog>
       </div>
 
-      {/* Table */}
+      {/* PIs Grid */}
       {filteredPis.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de PIs</CardTitle>
-            <CardDescription>
-              {filteredPis.length} PI(s) encontrado(s)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Identificador</TableHead>
-                  <TableHead>Agência</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead className="text-right">Valor Bruto</TableHead>
-                  <TableHead className="text-center">Projetos</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPis.map(pi => (
-                  <TableRow key={pi.id}>
-                    <TableCell className="font-medium">{pi.identificador}</TableCell>
-                    <TableCell>
-                      {pi.agencia ? (
-                        <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3" />
-                          {pi.agencia.nome}
-                        </span>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {pi.cliente ? (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {pi.cliente.nome}
-                        </span>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-green-600">
-                      {formatCurrency(pi.valor_bruto)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <Megaphone className="h-3 w-3" />
-                        {pi.projetos_count}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(pi)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(pi)}
-                            className="text-destructive"
-                            disabled={pi.projetos_count > 0}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filteredPis.map(pi => (
+            <Card key={pi.id} className="group">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="p-2 rounded-lg bg-primary/10 mt-1">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {pi.identificador}
+                      <Badge variant="outline" className="ml-auto">
+                        {pi.projetos_count} projeto{pi.projetos_count !== 1 ? 's' : ''}
+                      </Badge>
+                    </CardTitle>
+                    {pi.agencia && (
+                      <CardDescription className="flex items-center gap-1 mt-1">
+                        <Building2 className="h-3 w-3" />
+                        {pi.agencia.nome}
+                      </CardDescription>
+                    )}
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openEditDialog(pi)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDelete(pi)}
+                      className="text-destructive"
+                      disabled={pi.projetos_count > 0}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pi.cliente && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{pi.cliente.nome}</span>
+                  </div>
+                )}
+                <div className="pt-2 border-t">
+                  <p className="text-sm text-muted-foreground mb-1">Valor Bruto</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency(pi.valor_bruto)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card className="p-12">
           <div className="text-center">
