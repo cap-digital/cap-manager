@@ -50,7 +50,8 @@ import {
   Edit,
   Link2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -297,6 +298,12 @@ export function GestaoTrafegoKanban({
   const [editingCard, setEditingCard] = useState<CardKanban | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
+
+  // Filter states
+  const [responsavelFilter, setResponsavelFilter] = useState<string>('all')
+  const [clienteFilter, setClienteFilter] = useState<string>('all')
+  const [tipoCobrancaFilter, setTipoCobrancaFilter] = useState<string>('all')
+
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -308,6 +315,7 @@ export function GestaoTrafegoKanban({
     responsavel_revisao_id: '',
     revisao_relatorio_ok: false,
     link_relatorio: '',
+    data_inicio: '',
     data_vencimento: '',
   })
 
@@ -475,6 +483,7 @@ export function GestaoTrafegoKanban({
       responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
       revisao_relatorio_ok: card.revisao_relatorio_ok,
       link_relatorio: card.link_relatorio || '',
+      data_inicio: (card as any).data_inicio || '',
       data_vencimento: card.data_vencimento || '',
     })
     setIsEditMode(true)
@@ -550,6 +559,7 @@ export function GestaoTrafegoKanban({
       responsavel_revisao_id: '',
       revisao_relatorio_ok: false,
       link_relatorio: '',
+      data_inicio: '',
       data_vencimento: '',
     })
     setEditingCard(null)
@@ -558,7 +568,23 @@ export function GestaoTrafegoKanban({
   }
 
   const getColumnCards = (columnId: string) => {
-    return cards.filter(c => c.status === columnId).sort((a, b) => a.ordem - b.ordem)
+    return cards.filter(c => {
+      if (c.status !== columnId) return false
+
+      // Filter by responsible (trader)
+      if (responsavelFilter !== 'all' && c.trader_id !== parseInt(responsavelFilter)) return false
+
+      // Filter by client
+      if (clienteFilter !== 'all' && c.cliente_id !== parseInt(clienteFilter)) return false
+
+      // Filter by TD/FEE (based on linked project)
+      if (tipoCobrancaFilter !== 'all') {
+        const projeto = projetos.find(p => p.id === c.projeto_id)
+        if (!projeto || projeto.tipo_cobranca !== tipoCobrancaFilter) return false
+      }
+
+      return true
+    }).sort((a, b) => a.ordem - b.ordem)
   }
 
   // Campos visíveis baseado no status atual
@@ -619,7 +645,7 @@ export function GestaoTrafegoKanban({
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Fluxo: Backlog → Para Fazer → Em Execucao → Projeto Finalizado → Relatorio A Fazer → Revisao → Finalizado
+            Fluxo: Backlog → Para Fazer → Em Execucao → Campanha Finalizada → Relatorio A Fazer → Revisao → Finalizado
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -704,7 +730,15 @@ export function GestaoTrafegoKanban({
                           </Select>
                         </div>
                         <div>
-                          <Label>Prazo</Label>
+                          <Label>Data de Início</Label>
+                          <Input
+                            type="date"
+                            value={formData.data_inicio}
+                            onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Data Final</Label>
                           <Input
                             type="date"
                             value={formData.data_vencimento}
@@ -845,6 +879,71 @@ export function GestaoTrafegoKanban({
         </div>
       </div>
 
+      {/* Filter Bar */}
+      <Card className="p-4">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Responsável</Label>
+            <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {usuarios.map(u => (
+                  <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Cliente</Label>
+            <Select value={clienteFilter} onValueChange={setClienteFilter}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {clientes.map(c => (
+                  <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Tipo</Label>
+            <Select value={tipoCobrancaFilter} onValueChange={setTipoCobrancaFilter}>
+              <SelectTrigger className="w-[100px] h-9">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="td">TD</SelectItem>
+                <SelectItem value="fee">FEE</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(responsavelFilter !== 'all' || clienteFilter !== 'all' || tipoCobrancaFilter !== 'all') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9"
+              onClick={() => {
+                setResponsavelFilter('all')
+                setClienteFilter('all')
+                setTipoCobrancaFilter('all')
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Limpar
+            </Button>
+          )}
+        </div>
+      </Card>
+
       {/* Visualizacao em Lista */}
       {
         viewMode === 'list' && (
@@ -928,6 +1027,7 @@ export function GestaoTrafegoKanban({
                                   responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
                                   revisao_relatorio_ok: card.revisao_relatorio_ok,
                                   link_relatorio: card.link_relatorio || '',
+                                  data_inicio: (card as any).data_inicio || '',
                                   data_vencimento: card.data_vencimento || '',
                                 })
                                 setIsEditMode(true)

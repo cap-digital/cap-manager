@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -317,9 +318,16 @@ export function ProjetosClient({
                 {projetosDoCliente.map(projeto => {
                   const dias = getDiasAteAcabar(projeto.data_fim)
                   return (
-                    <Card key={projeto.id} className="hover:shadow-md transition-shadow relative group">
-                      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(projeto)}>
+                    <Card
+                      key={projeto.id}
+                      className="hover:shadow-md transition-shadow relative group cursor-pointer"
+                      onClick={() => router.push(`/projetos/${projeto.id}`)}
+                    >
+                      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/projetos/${projeto.id}`) }}>
+                          <Eye className="h-4 w-4 mr-2" /> Ver
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(projeto) }}>
                           <Pencil className="h-4 w-4 mr-2" /> Editar
                         </Button>
                       </div>

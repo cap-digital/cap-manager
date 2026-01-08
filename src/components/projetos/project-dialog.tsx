@@ -850,6 +850,40 @@ export function ProjectDialog({
                                         </div>
                                     </div>
 
+                                    {/* Delivery and Estimation Fields */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Entrega Contratada</Label>
+                                            <Input
+                                                type="number"
+                                                step="1"
+                                                value={estrategiaForm.entrega_contratada}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))}
+                                                placeholder="Ex: 10000"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Estimativa Resultado</Label>
+                                            <Input
+                                                type="number"
+                                                step="1"
+                                                value={estrategiaForm.estimativa_resultado}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_resultado: e.target.value }))}
+                                                placeholder="Ex: 500"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Estimativa Sucesso (%)</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.1"
+                                                value={estrategiaForm.estimativa_sucesso}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_sucesso: e.target.value }))}
+                                                placeholder="Ex: 85"
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div className="flex justify-end gap-2 pt-2">
                                         <Button type="button" variant="outline" onClick={() => setIsEstrategiaOpen(false)}>Cancelar</Button>
                                         <Button type="submit" disabled={isLoading}>{editingEstrategia ? 'Salvar Alterações' : 'Adicionar'}</Button>

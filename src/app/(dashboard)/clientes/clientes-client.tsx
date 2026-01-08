@@ -78,13 +78,15 @@ const tiposCobranca = [
 
 export function ClientesClient({
   clientes: initialClientes,
-  agencias,
+  agencias: initialAgencias,
 }: ClientesClientProps) {
   const [clientes, setClientes] = useState(initialClientes)
+  const [agencias, setAgencias] = useState(initialAgencias)
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [editingCliente, setEditingCliente] = useState<SimplifiedCliente | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingAgencias, setIsLoadingAgencias] = useState(false)
   const [formData, setFormData] = useState({
     nome: '',
     agencia_id: null as number | null,
@@ -96,6 +98,22 @@ export function ClientesClient({
   })
   const router = useRouter()
   const { toast } = useToast()
+
+  // Fetch agencies dynamically when dialog opens
+  const fetchAgencias = async () => {
+    setIsLoadingAgencias(true)
+    try {
+      const response = await fetch('/api/agencias')
+      if (response.ok) {
+        const data = await response.json()
+        setAgencias(data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar agências:', error)
+    } finally {
+      setIsLoadingAgencias(false)
+    }
+  }
 
   const filteredClientes = clientes.filter(
     cliente =>
@@ -176,13 +194,13 @@ export function ClientesClient({
               ? {
                 ...c,
                 nome: data.nome,
-                agencia_id: data.agenciaId,
+                agencia_id: data.agencia_id,
                 agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome, cnpj: null, telefone: null, email: null, contato: null, created_at: '', updated_at: '' } : null,
                 contato: data.contato,
                 cnpj: data.cnpj,
                 email: data.email,
                 whatsapp: data.whatsapp,
-                tipo_cobranca: data.tipoCobranca,
+                tipo_cobranca: data.tipo_cobranca,
               }
               : c
           )
@@ -205,16 +223,16 @@ export function ClientesClient({
           {
             id: data.id,
             nome: data.nome,
-            agencia_id: data.agenciaId,
+            agencia_id: data.agencia_id,
             agencia: data.agencia ? { id: data.agencia.id, nome: data.agencia.nome, cnpj: null, telefone: null, email: null, contato: null, created_at: '', updated_at: '' } : null,
             contato: data.contato,
             cnpj: data.cnpj,
             email: data.email,
             whatsapp: data.whatsapp,
-            tipo_cobranca: data.tipoCobranca,
+            tipo_cobranca: data.tipo_cobranca,
             ativo: data.ativo,
-            created_at: data.createdAt,
-            updated_at: data.updatedAt,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
           },
         ])
         toast({ title: 'Cliente criado com sucesso!' })
@@ -274,7 +292,11 @@ export function ClientesClient({
           open={isOpen}
           onOpenChange={open => {
             setIsOpen(open)
-            if (!open) resetForm()
+            if (open) {
+              fetchAgencias() // Fetch fresh agencies when dialog opens
+            } else {
+              resetForm()
+            }
           }}
         >
           <DialogTrigger asChild>

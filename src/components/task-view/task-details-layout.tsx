@@ -4,9 +4,10 @@ import { CardKanban, Projeto } from '@/lib/supabase'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import Link from 'next/link'
 import {
     Calendar, Folder, User, CheckCircle2,
-    MoreHorizontal, X, MessageSquare, Clock, Tag, ChevronRight, Edit
+    MoreHorizontal, X, MessageSquare, Clock, Tag, ChevronRight, Edit, ExternalLink
 } from 'lucide-react'
 import { TaskActivity } from './task-activity'
 import { SubtaskList } from '@/app/(dashboard)/gestao-trafego/subtask-list'
@@ -136,13 +137,17 @@ export function TaskDetailsLayout({
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {projeto && (
-                                    <div className="bg-muted/20 p-3 rounded-md flex items-center gap-3">
+                                    <Link
+                                        href={`/projetos/${projeto.id}`}
+                                        className="bg-muted/20 p-3 rounded-md flex items-center gap-3 hover:bg-muted/40 transition-colors cursor-pointer group"
+                                    >
                                         <Folder className="h-5 w-5 text-primary" />
-                                        <div>
+                                        <div className="flex-1">
                                             <p className="text-xs text-muted-foreground font-medium uppercase">Projeto</p>
                                             <p className="text-sm font-medium">{projeto.nome}</p>
                                         </div>
-                                    </div>
+                                        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </Link>
                                 )}
                                 {card.cliente_id && (
                                     <div className="bg-muted/20 p-3 rounded-md flex items-center gap-3">

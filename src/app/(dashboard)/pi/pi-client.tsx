@@ -48,6 +48,7 @@ import {
   Megaphone,
   Building2,
   Users,
+  X,
 } from 'lucide-react'
 import { formatCurrency, maskCurrency, parseCurrency } from '@/lib/utils'
 import type { Agencia, Cliente } from '@/types'
@@ -88,6 +89,13 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
   const [isOpen, setIsOpen] = useState(false)
   const [editingPi, setEditingPi] = useState<Pi | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Filter states
+  const [agenciaFilter, setAgenciaFilter] = useState<string>('all')
+  const [clienteFilter, setClienteFilter] = useState<string>('all')
+  const [minValorFilter, setMinValorFilter] = useState<string>('')
+  const [maxValorFilter, setMaxValorFilter] = useState<string>('')
+
   const [formData, setFormData] = useState({
     identificador: '',
     valor_bruto: '',
@@ -102,11 +110,26 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
     ? clientes.filter(c => c.agencia_id === formData.agencia_id || !c.agencia_id)
     : clientes
 
-  const filteredPis = pis.filter(pi =>
-    pi.identificador.toLowerCase().includes(search.toLowerCase()) ||
-    (pi.agencia && pi.agencia.nome.toLowerCase().includes(search.toLowerCase())) ||
-    (pi.cliente && pi.cliente.nome.toLowerCase().includes(search.toLowerCase()))
-  )
+  // Filtrar clientes para o filtro baseado na agência filtrada
+  const clientesParaFiltro = agenciaFilter !== 'all'
+    ? clientes.filter(c => c.agencia_id === parseInt(agenciaFilter) || !c.agencia_id)
+    : clientes
+
+  const filteredPis = pis.filter(pi => {
+    const matchesSearch =
+      pi.identificador.toLowerCase().includes(search.toLowerCase()) ||
+      (pi.agencia && pi.agencia.nome.toLowerCase().includes(search.toLowerCase())) ||
+      (pi.cliente && pi.cliente.nome.toLowerCase().includes(search.toLowerCase()))
+
+    const matchesAgencia = agenciaFilter === 'all' || pi.agencia_id === parseInt(agenciaFilter)
+    const matchesCliente = clienteFilter === 'all' || pi.cliente_id === parseInt(clienteFilter)
+
+    const minValor = minValorFilter ? parseCurrency(minValorFilter) : 0
+    const maxValor = maxValorFilter ? parseCurrency(maxValorFilter) : Infinity
+    const matchesValor = pi.valor_bruto >= minValor && pi.valor_bruto <= maxValor
+
+    return matchesSearch && matchesAgencia && matchesCliente && matchesValor
+  })
 
   const totalValor = pis.reduce((acc, pi) => acc + pi.valor_bruto, 0)
 
@@ -352,142 +375,229 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
       </div>
 
       {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar PIs..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar PIs..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button onClick={() => setIsOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo PI
+          </Button>
         </div>
 
-        <Dialog
-          open={isOpen}
-          onOpenChange={open => {
-            setIsOpen(open)
-            if (!open) resetForm()
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo PI
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>{editingPi ? 'Editar PI' : 'Novo PI'}</DialogTitle>
-                <DialogDescription>
-                  {editingPi
-                    ? 'Atualize os dados do PI'
-                    : 'Preencha os dados para criar um novo PI'}
-                </DialogDescription>
-              </DialogHeader>
+        {/* Filters Bar */}
+        <Card className="p-4">
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Agência</Label>
+              <Select value={agenciaFilter} onValueChange={v => {
+                setAgenciaFilter(v)
+                if (v !== agenciaFilter) setClienteFilter('all') // Reset cliente when agencia changes
+              }}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {agencias.map(a => (
+                    <SelectItem key={a.id} value={a.id.toString()}>{a.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="identificador">Identificador do PI *</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground font-medium">PI - </span>
-                    <Input
-                      id="identificador"
-                      placeholder="Ex: 2024-001"
-                      value={formData.identificador}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, identificador: e.target.value }))
-                      }
-                      required
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Cliente</Label>
+              <Select value={clienteFilter} onValueChange={setClienteFilter}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {clientesParaFiltro.map(c => (
+                    <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="valor_bruto">Valor Bruto Total *</Label>
+            <div className="h-9 border-l mx-1" />
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Valor Mínimo</Label>
+              <Input
+                placeholder="R$ 0,00"
+                value={minValorFilter}
+                onChange={e => setMinValorFilter(maskCurrency(e.target.value))}
+                className="w-[130px] h-9"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Valor Máximo</Label>
+              <Input
+                placeholder="R$ 999.999,99"
+                value={maxValorFilter}
+                onChange={e => setMaxValorFilter(maskCurrency(e.target.value))}
+                className="w-[130px] h-9"
+              />
+            </div>
+
+            {(agenciaFilter !== 'all' || clienteFilter !== 'all' || minValorFilter || maxValorFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  setAgenciaFilter('all')
+                  setClienteFilter('all')
+                  setMinValorFilter('')
+                  setMaxValorFilter('')
+                }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
+            )}
+
+            <div className="ml-auto text-sm text-muted-foreground">
+              {filteredPis.length} PI(s)
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <Dialog
+        open={isOpen}
+        onOpenChange={open => {
+          setIsOpen(open)
+          if (!open) resetForm()
+        }}
+      >
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo PI
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>{editingPi ? 'Editar PI' : 'Novo PI'}</DialogTitle>
+              <DialogDescription>
+                {editingPi
+                  ? 'Atualize os dados do PI'
+                  : 'Preencha os dados para criar um novo PI'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="identificador">Identificador do PI *</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground font-medium">PI - </span>
                   <Input
-                    id="valor_bruto"
-                    type="text"
-                    placeholder="R$ 0,00"
-                    value={formData.valor_bruto}
+                    id="identificador"
+                    placeholder="Ex: 2024-001"
+                    value={formData.identificador}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, valor_bruto: maskCurrency(e.target.value) }))
+                      setFormData(prev => ({ ...prev, identificador: e.target.value }))
                     }
                     required
+                    className="flex-1"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="agencia_id">Agência *</Label>
-                  <Select
-                    value={formData.agencia_id?.toString() || ''}
-                    onValueChange={value =>
-                      setFormData(prev => ({
-                        ...prev,
-                        agencia_id: value ? parseInt(value) : null,
-                        cliente_id: null // Reset cliente quando agência muda
-                      }))
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma agência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {agencias.map(agencia => (
-                        <SelectItem key={agencia.id} value={agencia.id.toString()}>
-                          {agencia.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cliente_id">Cliente *</Label>
-                  <Select
-                    value={formData.cliente_id?.toString() || ''}
-                    onValueChange={value =>
-                      setFormData(prev => ({ ...prev, cliente_id: value ? parseInt(value) : null }))
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredClientes.map(cliente => (
-                        <SelectItem key={cliente.id} value={cliente.id.toString()}>
-                          {cliente.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsOpen(false)
-                    resetForm()
-                  }}
+              <div className="space-y-2">
+                <Label htmlFor="valor_bruto">Valor Bruto Total *</Label>
+                <Input
+                  id="valor_bruto"
+                  type="text"
+                  placeholder="R$ 0,00"
+                  value={formData.valor_bruto}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, valor_bruto: maskCurrency(e.target.value) }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agencia_id">Agência *</Label>
+                <Select
+                  value={formData.agencia_id?.toString() || ''}
+                  onValueChange={value =>
+                    setFormData(prev => ({
+                      ...prev,
+                      agencia_id: value ? parseInt(value) : null,
+                      cliente_id: null // Reset cliente quando agência muda
+                    }))
+                  }
+                  required
                 >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {editingPi ? 'Salvar' : 'Criar'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma agência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agencias.map(agencia => (
+                      <SelectItem key={agencia.id} value={agencia.id.toString()}>
+                        {agencia.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cliente_id">Cliente *</Label>
+                <Select
+                  value={formData.cliente_id?.toString() || ''}
+                  onValueChange={value =>
+                    setFormData(prev => ({ ...prev, cliente_id: value ? parseInt(value) : null }))
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredClientes.map(cliente => (
+                      <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                        {cliente.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsOpen(false)
+                  resetForm()
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {editingPi ? 'Salvar' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* PIs Grid */}
       {filteredPis.length > 0 ? (
