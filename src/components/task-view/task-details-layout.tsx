@@ -139,14 +139,14 @@ export function TaskDetailsLayout({
                                 {projeto && (
                                     <Link
                                         href={`/projetos/${projeto.id}`}
-                                        className="bg-muted/20 p-3 rounded-md flex items-center gap-3 hover:bg-muted/40 transition-colors cursor-pointer group"
+                                        className="bg-muted/20 p-3 rounded-md flex items-center gap-3 hover:bg-muted/40 transition-colors cursor-pointer group border border-transparent hover:border-blue-200"
                                     >
-                                        <Folder className="h-5 w-5 text-primary" />
+                                        <Folder className="h-5 w-5 text-blue-600" />
                                         <div className="flex-1">
                                             <p className="text-xs text-muted-foreground font-medium uppercase">Projeto</p>
-                                            <p className="text-sm font-medium">{projeto.nome}</p>
+                                            <p className="text-sm font-medium text-blue-700 group-hover:underline">{projeto.nome}</p>
                                         </div>
-                                        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <ExternalLink className="h-4 w-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </Link>
                                 )}
                                 {card.cliente_id && (

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 
+    revalidatePath('/', 'layout')
     return NextResponse.json(agencia)
   } catch (error) {
     console.error('Erro ao criar agência:', error)
@@ -102,6 +104,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 
+    revalidatePath('/', 'layout')
     return NextResponse.json(agencia)
   } catch (error) {
     console.error('Erro ao atualizar agência:', error)
@@ -133,6 +136,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 
+    revalidatePath('/', 'layout')
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Erro ao excluir agência:', error)

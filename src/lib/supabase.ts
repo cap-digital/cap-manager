@@ -255,6 +255,8 @@ export interface CardKanban {
   link_relatorio?: string | null
   faturamento_card_id?: number | null
   data_vencimento?: string | null
+  data_inicio?: string | null
+  observador_id?: number | null
   ordem: number
   created_at: string
   updated_at: string

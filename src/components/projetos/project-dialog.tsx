@@ -798,7 +798,7 @@ export function ProjectDialog({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                             <Label>Objetivo / Estrategia</Label>
                                             <Select value={estrategiaForm.estrategia} onValueChange={v => setEstrategiaForm(p => ({ ...p, estrategia: v }))}>
@@ -816,6 +816,16 @@ export function ProjectDialog({
                                                     {kpiOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Entrega Contratada</Label>
+                                            <Input
+                                                type="number"
+                                                step="1"
+                                                value={estrategiaForm.entrega_contratada}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))}
+                                                placeholder="Ex: 10000"
+                                            />
                                         </div>
                                     </div>
 
@@ -851,17 +861,8 @@ export function ProjectDialog({
                                     </div>
 
                                     {/* Delivery and Estimation Fields */}
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Entrega Contratada</Label>
-                                            <Input
-                                                type="number"
-                                                step="1"
-                                                value={estrategiaForm.entrega_contratada}
-                                                onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))}
-                                                placeholder="Ex: 10000"
-                                            />
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Removed Entrega Contratada from here as it was moved up */}
                                         <div className="space-y-2">
                                             <Label>Estimativa Resultado</Label>
                                             <Input

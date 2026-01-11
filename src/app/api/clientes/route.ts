@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       agencia: cliente.agencias,
     }
 
+    revalidatePath('/', 'layout')
     return NextResponse.json(transformedCliente)
   } catch (error) {
     console.error('Erro ao criar cliente:', error)
@@ -119,6 +121,7 @@ export async function PUT(request: Request) {
       agencia: cliente.agencias,
     }
 
+    revalidatePath('/', 'layout')
     return NextResponse.json(transformedCliente)
   } catch (error) {
     console.error('Erro ao atualizar cliente:', error)
@@ -149,6 +152,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 
+    revalidatePath('/', 'layout')
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Erro ao excluir cliente:', error)

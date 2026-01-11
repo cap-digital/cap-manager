@@ -103,7 +103,7 @@ export function ClientesClient({
   const fetchAgencias = async () => {
     setIsLoadingAgencias(true)
     try {
-      const response = await fetch('/api/agencias')
+      const response = await fetch('/api/agencias', { cache: 'no-store' })
       if (response.ok) {
         const data = await response.json()
         setAgencias(data)
@@ -183,7 +183,10 @@ export function ClientesClient({
           body: JSON.stringify(payload),
         })
 
-        if (!response.ok) throw new Error('Erro ao atualizar cliente')
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Erro ao atualizar cliente')
+        }
 
         const data = await response.json()
 
@@ -213,7 +216,10 @@ export function ClientesClient({
           body: JSON.stringify(payload),
         })
 
-        if (!response.ok) throw new Error('Erro ao criar cliente')
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Erro ao criar cliente')
+        }
 
         const data = await response.json()
 

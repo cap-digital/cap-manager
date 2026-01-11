@@ -51,7 +51,8 @@ import {
   Link2,
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  Eye
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -127,6 +128,7 @@ function SortableCard({
   const trader = usuarios.find(u => u.id === card.trader_id)
   const responsavelRelatorio = usuarios.find(u => u.id === card.responsavel_relatorio_id)
   const responsavelRevisao = usuarios.find(u => u.id === card.responsavel_revisao_id)
+  const observador = usuarios.find(u => u.id === card.observador_id)
 
   const isRelatorioFinalizado = card.status === 'relatorio_finalizado'
 
@@ -220,6 +222,12 @@ function SortableCard({
             Revisao: {responsavelRevisao.nome}
           </span>
         )}
+        {observador && (
+          <span className="flex items-center gap-1">
+            <Eye className="h-3 w-3 text-purple-500" />
+            Obs: {observador.nome}
+          </span>
+        )}
         {card.data_vencimento && (
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
@@ -241,23 +249,25 @@ function SortableCard({
       </div>
 
       {/* Botão de ação para relatório finalizado */}
-      {isRelatorioFinalizado && card.link_relatorio && card.revisao_relatorio_ok && (
-        <div className="flex gap-2 mt-3 pt-2 border-t">
-          <Button
-            size="sm"
-            variant="default"
-            className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
-            onClick={(e) => {
-              e.stopPropagation()
-              onConcluirProjeto(card)
-            }}
-          >
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Concluir Projeto
-          </Button>
-        </div>
-      )}
-    </div>
+      {
+        isRelatorioFinalizado && card.link_relatorio && card.revisao_relatorio_ok && (
+          <div className="flex gap-2 mt-3 pt-2 border-t">
+            <Button
+              size="sm"
+              variant="default"
+              className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
+              onClick={(e) => {
+                e.stopPropagation()
+                onConcluirProjeto(card)
+              }}
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Concluir Projeto
+            </Button>
+          </div>
+        )
+      }
+    </div >
   )
 }
 
@@ -317,6 +327,7 @@ export function GestaoTrafegoKanban({
     link_relatorio: '',
     data_inicio: '',
     data_vencimento: '',
+    observador_id: '',
   })
 
   const sensors = useSensors(
@@ -422,6 +433,8 @@ export function GestaoTrafegoKanban({
       revisao_relatorio_ok: formData.revisao_relatorio_ok,
       link_relatorio: formData.link_relatorio || null,
       data_vencimento: formData.data_vencimento || null,
+      data_inicio: formData.data_inicio || null,
+      observador_id: formData.observador_id ? parseInt(formData.observador_id) : null,
     }
 
     if (editingCard) {
@@ -461,6 +474,8 @@ export function GestaoTrafegoKanban({
         revisao_relatorio_ok: newCard.revisaoRelatorioOk,
         link_relatorio: newCard.linkRelatorio,
         data_vencimento: newCard.dataVencimento?.split('T')[0] || null,
+        data_inicio: newCard.dataInicio?.split('T')[0] || null,
+        observador_id: newCard.observadorId,
         ordem: newCard.ordem,
         created_at: newCard.createdAt,
         updated_at: newCard.updatedAt,
@@ -483,8 +498,9 @@ export function GestaoTrafegoKanban({
       responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
       revisao_relatorio_ok: card.revisao_relatorio_ok,
       link_relatorio: card.link_relatorio || '',
-      data_inicio: (card as any).data_inicio || '',
+      data_inicio: card.data_inicio || '',
       data_vencimento: card.data_vencimento || '',
+      observador_id: card.observador_id?.toString() || '',
     })
     setIsEditMode(true)
     setIsDialogOpen(true)
@@ -561,6 +577,7 @@ export function GestaoTrafegoKanban({
       link_relatorio: '',
       data_inicio: '',
       data_vencimento: '',
+      observador_id: '',
     })
     setEditingCard(null)
     setIsEditMode(false)
@@ -648,6 +665,60 @@ export function GestaoTrafegoKanban({
             Fluxo: Backlog → Para Fazer → Em Execucao → Campanha Finalizada → Relatorio A Fazer → Revisao → Finalizado
           </p>
         </div>
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectValue placeholder="Responsavel" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Responsaveis</SelectItem>
+              {usuarios.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={clienteFilter} onValueChange={setClienteFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectValue placeholder="Cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Clientes</SelectItem>
+              {clientes.map(c => (
+                <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={tipoCobrancaFilter} onValueChange={setTipoCobrancaFilter}>
+            <SelectTrigger className="w-[100px] h-9 text-xs">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Tipos</SelectItem>
+              <SelectItem value="td">TD</SelectItem>
+              <SelectItem value="fee">FEE</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(responsavelFilter !== 'all' || clienteFilter !== 'all' || tipoCobrancaFilter !== 'all') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setResponsavelFilter('all')
+                setClienteFilter('all')
+                setTipoCobrancaFilter('all')
+              }}
+              className="h-9 px-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
         <div className="flex items-center gap-3">
           <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -744,6 +815,9 @@ export function GestaoTrafegoKanban({
                             value={formData.data_vencimento}
                             onChange={(e) => setFormData({ ...formData, data_vencimento: e.target.value })}
                           />
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {formData.data_vencimento ? new Date(formData.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'DD/MM/AAAA'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -779,6 +853,24 @@ export function GestaoTrafegoKanban({
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione o trader" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {usuarios.map((u) => (
+                                  <SelectItem key={u.id} value={u.id.toString()}>
+                                    {u.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Observador</Label>
+                            <Select
+                              value={formData.observador_id}
+                              onValueChange={(v) => setFormData({ ...formData, observador_id: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o observador" />
                               </SelectTrigger>
                               <SelectContent>
                                 {usuarios.map((u) => (

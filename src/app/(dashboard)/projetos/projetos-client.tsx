@@ -318,91 +318,89 @@ export function ProjetosClient({
                 {projetosDoCliente.map(projeto => {
                   const dias = getDiasAteAcabar(projeto.data_fim)
                   return (
-                    <Card
-                      key={projeto.id}
-                      className="hover:shadow-md transition-shadow relative group cursor-pointer"
-                      onClick={() => router.push(`/projetos/${projeto.id}`)}
-                    >
-                      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/projetos/${projeto.id}`) }}>
-                          <Eye className="h-4 w-4 mr-2" /> Ver
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(projeto) }}>
-                          <Pencil className="h-4 w-4 mr-2" /> Editar
-                        </Button>
-                      </div>
+                    <Link href={`/projetos/${projeto.id}`} key={projeto.id} className="block">
+                      <Card className="hover:shadow-md transition-shadow relative group cursor-pointer h-full">
+                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <Button variant="outline" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/projetos/${projeto.id}`) }}>
+                            <Eye className="h-4 w-4 mr-2" /> Ver
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditDialog(projeto) }}>
+                            <Pencil className="h-4 w-4 mr-2" /> Editar
+                          </Button>
+                        </div>
 
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              {projeto.nome}
-                              {getStatusBadge(projeto.status)}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                              {projeto.agencia && (
-                                <>
-                                  <Building2 className="h-3 w-3" />
-                                  {projeto.agencia.nome}
-                                </>
-                              )}
-                            </p>
-                          </div>
-                          {projeto.pi && (
-                            <div className="text-right">
-                              <Badge variant="outline" className="font-mono text-xs">
-                                {projeto.pi.identificador}
-                              </Badge>
-                              <p className="text-xs font-medium mt-1">{formatCurrency(projeto.pi.valor_bruto)}</p>
+                        <CardHeader className="pb-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                {projeto.nome}
+                                {getStatusBadge(projeto.status)}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                                {projeto.agencia && (
+                                  <>
+                                    <Building2 className="h-3 w-3" />
+                                    {projeto.agencia.nome}
+                                  </>
+                                )}
+                              </p>
                             </div>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-2">
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase">Trader</p>
-                            <p className="font-medium flex items-center gap-1">
-                              <User className="h-3 w-3" /> {projeto.trader?.nome || '-'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase">Periodo</p>
-                            <p className="font-medium flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {projeto.data_inicio ? formatDate(projeto.data_inicio) : '?'} - {projeto.data_fim ? formatDate(projeto.data_fim) : '?'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase">Estrategias</p>
-                            <p className="font-medium">{projeto.estrategias_count}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase">Status Prazo</p>
-                            {dias !== null && (
-                              <span className={`font-medium ${dias < 7 ? 'text-red-500' : 'text-green-600'}`}>
-                                {dias < 0 ? 'Expirado' : `${dias} dias restantes`}
-                              </span>
+                            {projeto.pi && (
+                              <div className="text-right">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {projeto.pi.identificador}
+                                </Badge>
+                                <p className="text-xs font-medium mt-1">{formatCurrency(projeto.pi.valor_bruto)}</p>
+                              </div>
                             )}
-                            {dias === null && <span>-</span>}
                           </div>
-                        </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-2">
+                            <div>
+                              <p className="text-muted-foreground text-xs uppercase">Trader</p>
+                              <p className="font-medium flex items-center gap-1">
+                                <User className="h-3 w-3" /> {projeto.trader?.nome || '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-xs uppercase">Periodo</p>
+                              <p className="font-medium flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {projeto.data_inicio ? formatDate(projeto.data_inicio) : '?'} - {projeto.data_fim ? formatDate(projeto.data_fim) : '?'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-xs uppercase">Estrategias</p>
+                              <p className="font-medium">{projeto.estrategias_count}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-xs uppercase">Status Prazo</p>
+                              {dias !== null && (
+                                <span className={`font-medium ${dias < 7 ? 'text-red-500' : 'text-green-600'}`}>
+                                  {dias < 0 ? 'Expirado' : `${dias} dias restantes`}
+                                </span>
+                              )}
+                              {dias === null && <span>-</span>}
+                            </div>
+                          </div>
 
-                        {/* Quick actions for links */}
-                        <div className="flex gap-3 mt-4 pt-4 border-t">
-                          {projeto.link_proposta && (
-                            <a href={projeto.link_proposta} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
-                              <ExternalLink className="h-3 w-3" /> Ver Proposta
-                            </a>
-                          )}
-                          {projeto.url_destino && (
-                            <a href={projeto.url_destino} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
-                              <ExternalLink className="h-3 w-3" /> Ver URL Destino
-                            </a>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                          {/* Quick actions for links */}
+                          <div className="flex gap-3 mt-4 pt-4 border-t">
+                            {projeto.link_proposta && (
+                              <a href={projeto.link_proposta} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                <ExternalLink className="h-3 w-3" /> Ver Proposta
+                              </a>
+                            )}
+                            {projeto.url_destino && (
+                              <a href={projeto.url_destino} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                <ExternalLink className="h-3 w-3" /> Ver URL Destino
+                              </a>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   )
                 })}
               </div>
