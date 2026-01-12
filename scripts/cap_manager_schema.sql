@@ -58,6 +58,7 @@ CREATE TABLE cap_manager.usuarios (
   avatar_url VARCHAR(500),
   role cap_manager.role_type DEFAULT 'trader',
   whatsapp VARCHAR(50),
+  email_notificacoes VARCHAR(255),
   ativo BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

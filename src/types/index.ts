@@ -212,6 +212,7 @@ export interface Usuario {
   avatar_url: string | null
   role: UsuarioRole
   whatsapp: string | null
+  email_notificacoes: string | null
   ativo: boolean
   created_at: string
   updated_at: string
