@@ -126,6 +126,42 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
+    // Verificar se há clientes vinculados
+    const { data: clientes, error: clientesError } = await supabaseAdmin
+      .from(TABLES.clientes)
+      .select('id')
+      .eq('agencia_id', parseInt(id))
+
+    if (clientesError) {
+      console.error('Erro ao verificar clientes:', clientesError)
+      return NextResponse.json({ error: 'Erro ao verificar dependências' }, { status: 500 })
+    }
+
+    if (clientes && clientes.length > 0) {
+      return NextResponse.json(
+        { error: `Não é possível excluir. Esta agência possui ${clientes.length} cliente(s) vinculado(s).` },
+        { status: 400 }
+      )
+    }
+
+    // Verificar se há PIs vinculados
+    const { data: pis, error: pisError } = await supabaseAdmin
+      .from(TABLES.pis)
+      .select('id')
+      .eq('agencia_id', parseInt(id))
+
+    if (pisError) {
+      console.error('Erro ao verificar PIs:', pisError)
+      return NextResponse.json({ error: 'Erro ao verificar dependências' }, { status: 500 })
+    }
+
+    if (pis && pis.length > 0) {
+      return NextResponse.json(
+        { error: `Não é possível excluir. Esta agência possui ${pis.length} PI(s) vinculado(s).` },
+        { status: 400 }
+      )
+    }
+
     const { error } = await supabaseAdmin
       .from(TABLES.agencias)
       .delete()
@@ -133,7 +169,7 @@ export async function DELETE(request: Request) {
 
     if (error) {
       console.error('Erro ao excluir agência:', error)
-      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+      return NextResponse.json({ error: 'Erro ao excluir agência' }, { status: 500 })
     }
 
     revalidatePath('/', 'layout')

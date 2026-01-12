@@ -31,7 +31,9 @@ import {
     Plus,
     Pencil,
     X,
-    CreditCard
+    CreditCard,
+    Copy,
+    Check
 } from 'lucide-react'
 import { formatCurrency, formatDateInput } from '@/lib/utils'
 import {
@@ -160,6 +162,58 @@ export function ProjectDialog({
     // Local state for strategies to manage optimistic updates for strategies within the dialog
     const [strategies, setStrategies] = useState<SimplifiedEstrategia[]>([])
     const [currentProjetoId, setCurrentProjetoId] = useState<number | null>(null)
+    const [utmCopied, setUtmCopied] = useState(false)
+
+    // Auto-calculate Estimativa Sucesso (%) = (entregue_ate_momento / entrega_contratada) * 100
+    useEffect(() => {
+        const entregue = parseFloat(estrategiaForm.entregue_ate_momento) || 0
+        const contratada = parseFloat(estrategiaForm.entrega_contratada) || 0
+
+        if (contratada > 0 && entregue >= 0) {
+            const sucesso = (entregue / contratada) * 100
+            setEstrategiaForm(prev => ({
+                ...prev,
+                estimativa_sucesso: sucesso.toFixed(2)
+            }))
+        }
+    }, [estrategiaForm.entregue_ate_momento, estrategiaForm.entrega_contratada])
+
+    // Generate UTM parameters
+    const gerarUTM = () => {
+        const cliente = clientes.find(c => c.id === formData.cliente_id)
+        const clienteNome = cliente?.nome || 'cliente'
+        const plataforma = estrategiaForm.plataforma || 'plataforma'
+        const estrategia = estrategiaForm.estrategia || 'estrategia'
+        const campaignId = estrategiaForm.campaign_id || 'campaign'
+
+        // Normalizar para URL (remover espaços, caracteres especiais, etc)
+        const normalizar = (str: string) => str.toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+            .replace(/[^a-z0-9]+/g, '_') // Substitui caracteres especiais por underscore
+            .replace(/^_|_$/g, '') // Remove underscores do início e fim
+
+        const utmSource = normalizar(plataforma)
+        const utmMedium = normalizar(estrategia)
+        const utmCampaign = normalizar(`${clienteNome}_${campaignId}`)
+
+        const baseUrl = formData.url_destino || 'https://exemplo.com'
+        const separator = baseUrl.includes('?') ? '&' : '?'
+
+        return `${baseUrl}${separator}utm_source=${utmSource}&utm_medium=${utmMedium}&utm_campaign=${utmCampaign}`
+    }
+
+    const copiarUTM = async () => {
+        const utm = gerarUTM()
+        try {
+            await navigator.clipboard.writeText(utm)
+            setUtmCopied(true)
+            toast({ title: 'UTM copiada!', description: 'Link com parâmetros UTM copiado para área de transferência' })
+            setTimeout(() => setUtmCopied(false), 2000)
+        } catch (err) {
+            toast({ variant: 'destructive', title: 'Erro ao copiar', description: 'Não foi possível copiar a UTM' })
+        }
+    }
 
     // Initialize form when project changes
     useEffect(() => {
@@ -860,9 +914,64 @@ export function ProjectDialog({
                                         </div>
                                     </div>
 
+                                    {/* UTM Generator */}
+                                    <div className="space-y-2">
+                                        <Label className="flex items-center gap-2">
+                                            Link com UTM
+                                            <Badge variant="outline" className="text-xs">Gerado Automaticamente</Badge>
+                                        </Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={gerarUTM()}
+                                                readOnly
+                                                className="bg-muted font-mono text-xs"
+                                                placeholder="Preencha os campos acima para gerar a UTM"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={copiarUTM}
+                                                title="Copiar UTM"
+                                            >
+                                                {utmCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+
                                     {/* Delivery and Estimation Fields */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Gasto até Momento (R$)</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={estrategiaForm.gasto_ate_momento}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, gasto_ate_momento: e.target.value }))}
+                                                placeholder="R$ 0,00"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Entregue até Momento</Label>
+                                            <Input
+                                                type="number"
+                                                step="1"
+                                                value={estrategiaForm.entregue_ate_momento}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, entregue_ate_momento: e.target.value }))}
+                                                placeholder="Ex: 5000"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Data Atualização</Label>
+                                            <Input
+                                                type="date"
+                                                value={estrategiaForm.data_atualizacao}
+                                                onChange={e => setEstrategiaForm(p => ({ ...p, data_atualizacao: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
-                                        {/* Removed Entrega Contratada from here as it was moved up */}
                                         <div className="space-y-2">
                                             <Label>Estimativa Resultado</Label>
                                             <Input
@@ -874,13 +983,17 @@ export function ProjectDialog({
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Estimativa Sucesso (%)</Label>
+                                            <Label className="flex items-center gap-2">
+                                                Estimativa Sucesso (%)
+                                                <Badge variant="secondary" className="text-xs">Auto</Badge>
+                                            </Label>
                                             <Input
                                                 type="number"
-                                                step="0.1"
+                                                step="0.01"
                                                 value={estrategiaForm.estimativa_sucesso}
-                                                onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_sucesso: e.target.value }))}
-                                                placeholder="Ex: 85"
+                                                readOnly
+                                                className="bg-muted"
+                                                placeholder="Calculado automaticamente"
                                             />
                                         </div>
                                     </div>
