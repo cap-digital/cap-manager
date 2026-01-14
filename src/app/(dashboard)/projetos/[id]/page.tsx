@@ -121,6 +121,8 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
       valor_restante_bruto: e.valor_restante_bruto ? Number(e.valor_restante_bruto) : null,
       pode_abaixar_margem: e.pode_abaixar_margem,
       pode_aumentar_margem: e.pode_aumentar_margem,
+      observacao: e.observacao || null,
+      plataforma_custom: e.plataforma_custom || null,
       created_at: e.created_at,
       updated_at: e.updated_at,
     })),

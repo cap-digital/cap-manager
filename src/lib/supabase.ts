@@ -45,7 +45,7 @@ export type Role = 'admin' | 'trader' | 'gestor' | 'cliente'
 export type TipoCobranca = 'td' | 'fee'
 export type StatusProjeto = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
 export type GrupoRevisao = 'A' | 'B' | 'C'
-export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
+export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'kwai' | 'tinder' | 'programatica' | 'outro'
 export type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
 export type StatusTarefa = 'backlog' | 'todo' | 'doing' | 'review' | 'done'
 export type PrioridadeTarefa = 'baixa' | 'media' | 'alta' | 'urgente'
@@ -167,6 +167,8 @@ export interface Estrategia {
   gasto_ate_momento?: number | null
   entregue_ate_momento?: number | null
   data_atualizacao?: string | null
+  observacao?: string | null
+  plataforma_custom?: string | null
   created_at: string
   updated_at: string
 }

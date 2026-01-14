@@ -240,6 +240,8 @@ export async function POST(request: Request) {
       valor_restante_bruto: valoresCalculados.valorRestanteBruto,
       pode_abaixar_margem: valoresCalculados.podeAbaixarMargem,
       pode_aumentar_margem: valoresCalculados.podeAumentarMargem,
+      observacao: data.observacao || null,
+      plataforma_custom: data.plataforma_custom || null,
     }
 
     const { data: estrategia, error } = await supabaseAdmin
@@ -351,6 +353,8 @@ export async function PUT(request: Request) {
       valor_restante_bruto: valoresCalculados.valorRestanteBruto,
       pode_abaixar_margem: valoresCalculados.podeAbaixarMargem,
       pode_aumentar_margem: valoresCalculados.podeAumentarMargem,
+      observacao: data.observacao || null,
+      plataforma_custom: data.plataforma_custom || null,
     }
 
     const { data: estrategia, error } = await supabaseAdmin

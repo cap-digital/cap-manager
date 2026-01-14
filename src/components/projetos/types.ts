@@ -1,7 +1,7 @@
 export type TipoCobranca = 'td' | 'fee'
 export type StatusProjeto = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
 export type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
-export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
+export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'kwai' | 'tinder' | 'programatica' | 'outro'
 export type GrupoRevisao = 'A' | 'B' | 'C'
 
 export interface SimplifiedPi {
@@ -34,6 +34,8 @@ export interface SimplifiedEstrategia {
     gasto_ate_momento: number | null
     entregue_ate_momento: number | null
     data_atualizacao: string | null
+    observacao: string | null
+    plataforma_custom: string | null
     created_at: string
     updated_at: string
 }

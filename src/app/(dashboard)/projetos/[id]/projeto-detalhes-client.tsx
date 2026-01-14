@@ -49,7 +49,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select'
 type TipoCobranca = 'td' | 'fee'
 type StatusProjeto = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
 type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
-type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'programatica' | 'outro'
+type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'kwai' | 'tinder' | 'programatica' | 'outro'
 type GrupoRevisao = 'A' | 'B' | 'C'
 
 interface SimplifiedPi {
@@ -97,6 +97,8 @@ interface SimplifiedEstrategia {
   valor_restante_bruto: number | null
   pode_abaixar_margem: boolean | null
   pode_aumentar_margem: boolean | null
+  observacao: string | null
+  plataforma_custom: string | null
   created_at: string
   updated_at: string
 }
@@ -158,7 +160,9 @@ const plataformaOptions: { value: Plataforma; label: string }[] = [
   { value: 'twitter', label: 'Twitter/X' },
   { value: 'pinterest', label: 'Pinterest' },
   { value: 'spotify', label: 'Spotify' },
-  { value: 'programatica', label: 'Programatica' },
+  { value: 'kwai', label: 'Kwai' },
+  { value: 'tinder', label: 'Tinder' },
+  { value: 'programatica', label: 'Programática' },
   { value: 'outro', label: 'Outro' },
 ]
 
@@ -631,6 +635,8 @@ export function ProjetoDetalhesClient({
       valor_restante_bruto: apiData.valorRestanteBruto ? Number(apiData.valorRestanteBruto) : null,
       pode_abaixar_margem: apiData.podeAbaixarMargem as boolean | null,
       pode_aumentar_margem: apiData.podeAumentarMargem as boolean | null,
+      observacao: apiData.observacao as string | null || null,
+      plataforma_custom: apiData.plataformaCustom as string | null || null,
       created_at: String(apiData.createdAt),
       updated_at: String(apiData.updatedAt),
     })

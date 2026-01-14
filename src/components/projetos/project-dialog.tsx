@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
     Dialog,
@@ -33,7 +34,8 @@ import {
     X,
     CreditCard,
     Copy,
-    Check
+    Check,
+    Info
 } from 'lucide-react'
 import { formatCurrency, formatDateInput } from '@/lib/utils'
 import {
@@ -68,7 +70,9 @@ const plataformaOptions: { value: Plataforma; label: string }[] = [
     { value: 'twitter', label: 'Twitter/X' },
     { value: 'pinterest', label: 'Pinterest' },
     { value: 'spotify', label: 'Spotify' },
-    { value: 'programatica', label: 'Programatica' },
+    { value: 'kwai', label: 'Kwai' },
+    { value: 'tinder', label: 'Tinder' },
+    { value: 'programatica', label: 'Programática' },
     { value: 'outro', label: 'Outro' },
 ]
 
@@ -157,6 +161,8 @@ export function ProjectDialog({
         gasto_ate_momento: '',
         entregue_ate_momento: '',
         data_atualizacao: '',
+        observacao: '',
+        plataforma_custom: '',
     })
 
     // Local state for strategies to manage optimistic updates for strategies within the dialog
@@ -280,6 +286,8 @@ export function ProjectDialog({
             gasto_ate_momento: '',
             entregue_ate_momento: '',
             data_atualizacao: '',
+            observacao: '',
+            plataforma_custom: '',
         })
         setEditingEstrategia(null)
     }
@@ -394,6 +402,8 @@ export function ProjectDialog({
             gasto_ate_momento: estrategiaForm.gasto_ate_momento ? parseFloat(estrategiaForm.gasto_ate_momento) : null,
             entregue_ate_momento: estrategiaForm.entregue_ate_momento ? parseFloat(estrategiaForm.entregue_ate_momento) : null,
             data_atualizacao: estrategiaForm.data_atualizacao || null,
+            observacao: estrategiaForm.observacao || null,
+            plataforma_custom: estrategiaForm.plataforma_custom || null,
         }
 
         try {
@@ -759,21 +769,61 @@ export function ProjectDialog({
                         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                             {strategies.map(estrategia => (
                                 <div key={estrategia.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                                    <div className="space-y-1">
+                                    <div className="space-y-1 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium capitalize">{estrategia.plataforma}</span>
+                                            <span className="font-medium capitalize">
+                                                {estrategia.plataforma === 'outro' && estrategia.plataforma_custom
+                                                    ? estrategia.plataforma_custom
+                                                    : estrategia.plataforma}
+                                            </span>
                                             <Badge variant="outline" className={`text-xs ${estrategia.status === 'ativa' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' : ''}`}>
                                                 {estrategia.status}
                                             </Badge>
                                             {estrategia.kpi && <Badge variant="secondary" className="text-[10px]">{estrategia.kpi}</Badge>}
+                                            {estrategia.observacao && (
+                                                <span
+                                                    className="cursor-help text-blue-500 hover:text-blue-600"
+                                                    title={estrategia.observacao}
+                                                >
+                                                    <Info className="h-4 w-4" />
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="text-sm text-muted-foreground flex gap-3">
                                             <span>Invest: {formatCurrency(estrategia.valor_bruto)}</span>
                                             {estrategia.campaign_id && <span className="text-xs font-mono bg-muted px-1 rounded">{estrategia.campaign_id}</span>}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => {
+                                    <div className="flex items-center gap-1">
+                                        {/* Duplicate Button */}
+                                        <Button variant="ghost" size="icon" title="Duplicar" onClick={() => {
+                                            setEditingEstrategia(null)
+                                            setEstrategiaForm({
+                                                plataforma: estrategia.plataforma,
+                                                nome_conta: estrategia.nome_conta || '',
+                                                id_conta: '',
+                                                campaign_id: '',
+                                                estrategia: estrategia.estrategia || '',
+                                                kpi: estrategia.kpi || '',
+                                                status: 'planejada',
+                                                valor_bruto: estrategia.valor_bruto.toString(),
+                                                porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
+                                                porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
+                                                entrega_contratada: estrategia.entrega_contratada?.toString() || '',
+                                                estimativa_resultado: '',
+                                                estimativa_sucesso: '',
+                                                gasto_ate_momento: '',
+                                                entregue_ate_momento: '',
+                                                data_atualizacao: '',
+                                                observacao: estrategia.observacao ? estrategia.observacao + ' (Cópia)' : '',
+                                                plataforma_custom: estrategia.plataforma_custom || '',
+                                            })
+                                            setIsEstrategiaOpen(true)
+                                        }}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                        {/* Edit Button */}
+                                        <Button variant="ghost" size="icon" title="Editar" onClick={() => {
                                             setEditingEstrategia(estrategia)
                                             setEstrategiaForm({
                                                 plataforma: estrategia.plataforma,
@@ -792,12 +842,15 @@ export function ProjectDialog({
                                                 gasto_ate_momento: estrategia.gasto_ate_momento?.toString() || '',
                                                 entregue_ate_momento: estrategia.entregue_ate_momento?.toString() || '',
                                                 data_atualizacao: estrategia.data_atualizacao || '',
+                                                observacao: estrategia.observacao || '',
+                                                plataforma_custom: estrategia.plataforma_custom || '',
                                             })
                                             setIsEstrategiaOpen(true)
                                         }}>
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteEstrategia(estrategia.id)}>
+                                        {/* Delete Button */}
+                                        <Button variant="ghost" size="icon" className="text-destructive" title="Excluir" onClick={() => handleDeleteEstrategia(estrategia.id)}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -830,12 +883,20 @@ export function ProjectDialog({
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>Plataforma *</Label>
-                                            <Select value={estrategiaForm.plataforma} onValueChange={v => setEstrategiaForm(p => ({ ...p, plataforma: v as Plataforma }))}>
+                                            <Select value={estrategiaForm.plataforma} onValueChange={v => setEstrategiaForm(p => ({ ...p, plataforma: v as Plataforma, plataforma_custom: v !== 'outro' ? '' : p.plataforma_custom }))}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     {plataformaOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
+                                            {estrategiaForm.plataforma === 'outro' && (
+                                                <Input
+                                                    className="mt-2"
+                                                    value={estrategiaForm.plataforma_custom}
+                                                    onChange={e => setEstrategiaForm(p => ({ ...p, plataforma_custom: e.target.value }))}
+                                                    placeholder="Nome da plataforma"
+                                                />
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <Label>Status</Label>
@@ -850,6 +911,17 @@ export function ProjectDialog({
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                    </div>
+
+                                    {/* Observation Field */}
+                                    <div className="space-y-2">
+                                        <Label>Observação <span className="text-muted-foreground text-xs">(posicionamento específico, etc)</span></Label>
+                                        <Textarea
+                                            value={estrategiaForm.observacao}
+                                            onChange={e => setEstrategiaForm(p => ({ ...p, observacao: e.target.value }))}
+                                            placeholder="Ex: Segmento 25-34, público lookalike de compradores..."
+                                            className="min-h-[60px]"
+                                        />
                                     </div>
 
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

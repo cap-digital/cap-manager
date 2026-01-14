@@ -1119,8 +1119,9 @@ export function GestaoTrafegoKanban({
                                   responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
                                   revisao_relatorio_ok: card.revisao_relatorio_ok,
                                   link_relatorio: card.link_relatorio || '',
-                                  data_inicio: (card as any).data_inicio || '',
+                                  data_inicio: card.data_inicio || '',
                                   data_vencimento: card.data_vencimento || '',
+                                  observador_id: card.observador_id?.toString() || '',
                                 })
                                 setIsEditMode(true)
                                 setIsDialogOpen(true)
