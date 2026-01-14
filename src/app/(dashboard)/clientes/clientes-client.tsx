@@ -258,18 +258,39 @@ export function ClientesClient({
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return
+  const handleDelete = async (id: number, force = false) => {
+    if (!force && !confirm('Tem certeza que deseja excluir este cliente?')) return
 
     try {
-      const response = await fetch(`/api/clientes?id=${id}`, {
-        method: 'DELETE',
-      })
+      const url = force ? `/api/clientes?id=${id}&force=true` : `/api/clientes?id=${id}`
+      const response = await fetch(url, { method: 'DELETE' })
+
+      // Handle 409 - has linked items
+      if (response.status === 409) {
+        const data = await response.json()
+        const linkedItems = []
+        if (data.linkedPIs?.length > 0) {
+          linkedItems.push(`PIs: ${data.linkedPIs.map((p: { identificador: string }) => p.identificador).join(', ')}`)
+        }
+        if (data.linkedProjetos?.length > 0) {
+          linkedItems.push(`Projetos: ${data.linkedProjetos.map((p: { nome: string }) => p.nome).join(', ')}`)
+        }
+
+        const confirmForce = confirm(
+          `⚠️ Este cliente possui vínculos:\n\n${linkedItems.join('\n')}\n\nDeseja excluir o cliente E todos os itens vinculados?`
+        )
+
+        if (confirmForce) {
+          return handleDelete(id, true)
+        }
+        return
+      }
 
       if (!response.ok) throw new Error('Erro ao excluir')
 
       setClientes(prev => prev.filter(c => c.id !== id))
       toast({ title: 'Cliente excluído com sucesso!' })
+      router.refresh()
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro'
       toast({

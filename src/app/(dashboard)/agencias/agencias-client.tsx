@@ -117,13 +117,13 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
           prev.map(a =>
             a.id === editingAgencia.id
               ? {
-                  ...a,
-                  nome: data.nome,
-                  cnpj: data.cnpj,
-                  telefone: data.telefone,
-                  email: data.email,
-                  contato: data.contato,
-                }
+                ...a,
+                nome: data.nome,
+                cnpj: data.cnpj,
+                telefone: data.telefone,
+                email: data.email,
+                contato: data.contato,
+              }
               : a
           )
         )
@@ -170,13 +170,36 @@ export function AgenciasClient({ agencias: initialAgencias }: AgenciasClientProp
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir esta agência?')) return
+  const handleDelete = async (id: number, force = false) => {
+    if (!force && !confirm('Tem certeza que deseja excluir esta agência?')) return
 
     try {
-      const response = await fetch(`/api/agencias?id=${id}`, {
-        method: 'DELETE',
-      })
+      const url = force ? `/api/agencias?id=${id}&force=true` : `/api/agencias?id=${id}`
+      const response = await fetch(url, { method: 'DELETE' })
+
+      // Handle 409 - has linked items
+      if (response.status === 409) {
+        const data = await response.json()
+        const linkedItems = []
+        if (data.linkedClientes?.length > 0) {
+          linkedItems.push(`Clientes: ${data.linkedClientes.map((c: { nome: string }) => c.nome).join(', ')}`)
+        }
+        if (data.linkedPIs?.length > 0) {
+          linkedItems.push(`PIs: ${data.linkedPIs.map((p: { identificador: string }) => p.identificador).join(', ')}`)
+        }
+        if (data.linkedProjetos?.length > 0) {
+          linkedItems.push(`Projetos: ${data.linkedProjetos.map((p: { nome: string }) => p.nome).join(', ')}`)
+        }
+
+        const confirmForce = confirm(
+          `⚠️ Esta agência possui vínculos:\n\n${linkedItems.join('\n')}\n\nAo excluir, os clientes serão desvinculados (não deletados), mas PIs e projetos serão removidos.\n\nDeseja continuar?`
+        )
+
+        if (confirmForce) {
+          return handleDelete(id, true)
+        }
+        return
+      }
 
       if (!response.ok) throw new Error('Erro ao excluir agência')
 

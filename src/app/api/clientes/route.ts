@@ -138,14 +138,70 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const force = searchParams.get('force') === 'true'
+
     if (!id) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
+    const clienteId = parseInt(id)
+
+    // Check for linked PIs
+    const { data: linkedPIs } = await supabaseAdmin
+      .from(TABLES.pis)
+      .select('id, identificador')
+      .eq('cliente_id', clienteId)
+
+    // Check for linked Projetos
+    const { data: linkedProjetos } = await supabaseAdmin
+      .from(TABLES.projetos)
+      .select('id, nome')
+      .eq('cliente_id', clienteId)
+
+    const hasLinks = (linkedPIs?.length || 0) > 0 || (linkedProjetos?.length || 0) > 0
+
+    // If there are links and force is not true, return warning
+    if (hasLinks && !force) {
+      return NextResponse.json({
+        error: 'Cliente possui vínculos',
+        hasLinks: true,
+        linkedPIs: linkedPIs || [],
+        linkedProjetos: linkedProjetos || [],
+        message: `Este cliente está vinculado a ${linkedPIs?.length || 0} PI(s) e ${linkedProjetos?.length || 0} projeto(s). Deseja excluir mesmo assim?`
+      }, { status: 409 })
+    }
+
+    // If force=true, delete linked data first
+    if (force && hasLinks) {
+      // Delete estrategias linked to projetos
+      if (linkedProjetos && linkedProjetos.length > 0) {
+        const projetoIds = linkedProjetos.map(p => p.id)
+        await supabaseAdmin
+          .from(TABLES.estrategias)
+          .delete()
+          .in('projeto_id', projetoIds)
+
+        // Delete projetos
+        await supabaseAdmin
+          .from(TABLES.projetos)
+          .delete()
+          .eq('cliente_id', clienteId)
+      }
+
+      // Delete PIs
+      if (linkedPIs && linkedPIs.length > 0) {
+        await supabaseAdmin
+          .from(TABLES.pis)
+          .delete()
+          .eq('cliente_id', clienteId)
+      }
+    }
+
+    // Delete the client
     const { error } = await supabaseAdmin
       .from(TABLES.clientes)
       .delete()
-      .eq('id', parseInt(id))
+      .eq('id', clienteId)
 
     if (error) {
       console.error('Erro ao excluir cliente:', error)

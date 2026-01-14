@@ -121,51 +121,80 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const force = searchParams.get('force') === 'true'
 
     if (!id) {
       return NextResponse.json({ error: 'ID não fornecido' }, { status: 400 })
     }
 
-    // Verificar se há clientes vinculados
-    const { data: clientes, error: clientesError } = await supabaseAdmin
+    const agenciaId = parseInt(id)
+
+    // Check for linked clientes
+    const { data: linkedClientes } = await supabaseAdmin
       .from(TABLES.clientes)
-      .select('id')
-      .eq('agencia_id', parseInt(id))
+      .select('id, nome')
+      .eq('agencia_id', agenciaId)
 
-    if (clientesError) {
-      console.error('Erro ao verificar clientes:', clientesError)
-      return NextResponse.json({ error: 'Erro ao verificar dependências' }, { status: 500 })
-    }
-
-    if (clientes && clientes.length > 0) {
-      return NextResponse.json(
-        { error: `Não é possível excluir. Esta agência possui ${clientes.length} cliente(s) vinculado(s).` },
-        { status: 400 }
-      )
-    }
-
-    // Verificar se há PIs vinculados
-    const { data: pis, error: pisError } = await supabaseAdmin
+    // Check for linked PIs
+    const { data: linkedPIs } = await supabaseAdmin
       .from(TABLES.pis)
-      .select('id')
-      .eq('agencia_id', parseInt(id))
+      .select('id, identificador')
+      .eq('agencia_id', agenciaId)
 
-    if (pisError) {
-      console.error('Erro ao verificar PIs:', pisError)
-      return NextResponse.json({ error: 'Erro ao verificar dependências' }, { status: 500 })
+    // Check for linked Projetos
+    const { data: linkedProjetos } = await supabaseAdmin
+      .from(TABLES.projetos)
+      .select('id, nome')
+      .eq('agencia_id', agenciaId)
+
+    const hasLinks = (linkedClientes?.length || 0) > 0 || (linkedPIs?.length || 0) > 0 || (linkedProjetos?.length || 0) > 0
+
+    // If there are links and force is not true, return warning
+    if (hasLinks && !force) {
+      return NextResponse.json({
+        error: 'Agência possui vínculos',
+        hasLinks: true,
+        linkedClientes: linkedClientes || [],
+        linkedPIs: linkedPIs || [],
+        linkedProjetos: linkedProjetos || [],
+        message: `Esta agência está vinculada a ${linkedClientes?.length || 0} cliente(s), ${linkedPIs?.length || 0} PI(s) e ${linkedProjetos?.length || 0} projeto(s). Deseja excluir mesmo assim?`
+      }, { status: 409 })
     }
 
-    if (pis && pis.length > 0) {
-      return NextResponse.json(
-        { error: `Não é possível excluir. Esta agência possui ${pis.length} PI(s) vinculado(s).` },
-        { status: 400 }
-      )
+    // If force=true, delete linked data first
+    if (force && hasLinks) {
+      // Delete estrategias linked to projetos
+      if (linkedProjetos && linkedProjetos.length > 0) {
+        const projetoIds = linkedProjetos.map(p => p.id)
+        await supabaseAdmin
+          .from(TABLES.estrategias)
+          .delete()
+          .in('projeto_id', projetoIds)
+      }
+
+      // Delete projetos
+      await supabaseAdmin
+        .from(TABLES.projetos)
+        .delete()
+        .eq('agencia_id', agenciaId)
+
+      // Delete PIs
+      await supabaseAdmin
+        .from(TABLES.pis)
+        .delete()
+        .eq('agencia_id', agenciaId)
+
+      // Update clientes to remove agencia_id (don't delete clients, just unlink)
+      await supabaseAdmin
+        .from(TABLES.clientes)
+        .update({ agencia_id: null })
+        .eq('agencia_id', agenciaId)
     }
 
     const { error } = await supabaseAdmin
       .from(TABLES.agencias)
       .delete()
-      .eq('id', parseInt(id))
+      .eq('id', agenciaId)
 
     if (error) {
       console.error('Erro ao excluir agência:', error)
