@@ -137,8 +137,8 @@ function SortableCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'bg-card border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-all',
-        isDragging && 'opacity-50'
+        'group bg-card border rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-200',
+        isDragging && 'opacity-50 rotate-2 scale-105'
       )}
       onClick={() => onView(card)}
       {...attributes}
@@ -146,44 +146,44 @@ function SortableCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 flex-1">
-          <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+          <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 shrink-0 hover:text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm truncate">{card.titulo}</h4>
+            <h4 className="font-semibold text-sm leading-tight">{card.titulo}</h4>
             {card.descricao && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
                 {card.descricao}
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="h-7 w-7 hover:bg-muted"
             onClick={(e) => {
               e.stopPropagation()
               onEdit(card)
             }}
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-destructive"
+            className="h-7 w-7 text-destructive hover:bg-destructive/10"
             onClick={(e) => {
               e.stopPropagation()
               onDelete(card.id)
             }}
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mt-3">
-        <Badge className={prioridadeColors[card.prioridade]} variant="secondary">
+      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+        <Badge className={cn(prioridadeColors[card.prioridade], 'text-[10px] font-medium px-2 py-0.5')} variant="secondary">
           {card.prioridade}
         </Badge>
         {projeto && (
@@ -192,18 +192,18 @@ function SortableCard({
             onClick={(e) => e.stopPropagation()}
             className="hover:opacity-80 transition-opacity"
           >
-            <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
+            <Badge variant="outline" className="text-[10px] cursor-pointer hover:bg-accent px-2 py-0.5">
               <Folder className="h-3 w-3 mr-1" />
-              {projeto.nome}
+              <span className="max-w-[100px] truncate">{projeto.nome}</span>
               {projeto.tipo_cobranca === 'fee' && (
-                <span className="ml-1 text-purple-600">(FEE)</span>
+                <span className="ml-1 text-purple-600 font-semibold">(FEE)</span>
               )}
             </Badge>
           </Link>
         )}
       </div>
 
-      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+      <div className="flex flex-col gap-1.5 mt-3 pt-3 border-t border-dashed text-xs text-muted-foreground">
         {trader && (
           <span className="flex items-center gap-1">
             <User className="h-3 w-3" />
@@ -285,8 +285,8 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'space-y-3 min-h-[200px] transition-colors rounded-lg p-2 -m-2',
-        isOver && 'bg-primary/10'
+        'space-y-3 min-h-[300px] transition-all duration-200 rounded-lg p-2 -m-2',
+        isOver && 'bg-primary/10 ring-2 ring-primary/30 ring-dashed'
       )}
     >
       {children}
@@ -961,19 +961,19 @@ export function GestaoTrafegoKanban({
             onDragEnd={handleDragEnd}
           >
             <ScrollArea className="w-full">
-              <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
+              <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
                 {columns.map((column) => (
-                  <Card key={column.id} className="min-h-[500px] w-[280px] shrink-0">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                        <div className={cn('w-3 h-3 rounded-full', column.color)} />
-                        <span className="truncate">{column.label}</span>
-                        <Badge variant="secondary" className="ml-auto shrink-0">
+                  <Card key={column.id} className="min-h-[600px] w-[320px] shrink-0 bg-muted/30 border-muted">
+                    <CardHeader className="pb-3 border-b">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <div className={cn('w-3 h-3 rounded-full shadow-sm', column.color)} />
+                        <span className="truncate flex-1">{column.label}</span>
+                        <Badge variant="secondary" className="ml-auto shrink-0 text-xs font-medium">
                           {getColumnCards(column.id).length}
                         </Badge>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-4">
                       <DroppableColumn id={column.id}>
                         <SortableContext
                           items={getColumnCards(column.id).map(c => c.id)}
@@ -1016,8 +1016,11 @@ export function GestaoTrafegoKanban({
                           ))}
                         </SortableContext>
                         {getColumnCards(column.id).length === 0 && (
-                          <div className="text-center py-8 text-muted-foreground text-sm">
-                            Arraste cards aqui
+                          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/60">
+                            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                              <Plus className="h-5 w-5" />
+                            </div>
+                            <p className="text-sm">Arraste cards aqui</p>
                           </div>
                         )}
                       </DroppableColumn>
@@ -1030,8 +1033,11 @@ export function GestaoTrafegoKanban({
 
             <DragOverlay>
               {activeCard && (
-                <div className="bg-card border rounded-lg p-3 shadow-lg">
-                  <h4 className="font-medium text-sm">{activeCard.titulo}</h4>
+                <div className="bg-card border-2 border-primary/50 rounded-lg p-4 shadow-2xl rotate-3 scale-105 w-[320px]">
+                  <h4 className="font-semibold text-sm">{activeCard.titulo}</h4>
+                  {activeCard.descricao && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{activeCard.descricao}</p>
+                  )}
                 </div>
               )}
             </DragOverlay>
