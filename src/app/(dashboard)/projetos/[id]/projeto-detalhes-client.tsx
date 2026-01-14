@@ -42,6 +42,10 @@ import {
   Settings,
   AlertTriangle,
   Calendar,
+  ChevronDown,
+  ChevronUp,
+  Activity,
+  BarChart3,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { SearchableSelect } from '@/components/ui/searchable-select'
@@ -209,6 +213,7 @@ export function ProjetoDetalhesClient({
   const [isEstrategiaOpen, setIsEstrategiaOpen] = useState(false)
   const [isProjetoOpen, setIsProjetoOpen] = useState(false)
   const [editingEstrategia, setEditingEstrategia] = useState<SimplifiedEstrategia | null>(null)
+  const [showPerformance, setShowPerformance] = useState(true)
 
   const [projetoForm, setProjetoForm] = useState({
     cliente_id: projeto.cliente_id,
@@ -809,6 +814,127 @@ export function ProjetoDetalhesClient({
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance Panel - Collapsible */}
+      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-slate-200 dark:border-slate-700">
+        <CardHeader className="py-3 cursor-pointer" onClick={() => setShowPerformance(!showPerformance)}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Chave de Performance</CardTitle>
+            </div>
+            <Button variant="ghost" size="sm">
+              {showPerformance ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+        {showPerformance && (
+          <CardContent className="pt-0 pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Gasto vs Orçamento */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="h-4 w-4" /> Gasto vs Orçamento
+                  </span>
+                  <span className="font-medium">
+                    {totalLiquido > 0 ? Math.round((totalGasto / totalLiquido) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${totalLiquido > 0 && (totalGasto / totalLiquido) > 1
+                      ? 'bg-red-500'
+                      : totalLiquido > 0 && (totalGasto / totalLiquido) > 0.9
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
+                      }`}
+                    style={{ width: `${Math.min((totalGasto / totalLiquido) * 100 || 0, 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Gasto: {formatCurrency(totalGasto)}</span>
+                  <span>Orçamento: {formatCurrency(totalLiquido)}</span>
+                </div>
+              </div>
+
+              {/* Previsão de Entrega */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Target className="h-4 w-4" /> Previsão de Entrega
+                  </span>
+                  <span className="font-medium">
+                    {(() => {
+                      const totalEntregaContratada = projeto.estrategias.reduce((acc, e) => acc + (e.entrega_contratada || 0), 0)
+                      const totalEntregue = projeto.estrategias.reduce((acc, e) => acc + (e.entregue_ate_momento || 0), 0)
+                      return totalEntregaContratada > 0 ? Math.round((totalEntregue / totalEntregaContratada) * 100) : 0
+                    })()}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  {(() => {
+                    const totalEntregaContratada = projeto.estrategias.reduce((acc, e) => acc + (e.entrega_contratada || 0), 0)
+                    const totalEntregue = projeto.estrategias.reduce((acc, e) => acc + (e.entregue_ate_momento || 0), 0)
+                    const percent = totalEntregaContratada > 0 ? (totalEntregue / totalEntregaContratada) * 100 : 0
+                    return (
+                      <div
+                        className={`h-3 rounded-full transition-all ${percent >= 100 ? 'bg-green-500' : percent >= 70 ? 'bg-blue-500' : percent >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                        style={{ width: `${Math.min(percent, 100)}%` }}
+                      />
+                    )
+                  })()}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Entregue: {projeto.estrategias.reduce((acc, e) => acc + (e.entregue_ate_momento || 0), 0).toLocaleString('pt-BR')}</span>
+                  <span>Meta: {projeto.estrategias.reduce((acc, e) => acc + (e.entrega_contratada || 0), 0).toLocaleString('pt-BR')}</span>
+                </div>
+              </div>
+
+              {/* Estimativa de Sucesso */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <BarChart3 className="h-4 w-4" /> Estimativa de Sucesso
+                  </span>
+                  {(() => {
+                    const avgEstimativaSucesso = projeto.estrategias.length > 0
+                      ? projeto.estrategias.reduce((acc, e) => acc + (e.estimativa_sucesso || 0), 0) / projeto.estrategias.filter(e => e.estimativa_sucesso).length || 0
+                      : 0
+                    return (
+                      <span className={`font-bold ${avgEstimativaSucesso >= 100 ? 'text-green-600' : avgEstimativaSucesso >= 80 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                        {Math.round(avgEstimativaSucesso)}%
+                      </span>
+                    )
+                  })()}
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  {(() => {
+                    const avgEstimativaSucesso = projeto.estrategias.length > 0
+                      ? projeto.estrategias.reduce((acc, e) => acc + (e.estimativa_sucesso || 0), 0) / projeto.estrategias.filter(e => e.estimativa_sucesso).length || 0
+                      : 0
+                    return (
+                      <div
+                        className={`h-3 rounded-full transition-all ${avgEstimativaSucesso >= 100 ? 'bg-green-500' : avgEstimativaSucesso >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                        style={{ width: `${Math.min(avgEstimativaSucesso, 150) / 1.5}%` }}
+                      />
+                    )
+                  })()}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Valor Restante: {formatCurrency(totalRestante)}</span>
+                  <span className={totalRestante < 0 ? 'text-red-600 font-medium' : ''}>
+                    {totalRestante < 0 ? 'Estourado!' : 'Dentro do orçamento'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Informações Secundárias */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
