@@ -660,59 +660,6 @@ export function GestaoTrafegoKanban({
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 
-        {/* Filtros */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
-            <SelectTrigger className="w-[140px] h-9 text-xs">
-              <SelectValue placeholder="Responsavel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos Responsaveis</SelectItem>
-              {usuarios.map(u => (
-                <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={clienteFilter} onValueChange={setClienteFilter}>
-            <SelectTrigger className="w-[140px] h-9 text-xs">
-              <SelectValue placeholder="Cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos Clientes</SelectItem>
-              {clientes.map(c => (
-                <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={tipoCobrancaFilter} onValueChange={setTipoCobrancaFilter}>
-            <SelectTrigger className="w-[100px] h-9 text-xs">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos Tipos</SelectItem>
-              <SelectItem value="td">TD</SelectItem>
-              <SelectItem value="fee">FEE</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {(responsavelFilter !== 'all' || clienteFilter !== 'all' || tipoCobrancaFilter !== 'all') && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setResponsavelFilter('all')
-                setClienteFilter('all')
-                setTipoCobrancaFilter('all')
-              }}
-              className="h-9 px-2"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
         <div className="flex items-center gap-3">
           <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -966,70 +913,7 @@ export function GestaoTrafegoKanban({
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <Card className="p-4">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Responsável</Label>
-            <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {usuarios.map(u => (
-                  <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Cliente</Label>
-            <Select value={clienteFilter} onValueChange={setClienteFilter}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {clientes.map(c => (
-                  <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Tipo</Label>
-            <Select value={tipoCobrancaFilter} onValueChange={setTipoCobrancaFilter}>
-              <SelectTrigger className="w-[100px] h-9">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="td">TD</SelectItem>
-                <SelectItem value="fee">FEE</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {(responsavelFilter !== 'all' || clienteFilter !== 'all' || tipoCobrancaFilter !== 'all') && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9"
-              onClick={() => {
-                setResponsavelFilter('all')
-                setClienteFilter('all')
-                setTipoCobrancaFilter('all')
-              }}
-            >
-              <X className="h-4 w-4 mr-1" />
-              Limpar
-            </Button>
-          )}
-        </div>
-      </Card>
 
       {/* Visualizacao em Lista */}
       {
