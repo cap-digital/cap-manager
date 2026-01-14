@@ -736,7 +736,8 @@ export function GestaoTrafegoKanban({
             </DialogTrigger>
             <DialogContent className={cn(
               "p-0 gap-0 overflow-hidden",
-              !isEditMode && "max-w-4xl h-[85vh] bg-transparent border-0 shadow-none"
+              !isEditMode && "max-w-4xl h-[85vh] bg-transparent border-0 shadow-none",
+              isEditMode && "max-w-5xl"
             )}>
               {!isEditMode && editingCard ? (
                 <TaskDetailsLayout
