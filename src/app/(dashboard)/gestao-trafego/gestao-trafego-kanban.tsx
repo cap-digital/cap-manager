@@ -659,12 +659,6 @@ export function GestaoTrafegoKanban({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            Fluxo: Backlog → Para Fazer → Em Execucao → Campanha Finalizada → Relatorio A Fazer → Revisao → Finalizado
-          </p>
-        </div>
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-2 items-center">
