@@ -37,7 +37,7 @@ import {
     Check,
     Info
 } from 'lucide-react'
-import { formatCurrency, formatDateInput } from '@/lib/utils'
+import { formatCurrency, formatDateInput, maskCurrency, parseCurrency, maskNumber, parseNumber } from '@/lib/utils'
 import {
     SimplifiedProjeto,
     SimplifiedEstrategia,
@@ -393,10 +393,10 @@ export function ProjectDialog({
             estrategia: estrategiaForm.estrategia || null,
             kpi: estrategiaForm.kpi || null,
             status: estrategiaForm.status,
-            valor_bruto: estrategiaForm.valor_bruto ? parseFloat(estrategiaForm.valor_bruto) : 0,
+            valor_bruto: estrategiaForm.valor_bruto ? parseInt(estrategiaForm.valor_bruto, 10) / 100 : 0,
             porcentagem_agencia: estrategiaForm.porcentagem_agencia ? parseFloat(estrategiaForm.porcentagem_agencia.toString()) : 0,
             porcentagem_plataforma: estrategiaForm.porcentagem_plataforma ? parseFloat(estrategiaForm.porcentagem_plataforma.toString()) : 0,
-            entrega_contratada: estrategiaForm.entrega_contratada ? parseFloat(estrategiaForm.entrega_contratada) : null,
+            entrega_contratada: estrategiaForm.entrega_contratada ? parseInt(estrategiaForm.entrega_contratada, 10) : null,
             estimativa_resultado: estrategiaForm.estimativa_resultado ? parseFloat(estrategiaForm.estimativa_resultado) : null,
             estimativa_sucesso: estrategiaForm.estimativa_sucesso ? parseFloat(estrategiaForm.estimativa_sucesso) : null,
             gasto_ate_momento: estrategiaForm.gasto_ate_momento ? parseFloat(estrategiaForm.gasto_ate_momento) : null,
@@ -806,7 +806,7 @@ export function ProjectDialog({
                                                 estrategia: estrategia.estrategia || '',
                                                 kpi: estrategia.kpi || '',
                                                 status: 'planejada',
-                                                valor_bruto: estrategia.valor_bruto.toString(),
+                                                valor_bruto: Math.round(estrategia.valor_bruto * 100).toString(),
                                                 porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
                                                 porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
                                                 entrega_contratada: estrategia.entrega_contratada?.toString() || '',
@@ -833,7 +833,7 @@ export function ProjectDialog({
                                                 estrategia: estrategia.estrategia || '',
                                                 kpi: estrategia.kpi || '',
                                                 status: estrategia.status,
-                                                valor_bruto: estrategia.valor_bruto.toString(),
+                                                valor_bruto: Math.round(estrategia.valor_bruto * 100).toString(),
                                                 porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
                                                 porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
                                                 entrega_contratada: estrategia.entrega_contratada?.toString() || '',
@@ -946,11 +946,13 @@ export function ProjectDialog({
                                         <div className="space-y-2">
                                             <Label>Entrega Contratada</Label>
                                             <Input
-                                                type="number"
-                                                step="1"
-                                                value={estrategiaForm.entrega_contratada}
-                                                onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))}
-                                                placeholder="Ex: 10000"
+                                                type="text"
+                                                value={estrategiaForm.entrega_contratada ? maskNumber(estrategiaForm.entrega_contratada) : ''}
+                                                onChange={e => {
+                                                    const rawValue = e.target.value.replace(/\D/g, '')
+                                                    setEstrategiaForm(p => ({ ...p, entrega_contratada: rawValue }))
+                                                }}
+                                                placeholder="Ex: 10.000"
                                             />
                                         </div>
                                     </div>
@@ -958,7 +960,15 @@ export function ProjectDialog({
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                             <Label>Valor Bruto (R$) *</Label>
-                                            <Input type="number" step="0.01" value={estrategiaForm.valor_bruto} onChange={e => setEstrategiaForm(p => ({ ...p, valor_bruto: e.target.value }))} />
+                                            <Input
+                                                type="text"
+                                                value={estrategiaForm.valor_bruto ? maskCurrency(estrategiaForm.valor_bruto) : ''}
+                                                onChange={e => {
+                                                    const rawValue = e.target.value.replace(/\D/g, '')
+                                                    setEstrategiaForm(p => ({ ...p, valor_bruto: rawValue }))
+                                                }}
+                                                placeholder="R$ 0,00"
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>% Agencia</Label>

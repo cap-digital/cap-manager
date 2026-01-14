@@ -13,11 +13,20 @@ export function formatCurrency(value: number): string {
 }
 
 export function formatDate(date: string | Date): string {
+  // Fix timezone offset: when parsing YYYY-MM-DD without time, JS treats it as UTC midnight
+  // which can cause the date to show as one day earlier in timezones behind UTC (like Brazil -3)
+  // Adding T12:00:00 ensures the date stays correct regardless of timezone
+  let dateObj: Date
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    dateObj = new Date(date + 'T12:00:00')
+  } else {
+    dateObj = new Date(date)
+  }
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(dateObj)
 }
 
 export function formatDateInput(date: string): string {
@@ -116,6 +125,25 @@ export function parseCurrency(value: string): number {
     .replace(',', '.')
     .trim()
   return parseFloat(cleaned) || 0
+}
+
+// Máscara de número enquanto digita (10.000)
+export function maskNumber(value: string): string {
+  // Remove tudo que não é número
+  const cleaned = value.replace(/\D/g, '')
+
+  if (!cleaned) return ''
+
+  // Formata com separador de milhar
+  return new Intl.NumberFormat('pt-BR').format(parseInt(cleaned, 10))
+}
+
+// Converte string formatada de número para número
+export function parseNumber(value: string): number {
+  if (!value) return 0
+  // Remove pontos (separador de milhar)
+  const cleaned = value.replace(/\./g, '').trim()
+  return parseInt(cleaned, 10) || 0
 }
 
 export function generateUTM(params: {

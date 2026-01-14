@@ -114,16 +114,17 @@ export default async function FollowUpPage() {
 
   const currentUserFormatted = currentUser
     ? {
-        id: currentUser.id,
-        email: currentUser.email,
-        nome: currentUser.nome,
-        avatar_url: currentUser.avatar_url,
-        role: currentUser.role as 'admin' | 'trader' | 'gestor' | 'cliente',
-        whatsapp: currentUser.whatsapp,
-        ativo: currentUser.ativo,
-        created_at: currentUser.created_at,
-        updated_at: currentUser.updated_at,
-      }
+      id: currentUser.id,
+      email: currentUser.email,
+      nome: currentUser.nome,
+      avatar_url: currentUser.avatar_url,
+      role: currentUser.role as 'admin' | 'trader' | 'gestor' | 'cliente',
+      whatsapp: currentUser.whatsapp,
+      email_notificacoes: currentUser.email_notificacoes ?? true,
+      ativo: currentUser.ativo,
+      created_at: currentUser.created_at,
+      updated_at: currentUser.updated_at,
+    }
     : null
 
   return (
