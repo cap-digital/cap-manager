@@ -260,6 +260,7 @@ export interface CardKanban {
   data_vencimento?: string | null
   data_inicio?: string | null
   observador_id?: number | null
+  categoria?: string | null
   ordem: number
   created_at: string
   updated_at: string

@@ -74,6 +74,7 @@ export async function POST(request: Request) {
         data_vencimento: data.data_vencimento || null,
         data_inicio: data.data_inicio || null,
         observador_id: data.observador_id || null,
+        categoria: data.categoria || null,
         ordem: maxOrdem + 1,
       })
       .select()
@@ -130,6 +131,7 @@ export async function PUT(request: Request) {
     if (data.data_vencimento !== undefined) updateData.data_vencimento = data.data_vencimento
     if (data.data_inicio !== undefined) updateData.data_inicio = data.data_inicio
     if (data.observador_id !== undefined) updateData.observador_id = data.observador_id
+    if (data.categoria !== undefined) updateData.categoria = data.categoria
     if (data.ordem !== undefined) updateData.ordem = data.ordem
 
     const { data: card, error } = await supabaseAdmin

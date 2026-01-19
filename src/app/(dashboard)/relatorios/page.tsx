@@ -51,6 +51,7 @@ export default async function RelatoriosPage() {
         linkRelatorio: card.link_relatorio,
         dataVencimento: card.data_vencimento,
         observadorId: card.observador_id,
+        categoria: card.categoria,
         createdAt: card.created_at,
         updatedAt: card.updated_at,
     })) || []

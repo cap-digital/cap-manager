@@ -307,12 +307,13 @@ export function SimpleKanban({
       titulo: formData.titulo,
       descricao: formData.descricao || null,
       area: area as AreaKanban,
-      status: editingCard?.status || 'backlog',
+      status: editingCard?.status || (area === 'relatorios' ? 'relatorio_a_fazer' : 'backlog'),
       prioridade: formData.prioridade,
       projeto_id: formData.projeto_id ? parseInt(formData.projeto_id) : null,
       cliente_id: formData.cliente_id ? parseInt(formData.cliente_id) : null,
       trader_id: formData.trader_id ? parseInt(formData.trader_id) : null,
       data_vencimento: formData.data_vencimento || null,
+      categoria: areaLabel,
     }
 
     try {
@@ -375,6 +376,7 @@ export function SimpleKanban({
           data_vencimento: newCard.data_vencimento?.split('T')[0] || null,
           data_inicio: newCard.data_inicio?.split('T')[0] || null,
           observador_id: newCard.observador_id,
+          categoria: newCard.categoria,
           ordem: newCard.ordem,
           created_at: newCard.created_at,
           updated_at: newCard.updated_at,
