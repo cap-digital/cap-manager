@@ -80,7 +80,7 @@ export function SubtaskList({ tarefaId, usuarios }: SubtaskListProps) {
         await fetch(`/api/subtarefas?id=${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ concluida }),
+            body: JSON.stringify({ id, concluida }),
         })
     }
 
