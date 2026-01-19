@@ -126,7 +126,7 @@ function SortableCard({
   const trader = usuarios.find(u => u.id === card.trader_id)
   const responsavelRelatorio = usuarios.find(u => u.id === card.responsavel_relatorio_id)
   const responsavelRevisao = usuarios.find(u => u.id === card.responsavel_revisao_id)
-
+  const observador = usuarios.find(u => u.id === card.observador_id)
 
   const isRelatorioFinalizado = card.status === 'relatorio_finalizado'
 
@@ -220,7 +220,12 @@ function SortableCard({
             Revisao: {responsavelRevisao.nome}
           </span>
         )}
-
+        {observador && (
+          <span className="flex items-center gap-1">
+            <Eye className="h-3 w-3 text-purple-500" />
+            Obs: {observador.nome}
+          </span>
+        )}
         {card.data_vencimento && (
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
@@ -319,7 +324,9 @@ export function GestaoTrafegoKanban({
     responsavel_revisao_id: '',
     revisao_relatorio_ok: false,
     link_relatorio: '',
+    data_inicio: '',
     data_vencimento: '',
+    observador_id: '',
   })
 
   const sensors = useSensors(
@@ -432,6 +439,8 @@ export function GestaoTrafegoKanban({
       revisao_relatorio_ok: formData.revisao_relatorio_ok,
       link_relatorio: formData.link_relatorio || null,
       data_vencimento: formData.data_vencimento || null,
+      data_inicio: formData.data_inicio || null,
+      observador_id: formData.observador_id ? parseInt(formData.observador_id) : null,
     }
 
     try {
@@ -493,6 +502,8 @@ export function GestaoTrafegoKanban({
           revisao_relatorio_ok: newCard.revisao_relatorio_ok,
           link_relatorio: newCard.link_relatorio,
           data_vencimento: newCard.data_vencimento?.split('T')[0] || null,
+          data_inicio: newCard.data_inicio?.split('T')[0] || null,
+          observador_id: newCard.observador_id,
           ordem: newCard.ordem,
           created_at: newCard.created_at,
           updated_at: newCard.updated_at,
@@ -528,7 +539,9 @@ export function GestaoTrafegoKanban({
       responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
       revisao_relatorio_ok: card.revisao_relatorio_ok,
       link_relatorio: card.link_relatorio || '',
+      data_inicio: card.data_inicio || '',
       data_vencimento: card.data_vencimento || '',
+      observador_id: card.observador_id?.toString() || '',
     })
     setIsEditMode(true)
     setIsDialogOpen(true)
@@ -622,7 +635,9 @@ export function GestaoTrafegoKanban({
       responsavel_revisao_id: '',
       revisao_relatorio_ok: false,
       link_relatorio: '',
+      data_inicio: '',
       data_vencimento: '',
+      observador_id: '',
     })
     setEditingCard(null)
     setIsEditMode(false)
@@ -787,7 +802,14 @@ export function GestaoTrafegoKanban({
                             </SelectContent>
                           </Select>
                         </div>
-
+                        <div>
+                          <Label>Data de Início</Label>
+                          <Input
+                            type="date"
+                            value={formData.data_inicio}
+                            onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+                          />
+                        </div>
                         <div>
                           <Label>Data Final</Label>
                           <Input
@@ -843,7 +865,24 @@ export function GestaoTrafegoKanban({
                               </SelectContent>
                             </Select>
                           </div>
-
+                          <div>
+                            <Label>Observador</Label>
+                            <Select
+                              value={formData.observador_id}
+                              onValueChange={(v) => setFormData({ ...formData, observador_id: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o observador" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {usuarios.map((u) => (
+                                  <SelectItem key={u.id} value={u.id.toString()}>
+                                    {u.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1019,7 +1058,9 @@ export function GestaoTrafegoKanban({
                                   responsavel_revisao_id: card.responsavel_revisao_id?.toString() || '',
                                   revisao_relatorio_ok: card.revisao_relatorio_ok,
                                   link_relatorio: card.link_relatorio || '',
+                                  data_inicio: card.data_inicio || '',
                                   data_vencimento: card.data_vencimento || '',
+                                  observador_id: card.observador_id?.toString() || '',
                                 })
                                 setIsEditMode(true)
                                 setIsDialogOpen(true)
