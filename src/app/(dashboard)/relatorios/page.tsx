@@ -50,7 +50,7 @@ export default async function RelatoriosPage() {
         revisaoRelatorioOk: card.revisao_relatorio_ok,
         linkRelatorio: card.link_relatorio,
         dataVencimento: card.data_vencimento,
-        observadorId: card.observador_id,
+
         createdAt: card.created_at,
         updatedAt: card.updated_at,
     })) || []

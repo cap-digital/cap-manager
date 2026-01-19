@@ -373,8 +373,7 @@ export function SimpleKanban({
           revisao_relatorio_ok: newCard.revisao_relatorio_ok,
           link_relatorio: newCard.link_relatorio,
           data_vencimento: newCard.data_vencimento?.split('T')[0] || null,
-          data_inicio: newCard.data_inicio?.split('T')[0] || null,
-          observador_id: newCard.observador_id,
+
           ordem: newCard.ordem,
           created_at: newCard.created_at,
           updated_at: newCard.updated_at,
