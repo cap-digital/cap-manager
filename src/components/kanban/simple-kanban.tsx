@@ -46,6 +46,7 @@ import { ListView } from './list-view'
 import { TableView } from './table-view'
 import { TaskDetailsLayout } from '@/components/task-view/task-details-layout'
 import { CardKanban, AreaKanban } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
 
 interface SimpleKanbanProps {
   area: string
@@ -224,6 +225,7 @@ export function SimpleKanban({
   usuarios,
   usuarioLogadoId,
 }: SimpleKanbanProps) {
+  const { toast } = useToast()
   const [cards, setCards] = useState<CardKanban[]>(initialCards)
   const [activeCard, setActiveCard] = useState<CardKanban | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -285,7 +287,14 @@ export function SimpleKanban({
   }
 
   const handleSubmit = async () => {
-    if (!formData.titulo.trim()) return
+    if (!formData.titulo.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'O título é obrigatório.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     const cardData = {
       titulo: formData.titulo,
@@ -299,50 +308,84 @@ export function SimpleKanban({
       data_vencimento: formData.data_vencimento || null,
     }
 
-    if (editingCard) {
-      const response = await fetch(`/api/cards-kanban?id=${editingCard.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cardData),
-      })
-      const updated = await response.json()
-      setCards(cards.map(c => c.id === editingCard.id ? {
-        ...c,
-        ...cardData,
-        updated_at: new Date().toISOString(),
-      } : c))
-      setIsEditMode(false)
-    } else {
-      const response = await fetch('/api/cards-kanban', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cardData),
-      })
-      const newCard = await response.json()
-      setCards([...cards, {
-        id: newCard.id,
-        titulo: newCard.titulo,
-        descricao: newCard.descricao,
-        area: newCard.area,
-        status: newCard.status,
-        prioridade: newCard.prioridade,
-        cliente_id: newCard.cliente_id,
-        projeto_id: newCard.projeto_id,
-        trader_id: newCard.trader_id,
-        responsavel_relatorio_id: newCard.responsavel_relatorio_id,
-        responsavel_revisao_id: newCard.responsavel_revisao_id,
-        revisao_relatorio_ok: newCard.revisao_relatorio_ok,
-        link_relatorio: newCard.link_relatorio,
-        data_vencimento: newCard.data_vencimento?.split('T')[0] || null,
-        data_inicio: newCard.data_inicio?.split('T')[0] || null,
-        observador_id: newCard.observador_id,
-        ordem: newCard.ordem,
-        created_at: newCard.created_at,
-        updated_at: newCard.updated_at,
-      }])
-    }
+    try {
+      if (editingCard) {
+        const response = await fetch(`/api/cards-kanban?id=${editingCard.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cardData),
+        })
 
-    resetForm()
+        if (!response.ok) {
+          throw new Error('Erro ao atualizar task')
+        }
+
+        const updated = await response.json()
+        setCards(cards.map(c => c.id === editingCard.id ? {
+          ...c,
+          ...cardData,
+          updated_at: new Date().toISOString(),
+        } : c))
+        setIsEditMode(false)
+
+        toast({
+          title: 'Sucesso',
+          description: 'Task atualizada com sucesso!',
+        })
+      } else {
+        const response = await fetch('/api/cards-kanban', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cardData),
+        })
+
+        if (!response.ok) {
+          throw new Error('Erro ao criar task')
+        }
+
+        const newCard = await response.json()
+
+        if (!newCard.id) {
+          throw new Error('Resposta inválida do servidor')
+        }
+
+        setCards(prevCards => [...prevCards, {
+          id: newCard.id,
+          titulo: newCard.titulo,
+          descricao: newCard.descricao,
+          area: newCard.area,
+          status: newCard.status,
+          prioridade: newCard.prioridade,
+          cliente_id: newCard.cliente_id,
+          projeto_id: newCard.projeto_id,
+          trader_id: newCard.trader_id,
+          responsavel_relatorio_id: newCard.responsavel_relatorio_id,
+          responsavel_revisao_id: newCard.responsavel_revisao_id,
+          revisao_relatorio_ok: newCard.revisao_relatorio_ok,
+          link_relatorio: newCard.link_relatorio,
+          data_vencimento: newCard.data_vencimento?.split('T')[0] || null,
+          data_inicio: newCard.data_inicio?.split('T')[0] || null,
+          observador_id: newCard.observador_id,
+          ordem: newCard.ordem,
+          created_at: newCard.created_at,
+          updated_at: newCard.updated_at,
+        }])
+
+        toast({
+          title: 'Sucesso',
+          description: 'Task criada com sucesso!',
+        })
+      }
+
+      resetForm()
+    } catch (error) {
+      console.error('Erro ao salvar task:', error)
+      toast({
+        title: 'Erro',
+        description: editingCard ? 'Erro ao atualizar task. Tente novamente.' : 'Erro ao criar task. Tente novamente.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleEdit = (card: CardKanban) => {
@@ -363,8 +406,27 @@ export function SimpleKanban({
   const handleDelete = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir este card?')) return
 
-    await fetch(`/api/cards-kanban?id=${id}`, { method: 'DELETE' })
-    setCards(cards.filter(c => c.id !== id))
+    try {
+      const response = await fetch(`/api/cards-kanban?id=${id}`, { method: 'DELETE' })
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir task')
+      }
+
+      setCards(cards.filter(c => c.id !== id))
+
+      toast({
+        title: 'Sucesso',
+        description: 'Task excluída com sucesso!',
+      })
+    } catch (error) {
+      console.error('Erro ao excluir task:', error)
+      toast({
+        title: 'Erro',
+        description: 'Erro ao excluir task. Tente novamente.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const resetForm = () => {
