@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
+import { sendTaskCreatedEmail, sendTaskUpdatedEmail } from '@/lib/mail'
 
 export async function GET(request: Request) {
   try {
@@ -90,6 +91,26 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
 
+    // Enviar email de notificação (fire and forget)
+    if (card.trader_id) {
+      const { data: trader } = await supabaseAdmin
+        .from(TABLES.usuarios)
+        .select('name:nome, email')
+        .eq('id', card.trader_id)
+        .single()
+
+      if (trader && trader.email) {
+        // Find project name for email
+        let projectName = 'N/A'
+        if (card.projeto_id) {
+          const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
+          if (proj) projectName = proj.nome
+        }
+
+        await sendTaskCreatedEmail(trader.email, card.titulo, projectName, trader.name)
+      }
+    }
+
     return NextResponse.json(card)
   } catch (error: any) {
     console.error('Erro ao criar card:', error)
@@ -144,6 +165,19 @@ export async function PUT(request: Request) {
     if (error) {
       console.error('Erro ao atualizar card:', error)
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    }
+
+    // Se houve mudança de status e existe um responsável, notificar
+    if (data.status !== undefined && card.trader_id) {
+      const { data: trader } = await supabaseAdmin
+        .from(TABLES.usuarios)
+        .select('name:nome, email')
+        .eq('id', card.trader_id)
+        .single()
+
+      if (trader && trader.email) {
+        await sendTaskUpdatedEmail(trader.email, card.titulo, card.status, trader.name)
+      }
     }
 
     return NextResponse.json(card)
