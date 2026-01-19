@@ -81,13 +81,21 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Erro ao criar card:', error)
-      return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+      return NextResponse.json({
+        error: error.message || 'Erro interno ao criar card',
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      }, { status: 500 })
     }
 
     return NextResponse.json(card)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar card:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    return NextResponse.json({
+      error: error.message || 'Erro interno não tratado',
+      stack: error.stack
+    }, { status: 500 })
   }
 }
 

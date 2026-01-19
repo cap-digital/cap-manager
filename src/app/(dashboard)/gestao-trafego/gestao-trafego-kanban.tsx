@@ -452,7 +452,8 @@ export function GestaoTrafegoKanban({
         })
 
         if (!response.ok) {
-          throw new Error('Erro ao atualizar task')
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Erro ao atualizar task')
         }
 
         const updated = await response.json()
@@ -476,7 +477,8 @@ export function GestaoTrafegoKanban({
         })
 
         if (!response.ok) {
-          throw new Error('Erro ao criar task')
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Erro ao criar task')
         }
 
         const newCard = await response.json()
@@ -514,11 +516,11 @@ export function GestaoTrafegoKanban({
       }
 
       resetForm()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar task:', error)
       toast({
         title: 'Erro',
-        description: editingCard ? 'Erro ao atualizar task. Tente novamente.' : 'Erro ao criar task. Tente novamente.',
+        description: error.message || (editingCard ? 'Erro ao atualizar task. Tente novamente.' : 'Erro ao criar task. Tente novamente.'),
         variant: 'destructive',
       })
     }
