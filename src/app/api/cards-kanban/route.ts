@@ -45,16 +45,15 @@ export async function POST(request: Request) {
     const data = await request.json()
 
     // Get max ordem for this area and status
-    const { data: maxOrdemData } = await supabaseAdmin
+    const { data: maxOrdemData, error: maxOrdemError } = await supabaseAdmin
       .from(TABLES.cards_kanban)
       .select('ordem')
       .eq('area', data.area)
       .eq('status', data.status || 'backlog')
       .order('ordem', { ascending: false })
       .limit(1)
-      .single()
 
-    const maxOrdem = maxOrdemData?.ordem || 0
+    const maxOrdem = maxOrdemData && maxOrdemData.length > 0 ? maxOrdemData[0].ordem : 0
 
     const { data: card, error } = await supabaseAdmin
       .from(TABLES.cards_kanban)
