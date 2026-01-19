@@ -173,11 +173,11 @@ function SortableCard({
         )}
       </div>
 
-      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
         {responsavel && (
           <span className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            {responsavel.nome}
+            Responsável: {responsavel.nome}
           </span>
         )}
         {card.data_vencimento && (

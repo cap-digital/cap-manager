@@ -608,42 +608,42 @@ export function ProjetoDetalhesClient({
     // Função para converter resposta da API para formato do estado local
     const formatEstrategiaFromApi = (apiData: Record<string, unknown>): SimplifiedEstrategia => ({
       id: apiData.id as number,
-      projeto_id: apiData.projetoId as number,
+      projeto_id: apiData.projeto_id as number,
       plataforma: apiData.plataforma as Plataforma,
-      nome_conta: apiData.nomeConta as string | null,
-      id_conta: apiData.idConta as string | null,
-      campaign_id: apiData.campaignId as string | null,
+      nome_conta: apiData.nome_conta as string | null,
+      id_conta: apiData.id_conta as string | null,
+      campaign_id: apiData.campaign_id as string | null,
       estrategia: apiData.estrategia as string | null,
       kpi: apiData.kpi as string | null,
       status: apiData.status as StatusEstrategia,
-      data_inicio: apiData.dataInicio ? String(apiData.dataInicio).split('T')[0] : null,
-      valor_bruto: Number(apiData.valorBruto) || 0,
-      porcentagem_agencia: Number(apiData.porcentagemAgencia) || 0,
-      porcentagem_plataforma: Number(apiData.porcentagemPlataforma) || 0,
-      entrega_contratada: apiData.entregaContratada ? Number(apiData.entregaContratada) : null,
-      gasto_ate_momento: apiData.gastoAteMomento ? Number(apiData.gastoAteMomento) : null,
-      entregue_ate_momento: apiData.entregueAteMomento ? Number(apiData.entregueAteMomento) : null,
-      data_atualizacao: apiData.dataAtualizacao ? String(apiData.dataAtualizacao).split('T')[0] : null,
+      data_inicio: apiData.data_inicio ? String(apiData.data_inicio).split('T')[0] : null,
+      valor_bruto: Number(apiData.valor_bruto) || 0,
+      porcentagem_agencia: Number(apiData.porcentagem_agencia) || 0,
+      porcentagem_plataforma: Number(apiData.porcentagem_plataforma) || 0,
+      entrega_contratada: apiData.entrega_contratada ? Number(apiData.entrega_contratada) : null,
+      gasto_ate_momento: apiData.gasto_ate_momento ? Number(apiData.gasto_ate_momento) : null,
+      entregue_ate_momento: apiData.entregue_ate_momento ? Number(apiData.entregue_ate_momento) : null,
+      data_atualizacao: apiData.data_atualizacao ? String(apiData.data_atualizacao).split('T')[0] : null,
       // Valores calculados
-      valor_liquido: apiData.valorLiquido ? Number(apiData.valorLiquido) : null,
-      valor_plataforma: apiData.valorPlataforma ? Number(apiData.valorPlataforma) : null,
+      valor_liquido: apiData.valor_liquido ? Number(apiData.valor_liquido) : null,
+      valor_plataforma: apiData.valor_plataforma ? Number(apiData.valor_plataforma) : null,
       coeficiente: apiData.coeficiente ? Number(apiData.coeficiente) : null,
-      valor_por_dia_plataforma: apiData.valorPorDiaPlataforma ? Number(apiData.valorPorDiaPlataforma) : null,
-      valor_restante: apiData.valorRestante ? Number(apiData.valorRestante) : null,
-      restante_por_dia: apiData.restantePorDia ? Number(apiData.restantePorDia) : null,
-      percentual_entrega: apiData.percentualEntrega ? Number(apiData.percentualEntrega) : null,
-      estimativa_resultado: apiData.estimativaResultado ? Number(apiData.estimativaResultado) : null,
-      estimativa_sucesso: apiData.estimativaSucesso ? Number(apiData.estimativaSucesso) : null,
-      meta_custo_resultado: apiData.metaCustoResultado ? Number(apiData.metaCustoResultado) : null,
-      custo_resultado: apiData.custoResultado ? Number(apiData.custoResultado) : null,
-      gasto_ate_momento_bruto: apiData.gastoAteMomentoBruto ? Number(apiData.gastoAteMomentoBruto) : null,
-      valor_restante_bruto: apiData.valorRestanteBruto ? Number(apiData.valorRestanteBruto) : null,
-      pode_abaixar_margem: apiData.podeAbaixarMargem as boolean | null,
-      pode_aumentar_margem: apiData.podeAumentarMargem as boolean | null,
+      valor_por_dia_plataforma: apiData.valor_por_dia_plataforma ? Number(apiData.valor_por_dia_plataforma) : null,
+      valor_restante: apiData.valor_restante ? Number(apiData.valor_restante) : null,
+      restante_por_dia: apiData.restante_por_dia ? Number(apiData.restante_por_dia) : null,
+      percentual_entrega: apiData.percentual_entrega ? Number(apiData.percentual_entrega) : null,
+      estimativa_resultado: apiData.estimativa_resultado ? Number(apiData.estimativa_resultado) : null,
+      estimativa_sucesso: apiData.estimativa_sucesso ? Number(apiData.estimativa_sucesso) : null,
+      meta_custo_resultado: apiData.meta_custo_resultado ? Number(apiData.meta_custo_resultado) : null,
+      custo_resultado: apiData.custo_resultado ? Number(apiData.custo_resultado) : null,
+      gasto_ate_momento_bruto: apiData.gasto_ate_momento_bruto ? Number(apiData.gasto_ate_momento_bruto) : null,
+      valor_restante_bruto: apiData.valor_restante_bruto ? Number(apiData.valor_restante_bruto) : null,
+      pode_abaixar_margem: apiData.pode_abaixar_margem as boolean | null,
+      pode_aumentar_margem: apiData.pode_aumentar_margem as boolean | null,
       observacao: apiData.observacao as string | null || null,
-      plataforma_custom: apiData.plataformaCustom as string | null || null,
-      created_at: String(apiData.createdAt),
-      updated_at: String(apiData.updatedAt),
+      plataforma_custom: apiData.plataforma_custom as string | null || null,
+      created_at: String(apiData.created_at),
+      updated_at: String(apiData.updated_at),
     })
 
     try {
@@ -1530,16 +1530,10 @@ export function ProjetoDetalhesClient({
                           <p className="text-xs text-muted-foreground">Restante Bruto</p>
                           <p className="font-semibold text-amber-700">{calc.valorRestanteBruto ? formatCurrency(calc.valorRestanteBruto) : '-'}</p>
                         </div>
-                        <div className={`p-3 rounded-lg border ${calc.podeAbaixarMargem ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                          <p className="text-xs text-muted-foreground">Pode Abaixar Margem?</p>
-                          <p className={`font-semibold ${calc.podeAbaixarMargem ? 'text-green-600' : 'text-red-600'}`}>
-                            {calc.podeAbaixarMargem === null ? '-' : calc.podeAbaixarMargem ? 'SIM' : 'NÃO'}
-                          </p>
-                        </div>
-                        <div className={`p-3 rounded-lg border ${calc.podeAumentarMargem ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                          <p className="text-xs text-muted-foreground">Pode Aumentar Margem?</p>
-                          <p className={`font-semibold ${calc.podeAumentarMargem ? 'text-green-600' : 'text-red-600'}`}>
-                            {calc.podeAumentarMargem === null ? '-' : calc.podeAumentarMargem ? 'SIM' : 'NÃO'}
+                        <div className={`p-3 rounded-lg border ${calc.podeAbaixarMargem ? 'bg-green-50 border-green-200' : calc.podeAumentarMargem ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                          <p className="text-xs text-muted-foreground">Sugestão de Margem</p>
+                          <p className={`font-semibold ${calc.podeAbaixarMargem ? 'text-green-600' : calc.podeAumentarMargem ? 'text-red-600' : 'text-gray-600'}`}>
+                            {calc.podeAbaixarMargem ? 'Pode Abaixar' : calc.podeAumentarMargem ? 'Pode Aumentar' : 'Ideal'}
                           </p>
                         </div>
                       </div>
