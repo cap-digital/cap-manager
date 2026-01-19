@@ -19,6 +19,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -402,9 +403,6 @@ export function SimpleKanban({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <p className="text-sm text-muted-foreground">
-          Fluxo: Backlog → Para Fazer → Em Execucao → Finalizado
-        </p>
         <div className="flex items-center gap-3">
           <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -608,56 +606,65 @@ export function SimpleKanban({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {columns.map((column) => (
-              <Card key={column.id} className="min-h-[500px]">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                    <div className={cn('w-3 h-3 rounded-full', column.color)} />
-                    {column.label}
-                    <Badge variant="secondary" className="ml-auto">
-                      {getColumnCards(column.id).length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DroppableColumn id={column.id}>
-                    <SortableContext
-                      items={getColumnCards(column.id).map(c => c.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {getColumnCards(column.id).map((card) => (
-                        <SortableCard
-                          key={card.id}
-                          card={card}
-                          projetos={projetos}
-                          clientes={clientes}
-                          usuarios={usuarios}
-                          onView={(card) => {
-                            setEditingCard(card)
-                            setIsEditMode(false)
-                            setIsDialogOpen(true)
-                          }}
-                          onEdit={(card) => handleEdit(card)}
-                          onDelete={handleDelete}
-                        />
-                      ))}
-                    </SortableContext>
-                    {getColumnCards(column.id).length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground text-sm">
-                        Arraste cards aqui
-                      </div>
-                    )}
-                  </DroppableColumn>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <ScrollArea className="w-full">
+            <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
+              {columns.map((column) => (
+                <Card key={column.id} className="min-h-[600px] w-[320px] shrink-0 bg-muted/30 border-muted">
+                  <CardHeader className="pb-3 border-b">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                      <div className={cn('w-3 h-3 rounded-full shadow-sm', column.color)} />
+                      <span className="truncate flex-1">{column.label}</span>
+                      <Badge variant="secondary" className="ml-auto shrink-0 text-xs font-medium">
+                        {getColumnCards(column.id).length}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <DroppableColumn id={column.id}>
+                      <SortableContext
+                        items={getColumnCards(column.id).map(c => c.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {getColumnCards(column.id).map((card) => (
+                          <SortableCard
+                            key={card.id}
+                            card={card}
+                            projetos={projetos}
+                            clientes={clientes}
+                            usuarios={usuarios}
+                            onView={(card) => {
+                              setEditingCard(card)
+                              setIsEditMode(false)
+                              setIsDialogOpen(true)
+                            }}
+                            onEdit={(card) => handleEdit(card)}
+                            onDelete={handleDelete}
+                          />
+                        ))}
+                      </SortableContext>
+                      {getColumnCards(column.id).length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/60">
+                          <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                            <Plus className="h-5 w-5" />
+                          </div>
+                          <p className="text-sm">Arraste cards aqui</p>
+                        </div>
+                      )}
+                    </DroppableColumn>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
           <DragOverlay>
             {activeCard && (
-              <div className="bg-card border rounded-lg p-3 shadow-lg">
-                <h4 className="font-medium text-sm">{activeCard.titulo}</h4>
+              <div className="bg-card border-2 border-primary/50 rounded-lg p-4 shadow-2xl rotate-3 scale-105 w-[320px]">
+                <h4 className="font-semibold text-sm">{activeCard.titulo}</h4>
+                {activeCard.descricao && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{activeCard.descricao}</p>
+                )}
               </div>
             )}
           </DragOverlay>
