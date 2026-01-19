@@ -439,6 +439,7 @@ export function GestaoTrafegoKanban({
       revisao_relatorio_ok: formData.revisao_relatorio_ok,
       link_relatorio: formData.link_relatorio || null,
       data_vencimento: formData.data_vencimento || null,
+      data_inicio: formData.data_inicio || null,
       observador_id: formData.observador_id ? parseInt(formData.observador_id) : null,
     }
 
