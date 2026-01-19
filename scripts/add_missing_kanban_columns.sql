@@ -6,6 +6,9 @@ ADD COLUMN IF NOT EXISTS observador_id INTEGER REFERENCES cap_manager.usuarios(i
 ALTER TABLE cap_manager.cards_kanban 
 ADD COLUMN IF NOT EXISTS data_inicio DATE;
 
+-- Force Supabase API schema cache reload
+NOTIFY pgrst, 'reload config';
+
 -- Verify creation
 SELECT column_name, data_type 
 FROM information_schema.columns 
