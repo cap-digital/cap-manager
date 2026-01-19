@@ -80,9 +80,6 @@ const columns = [
   { id: 'para_fazer', label: 'Para Fazer', color: 'bg-blue-500' },
   { id: 'em_execucao', label: 'Em Execucao', color: 'bg-yellow-500' },
   { id: 'projeto_finalizado', label: 'Campanha Finalizada', color: 'bg-purple-500' },
-  { id: 'relatorio_a_fazer', label: 'Relatorio A Fazer', color: 'bg-orange-500' },
-  { id: 'relatorio_em_revisao', label: 'Relatorio em Revisao', color: 'bg-pink-500' },
-  { id: 'relatorio_finalizado', label: 'Relatorio Finalizado', color: 'bg-green-500' },
 ]
 
 const prioridadeColors = {

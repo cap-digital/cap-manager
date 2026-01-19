@@ -79,6 +79,7 @@ const campanhaSubCategory: NavSubCategory = {
   icon: Megaphone,
   items: [
     { name: 'Campanhas', href: '/gestao-trafego', icon: TrendingUp },
+    { name: 'Relatórios', href: '/relatorios', icon: FileText },
     { name: 'Faturamento', href: '/faturamento', icon: DollarSign },
   ],
 }
@@ -388,6 +389,27 @@ export function Sidebar({ user }: SidebarProps) {
             )}
           </nav>
 
+          {/* Theme Toggle Button */}
+          <div className="px-3 py-2 border-t">
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start gap-3",
+                isCollapsed && "justify-center px-0"
+              )}
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            >
+              {resolvedTheme === 'dark' ? (
+                <Sun className="h-5 w-5 shrink-0" />
+              ) : (
+                <Moon className="h-5 w-5 shrink-0" />
+              )}
+              {!isCollapsed && (
+                <span>{resolvedTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+              )}
+            </Button>
+          </div>
+
           {/* User menu */}
           <div className="border-t p-4">
             <DropdownMenu>
@@ -423,17 +445,6 @@ export function Sidebar({ user }: SidebarProps) {
                     <Settings className="mr-2 h-4 w-4" />
                     Configurações
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                  className="cursor-pointer"
-                >
-                  {resolvedTheme === 'dark' ? (
-                    <Sun className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Moon className="mr-2 h-4 w-4" />
-                  )}
-                  {resolvedTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

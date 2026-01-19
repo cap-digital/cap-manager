@@ -51,7 +51,7 @@ export type StatusTarefa = 'backlog' | 'todo' | 'doing' | 'review' | 'done'
 export type PrioridadeTarefa = 'baixa' | 'media' | 'alta' | 'urgente'
 export type TipoFollowUp = 'nota' | 'alerta' | 'atualizacao' | 'reuniao'
 export type TipoAlerta = 'cobranca' | 'campanha' | 'tarefa' | 'sistema'
-export type AreaKanban = 'gestao_trafego' | 'faturamento' | 'dashboards' | 'gtm' | 'sites_lp' | 'projetos_concluidos'
+export type AreaKanban = 'gestao_trafego' | 'faturamento' | 'dashboards' | 'gtm' | 'sites_lp' | 'projetos_concluidos' | 'relatorios'
 export type AcaoSubtarefa = 'criada' | 'atualizada' | 'concluida' | 'reaberta'
 
 export interface Usuario {

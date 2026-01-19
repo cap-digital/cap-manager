@@ -66,6 +66,13 @@ const columns = [
   { id: 'finalizado', label: 'Finalizado', color: 'bg-green-500' },
 ]
 
+// Colunas específicas para Relatórios
+const columnsRelatorio = [
+  { id: 'relatorio_a_fazer', label: 'A Fazer', color: 'bg-blue-500' },
+  { id: 'relatorio_em_revisao', label: 'Em Revisão', color: 'bg-yellow-500' },
+  { id: 'relatorio_finalizado', label: 'Finalizado', color: 'bg-green-500' },
+]
+
 const prioridadeColors = {
   baixa: 'bg-slate-100 text-slate-700',
   media: 'bg-blue-100 text-blue-700',
@@ -624,7 +631,7 @@ export function SimpleKanban({
       {viewMode === 'list' && (
         <ListView
           cards={cards}
-          columns={columns}
+          columns={area === 'relatorios' ? columnsRelatorio : columns}
           projetos={projetos}
           usuarios={usuarios}
           onEdit={(card) => {
@@ -645,7 +652,7 @@ export function SimpleKanban({
       {viewMode === 'table' && (
         <TableView
           cards={cards}
-          columns={columns}
+          columns={area === 'relatorios' ? columnsRelatorio : columns}
           projetos={projetos}
           clientes={clientes}
           usuarios={usuarios}
@@ -672,7 +679,7 @@ export function SimpleKanban({
         >
           <ScrollArea className="w-full">
             <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
-              {columns.map((column) => (
+              {(area === 'relatorios' ? columnsRelatorio : columns).map((column) => (
                 <Card key={column.id} className="min-h-[600px] w-[320px] shrink-0 bg-muted/30 border-muted">
                   <CardHeader className="pb-3 border-b">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold">
