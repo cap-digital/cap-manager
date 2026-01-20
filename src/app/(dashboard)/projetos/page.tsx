@@ -37,7 +37,7 @@ export default async function ProjetosPage() {
       .order('created_at', { ascending: false }),
     supabaseAdmin
       .from(TABLES.clientes)
-      .select('id, nome')
+      .select('id, nome, tipo_cobranca')
       .eq('ativo', true)
       .order('nome', { ascending: true }),
     supabaseAdmin

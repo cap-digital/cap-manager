@@ -101,7 +101,7 @@ interface ProjectDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     project: SimplifiedProjeto | null
-    clientes: { id: number; nome: string }[]
+    clientes: { id: number; nome: string; tipo_cobranca?: TipoCobranca }[]
     traders: { id: number; nome: string }[]
     pis: SimplifiedPi[]
     agencias: SimplifiedAgencia[]
@@ -494,7 +494,11 @@ export function ProjectDialog({
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                 })
-                if (!response.ok) throw new Error('Erro ao criar estrategia')
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}))
+                    console.error('Erro detalhado:', errorData)
+                    throw new Error(errorData.details || errorData.error || 'Erro ao criar estrategia')
+                }
                 const novaEstrategia = await response.json()
 
                 const updatedStrategies = [...strategies, novaEstrategia]
@@ -627,11 +631,16 @@ export function ProjectDialog({
                                 <SearchableSelect
                                     options={clientes.map(c => ({ value: c.id.toString(), label: c.nome }))}
                                     value={formData.cliente_id?.toString() || ''}
-                                    onValueChange={v => setFormData(p => ({
-                                        ...p,
-                                        cliente_id: v ? parseInt(v) : null,
-                                        pi_id: null // Reset PI quando cliente muda
-                                    }))}
+                                    onValueChange={v => {
+                                        const clienteId = v ? parseInt(v) : null
+                                        const clienteSelecionado = clientes.find(c => c.id === clienteId)
+                                        setFormData(p => ({
+                                            ...p,
+                                            cliente_id: clienteId,
+                                            pi_id: null, // Reset PI quando cliente muda
+                                            tipo_cobranca: clienteSelecionado?.tipo_cobranca || 'td'
+                                        }))
+                                    }}
                                     placeholder="Selecione um cliente"
                                     searchPlaceholder="Buscar cliente..."
                                     emptyMessage="Nenhum cliente encontrado."
