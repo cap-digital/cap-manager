@@ -502,9 +502,17 @@ export function ProjectDialog({
                     body: JSON.stringify(payload),
                 })
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}))
-                    console.error('Erro detalhado:', errorData)
-                    throw new Error(errorData.details || errorData.error || 'Erro ao criar estrategia')
+                    const errorText = await response.text()
+                    let errorMessage = 'Erro ao criar estrategia'
+                    try {
+                        const errorData = JSON.parse(errorText)
+                        console.error('Erro detalhado (JSON):', errorData)
+                        errorMessage = errorData.details || errorData.error || errorData.message || errorMessage
+                    } catch (e) {
+                        console.error('Erro detalhado (Texto):', errorText)
+                        errorMessage = `Erro no servidor: ${errorText.slice(0, 100)}...`
+                    }
+                    throw new Error(errorMessage)
                 }
                 const novaEstrategia = await response.json()
 
