@@ -178,6 +178,10 @@ export async function POST(request: Request) {
 
     const data = await request.json()
 
+    if (!data.projeto_id) {
+      return NextResponse.json({ error: 'ID do projeto é obrigatório' }, { status: 400 })
+    }
+
     // Buscar dados do projeto para cálculos
     const { data: projeto, error: projetoError } = await supabaseAdmin
       .from(TABLES.projetos)
@@ -187,19 +191,29 @@ export async function POST(request: Request) {
 
     if (projetoError || !projeto) {
       console.error('Erro ao buscar projeto:', projetoError)
-      return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+      return NextResponse.json({
+        error: 'Projeto não encontrado',
+        details: projetoError
+      }, { status: 404 })
     }
 
     const dataInicio = data.data_inicio ? new Date(data.data_inicio + 'T12:00:00') : null
 
+    // Helper para converter para número seguro
+    const toNumber = (val: any) => {
+      if (!val) return 0
+      const num = Number(val)
+      return isNaN(num) ? 0 : num
+    }
+
     // Calcular todos os valores
     const valoresCalculados = calcularValoresEstrategia({
-      valorBruto: data.valor_bruto || 0,
-      porcentagemAgencia: data.porcentagem_agencia || 0,
-      porcentagemPlataforma: data.porcentagem_plataforma || 0,
-      entregaContratada: data.entrega_contratada || null,
-      gastoAteMomento: data.gasto_ate_momento || null,
-      entregueAteMomento: data.entregue_ate_momento || null,
+      valorBruto: toNumber(data.valor_bruto),
+      porcentagemAgencia: toNumber(data.porcentagem_agencia),
+      porcentagemPlataforma: toNumber(data.porcentagem_plataforma),
+      entregaContratada: toNumber(data.entrega_contratada) || null,
+      gastoAteMomento: toNumber(data.gasto_ate_momento) || null,
+      entregueAteMomento: toNumber(data.entregue_ate_momento) || null,
       kpi: data.kpi || null,
       dataInicio,
       tipoCobranca: projeto.tipo_cobranca,
@@ -217,12 +231,12 @@ export async function POST(request: Request) {
       kpi: data.kpi || null,
       status: data.status || 'planejada',
       data_inicio: dataInicio?.toISOString(),
-      valor_bruto: data.valor_bruto || 0,
-      porcentagem_agencia: data.porcentagem_agencia || 0,
-      porcentagem_plataforma: data.porcentagem_plataforma || 0,
-      entrega_contratada: data.entrega_contratada || null,
-      gasto_ate_momento: data.gasto_ate_momento || null,
-      entregue_ate_momento: data.entregue_ate_momento || null,
+      valor_bruto: toNumber(data.valor_bruto),
+      porcentagem_agencia: toNumber(data.porcentagem_agencia),
+      porcentagem_plataforma: toNumber(data.porcentagem_plataforma),
+      entrega_contratada: toNumber(data.entrega_contratada) || null,
+      gasto_ate_momento: toNumber(data.gasto_ate_momento) || null,
+      entregue_ate_momento: toNumber(data.entregue_ate_momento) || null,
       data_atualizacao: data.data_atualizacao ? new Date(data.data_atualizacao + 'T12:00:00').toISOString() : null,
       // Valores calculados (snake_case)
       valor_liquido: valoresCalculados.valorLiquido,
@@ -260,13 +274,21 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Erro ao criar estrategia:', error)
-      return NextResponse.json({ error: 'Erro ao criar estrategia' }, { status: 500 })
+      return NextResponse.json({
+        error: 'Erro ao criar estrategia',
+        details: error.message,
+        pgError: error
+      }, { status: 500 })
     }
 
     return NextResponse.json(estrategia)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar estrategia:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Erro interno no servidor API',
+      details: error.message,
+      stack: error.stack
+    }, { status: 500 })
   }
 }
 
