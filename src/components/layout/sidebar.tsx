@@ -66,7 +66,8 @@ interface NavSubCategory {
 
 // Itens principais (sem categoria)
 const mainNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Visão Geral', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard-gerencial', icon: BarChart3 },
   { name: 'Agências', href: '/agencias', icon: Building2 },
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'PIs', href: '/pi', icon: FileText },

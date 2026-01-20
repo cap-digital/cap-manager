@@ -166,7 +166,7 @@ export function ClientesClient({
 
     // Limpar máscaras antes de enviar
     const payload = {
-      nome: formData.nome,
+      nome: formData.nome.toUpperCase(),
       agencia_id: formData.agencia_id,
       contato: formData.contato || null,
       cnpj: formData.cnpj ? formData.cnpj.replace(/\D/g, '') : null,
@@ -353,7 +353,7 @@ export function ClientesClient({
                     placeholder="Nome do cliente"
                     value={formData.nome}
                     onChange={e =>
-                      setFormData(prev => ({ ...prev, nome: e.target.value }))
+                      setFormData(prev => ({ ...prev, nome: e.target.value.toUpperCase() }))
                     }
                     required
                   />

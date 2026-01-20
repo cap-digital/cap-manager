@@ -1009,7 +1009,7 @@ export function ProjectDialog({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className={`grid ${formData.tipo_cobranca === 'fee' ? 'grid-cols-1' : 'grid-cols-3'} gap-4`}>
                                         <div className="space-y-2">
                                             <Label>Valor Bruto (R$) *</Label>
                                             <Input
@@ -1022,14 +1022,18 @@ export function ProjectDialog({
                                                 placeholder="R$ 0,00"
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>% Agencia</Label>
-                                            <Input type="number" step="0.1" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>% Plataforma (Imposto)</Label>
-                                            <Input type="number" step="0.1" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
-                                        </div>
+                                        {formData.tipo_cobranca !== 'fee' && (
+                                            <>
+                                                <div className="space-y-2">
+                                                    <Label>% Agencia</Label>
+                                                    <Input type="number" step="0.1" value={estrategiaForm.porcentagem_agencia} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>% Plataforma (Imposto)</Label>
+                                                    <Input type="number" step="0.1" value={estrategiaForm.porcentagem_plataforma} onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))} />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     {/* Optional ID fields */}
