@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+import { NotificationInbox } from './notification-inbox'
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
@@ -69,11 +70,13 @@ export function Header({ title, subtitle, backHref }: HeaderProps) {
   useEffect(() => {
     fetchNotifications()
 
-    // Optional: Subscribe to realtime (omitted for now to keep it simple as requested "fix inadequately")
-    // If user wants realtime, we can add it later. Polling or just fetch on mount is safer for now.
-    const interval = setInterval(fetchNotifications, 60000) // Poll every min
+    // Poll every min
+    const interval = setInterval(fetchNotifications, 60000)
     return () => clearInterval(interval)
   }, [session])
+
+  // @ts-ignore
+  const userId = session?.user?.id
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-8">
@@ -93,7 +96,7 @@ export function Header({ title, subtitle, backHref }: HeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         {/* Search */}
         <div className="hidden md:flex relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -103,7 +106,10 @@ export function Header({ title, subtitle, backHref }: HeaderProps) {
           />
         </div>
 
-        {/* Notifications */}
+        {/* Inbox / Caixa de Entrada */}
+        {userId && <NotificationInbox userId={Number(userId)} />}
+
+        {/* Quick Notifications Bell */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
@@ -117,7 +123,7 @@ export function Header({ title, subtitle, backHref }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <div className="flex items-center justify-between px-4 py-2 border-b">
-              <span className="font-semibold">Notificações</span>
+              <span className="font-semibold">Notificações Recentes</span>
               {unreadCount > 0 && (
                 <Button variant="ghost" size="sm" className="text-xs" onClick={markAsRead}>
                   Marcar como lidas
@@ -129,10 +135,10 @@ export function Header({ title, subtitle, backHref }: HeaderProps) {
                 Nenhuma notificação recente.
               </div>
             ) : (
-              notifications.map(notification => (
+              notifications.slice(0, 5).map(notification => (
                 <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1 p-4 cursor-pointer">
                   <span className={`font-medium ${!notification.lido ? 'text-primary' : ''}`}>{notification.titulo}</span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground line-clamp-2">
                     {notification.mensagem}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -140,6 +146,13 @@ export function Header({ title, subtitle, backHref }: HeaderProps) {
                   </span>
                 </DropdownMenuItem>
               ))
+            )}
+            {notifications.length > 5 && (
+              <div className="p-2 text-center border-t">
+                <span className="text-xs text-muted-foreground">
+                  Clique na caixa de entrada para ver todas
+                </span>
+              </div>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

@@ -35,7 +35,8 @@ import {
     CreditCard,
     Copy,
     Check,
-    Info
+    Info,
+    RefreshCw
 } from 'lucide-react'
 import { formatCurrency, formatDateInput, maskCurrency, parseCurrency, maskNumber, parseNumber } from '@/lib/utils'
 import {
@@ -169,6 +170,38 @@ export function ProjectDialog({
     const [strategies, setStrategies] = useState<SimplifiedEstrategia[]>([])
     const [currentProjetoId, setCurrentProjetoId] = useState<number | null>(null)
     const [utmCopied, setUtmCopied] = useState(false)
+
+    // Local state for PIs refresh
+    const [pisList, setPisList] = useState(pis)
+    const [isRefreshingPis, setIsRefreshingPis] = useState(false)
+
+    // Sync props with state
+    useEffect(() => {
+        setPisList(pis)
+    }, [pis])
+
+    // Function to refresh PIs
+    const refreshPis = async () => {
+        setIsRefreshingPis(true)
+        try {
+            const res = await fetch('/api/pis')
+            if (!res.ok) throw new Error('Falha ao buscar PIs')
+            const data = await res.json()
+            setPisList(data)
+            toast({ title: 'Lista de PIs atualizada' })
+        } catch (error) {
+            console.error('Erro ao atualizar PIs:', error)
+            toast({ title: 'Erro ao atualizar PIs', variant: 'destructive' })
+        } finally {
+            setIsRefreshingPis(false)
+        }
+    }
+
+    // Filtrar PIs baseado no cliente selecionado
+    const filteredPis = useMemo(() => {
+        if (!formData.cliente_id) return []
+        return pisList.filter(pi => pi.cliente_id === formData.cliente_id)
+    }, [pisList, formData.cliente_id])
 
     // Auto-calculate Estimativa Sucesso (%) = (entregue_ate_momento / entrega_contratada) * 100
     useEffect(() => {
@@ -594,7 +627,11 @@ export function ProjectDialog({
                                 <SearchableSelect
                                     options={clientes.map(c => ({ value: c.id.toString(), label: c.nome }))}
                                     value={formData.cliente_id?.toString() || ''}
-                                    onValueChange={v => setFormData(p => ({ ...p, cliente_id: v ? parseInt(v) : null }))}
+                                    onValueChange={v => setFormData(p => ({
+                                        ...p,
+                                        cliente_id: v ? parseInt(v) : null,
+                                        pi_id: null // Reset PI quando cliente muda
+                                    }))}
                                     placeholder="Selecione um cliente"
                                     searchPlaceholder="Buscar cliente..."
                                     emptyMessage="Nenhum cliente encontrado."
@@ -615,18 +652,33 @@ export function ProjectDialog({
                             {formData.tipo_cobranca === 'td' && (
                                 <div className="space-y-2">
                                     <Label>PI - Autorizacao</Label>
-                                    <SearchableSelect
-                                        options={pis.map(pi => ({
-                                            value: pi.id.toString(),
-                                            label: pi.identificador,
-                                            description: formatCurrency(pi.valor_bruto)
-                                        }))}
-                                        value={formData.pi_id?.toString() || ''}
-                                        onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}
-                                        placeholder="Selecione um PI"
-                                        searchPlaceholder="Buscar PI..."
-                                        emptyMessage="Nenhum PI encontrado."
-                                    />
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <SearchableSelect
+                                                options={filteredPis.map(pi => ({
+                                                    value: pi.id.toString(),
+                                                    label: pi.identificador,
+                                                    description: formatCurrency(pi.valor_bruto)
+                                                }))}
+                                                value={formData.pi_id?.toString() || ''}
+                                                onValueChange={v => setFormData(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}
+                                                placeholder={formData.cliente_id ? "Selecione um PI" : "Selecione um cliente primeiro"}
+                                                searchPlaceholder="Buscar PI..."
+                                                emptyMessage={formData.cliente_id ? "Nenhum PI encontrado para este cliente." : "Selecione um cliente primeiro."}
+                                                disabled={!formData.cliente_id}
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={refreshPis}
+                                            disabled={isRefreshingPis || !formData.cliente_id}
+                                            title="Atualizar lista de PIs"
+                                        >
+                                            <RefreshCw className={`h-4 w-4 ${isRefreshingPis ? 'animate-spin' : ''}`} />
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
 
@@ -1053,32 +1105,39 @@ export function ProjectDialog({
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label>Estimativa Resultado</Label>
-                                            <Input
-                                                type="number"
-                                                step="1"
-                                                value={estrategiaForm.estimativa_resultado}
-                                                onChange={e => setEstrategiaForm(p => ({ ...p, estimativa_resultado: e.target.value }))}
-                                                placeholder="Ex: 500"
-                                            />
+                                    {/* Campos de estimativa - Apenas exibidos quando editando (valores já existem no banco) */}
+                                    {editingEstrategia && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="flex items-center gap-2">
+                                                    Estimativa Resultado
+                                                    <Badge variant="secondary" className="text-xs">Auto</Badge>
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    step="1"
+                                                    value={estrategiaForm.estimativa_resultado}
+                                                    readOnly
+                                                    className="bg-muted"
+                                                    placeholder="Calculado automaticamente"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="flex items-center gap-2">
+                                                    Estimativa Sucesso (%)
+                                                    <Badge variant="secondary" className="text-xs">Auto</Badge>
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={estrategiaForm.estimativa_sucesso}
+                                                    readOnly
+                                                    className="bg-muted"
+                                                    placeholder="Calculado automaticamente"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label className="flex items-center gap-2">
-                                                Estimativa Sucesso (%)
-                                                <Badge variant="secondary" className="text-xs">Auto</Badge>
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                value={estrategiaForm.estimativa_sucesso}
-                                                readOnly
-                                                className="bg-muted"
-                                                placeholder="Calculado automaticamente"
-                                            />
-                                        </div>
-                                    </div>
+                                    )}
 
                                     <div className="flex justify-end gap-2 pt-2">
                                         <Button type="button" variant="outline" onClick={() => setIsEstrategiaOpen(false)}>Cancelar</Button>

@@ -562,6 +562,24 @@ export function SimpleKanban({
                       </div>
                     </div>
                     <div>
+                      <Label>Cliente</Label>
+                      <Select
+                        value={formData.cliente_id}
+                        onValueChange={(v) => setFormData({ ...formData, cliente_id: v, projeto_id: '' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clientes.map((c) => (
+                            <SelectItem key={c.id} value={c.id.toString()}>
+                              {c.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <Label>Projeto</Label>
                       <Select
                         value={formData.projeto_id}
@@ -574,24 +592,6 @@ export function SimpleKanban({
                           {projetos.map((p) => (
                             <SelectItem key={p.id} value={p.id.toString()}>
                               {p.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Cliente</Label>
-                      <Select
-                        value={formData.cliente_id}
-                        onValueChange={(v) => setFormData({ ...formData, cliente_id: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clientes.map((c) => (
-                            <SelectItem key={c.id} value={c.id.toString()}>
-                              {c.nome}
                             </SelectItem>
                           ))}
                         </SelectContent>

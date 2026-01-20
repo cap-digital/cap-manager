@@ -8,6 +8,7 @@ export interface SimplifiedPi {
     id: number
     identificador: string
     valor_bruto: number
+    cliente_id: number | null
 }
 
 export interface SimplifiedAgencia {

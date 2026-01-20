@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -60,6 +60,7 @@ interface SimplifiedPi {
   id: number
   identificador: string
   valor_bruto: number
+  cliente_id: number | null
 }
 
 interface SimplifiedAgencia {
@@ -251,6 +252,12 @@ export function ProjetoDetalhesClient({
 
   const router = useRouter()
   const { toast } = useToast()
+
+  // Filtrar PIs baseado no cliente selecionado no formulário
+  const filteredPis = useMemo(() => {
+    if (!projetoForm.cliente_id) return []
+    return pis.filter(pi => pi.cliente_id === projetoForm.cliente_id)
+  }, [pis, projetoForm.cliente_id])
 
   const resetProjetoForm = () => {
     setProjetoForm({
@@ -535,6 +542,7 @@ export function ProjetoDetalhesClient({
           id: updatedProjeto.pi.id,
           identificador: updatedProjeto.pi.identificador,
           valor_bruto: Number(updatedProjeto.pi.valorBruto),
+          cliente_id: updatedProjeto.pi.cliente_id || null,
         } : null,
         agencia: updatedProjeto.agencia,
         estrategias: prev.estrategias,
@@ -1155,7 +1163,11 @@ export function ProjetoDetalhesClient({
                 <SearchableSelect
                   options={clientes.map(c => ({ value: c.id.toString(), label: c.nome }))}
                   value={projetoForm.cliente_id?.toString() || ''}
-                  onValueChange={v => setProjetoForm(p => ({ ...p, cliente_id: v ? parseInt(v) : p.cliente_id }))}
+                  onValueChange={v => setProjetoForm(p => ({
+                    ...p,
+                    cliente_id: v ? parseInt(v) : p.cliente_id,
+                    pi_id: null // Reset PI quando cliente muda
+                  }))}
                   placeholder="Selecione o cliente"
                 />
               </div>
@@ -1175,10 +1187,11 @@ export function ProjetoDetalhesClient({
                   <div className="space-y-2">
                     <Label>PI</Label>
                     <SearchableSelect
-                      options={pis.map(p => ({ value: p.id.toString(), label: p.identificador, description: formatCurrency(p.valor_bruto) }))}
+                      options={filteredPis.map(p => ({ value: p.id.toString(), label: p.identificador, description: formatCurrency(p.valor_bruto) }))}
                       value={projetoForm.pi_id?.toString() || ''}
                       onValueChange={v => setProjetoForm(p => ({ ...p, pi_id: v ? parseInt(v) : null }))}
-                      placeholder="Selecione o PI"
+                      placeholder={projetoForm.cliente_id ? "Selecione o PI" : "Selecione um cliente primeiro"}
+                      disabled={!projetoForm.cliente_id}
                     />
                   </div>
 

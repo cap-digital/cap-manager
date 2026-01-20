@@ -95,3 +95,56 @@ export async function sendTaskUpdatedEmail(
         return null
     }
 }
+
+// Função genérica para enviar notificações por email
+export async function sendNotificationEmail(
+    to: string,
+    userName: string,
+    title: string,
+    message: string,
+    actionLink?: string
+) {
+    try {
+        if (!process.env.RESEND_API_KEY) {
+            console.warn('RESEND_API_KEY is not set. Skipping email.')
+            return null
+        }
+
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+        const actionButton = actionLink
+            ? `<a href="${baseUrl}${actionLink}" style="display: inline-block; background-color: #0099ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">Ver detalhes</a>`
+            : ''
+
+        const { data, error } = await resend.emails.send({
+            from: SENDER_EMAIL,
+            to: [to],
+            subject: `CAP Manager: ${title}`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #0099ff 0%, #0066cc 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">CAP Manager</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p style="color: #374151; font-size: 16px;">Olá <strong>${userName}</strong>,</p>
+            <h2 style="color: #111827; font-size: 18px; margin: 16px 0;">${title}</h2>
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">${message}</p>
+            ${actionButton}
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+            <p style="color: #9ca3af; font-size: 12px;">Esta é uma notificação automática do CAP Manager. Não responda a este email.</p>
+          </div>
+        </div>
+      `,
+        })
+
+        if (error) {
+            console.error('Erro ao enviar email de notificação:', error)
+            return null
+        }
+
+        return data
+    } catch (err) {
+        console.error('Erro inesperado ao enviar email:', err)
+        return null
+    }
+}
+

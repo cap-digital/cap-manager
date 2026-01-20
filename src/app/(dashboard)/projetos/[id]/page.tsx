@@ -23,7 +23,7 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
         clientes:cap_manager_clientes!cap_manager_projetos_cliente_id_fkey(id, nome),
         trader:cap_manager_usuarios!cap_manager_projetos_trader_id_fkey(id, nome),
         colaborador:cap_manager_usuarios!cap_manager_projetos_colaborador_id_fkey(id, nome),
-        pis:cap_manager_pis!cap_manager_projetos_pi_id_fkey(id, identificador, valor_bruto),
+        pis:cap_manager_pis!cap_manager_projetos_pi_id_fkey(id, identificador, valor_bruto, cliente_id),
         agencias:cap_manager_agencias!cap_manager_projetos_agencia_id_fkey(id, nome),
         estrategias:cap_manager_estrategias(*)
       `)
@@ -36,7 +36,7 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
       .order('nome', { ascending: true }),
     supabaseAdmin
       .from(TABLES.pis)
-      .select('id, identificador, valor_bruto')
+      .select('id, identificador, valor_bruto, cliente_id')
       .order('identificador', { ascending: true }),
     supabaseAdmin
       .from(TABLES.agencias)
@@ -70,6 +70,7 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
       id: projeto.pis.id,
       identificador: projeto.pis.identificador,
       valor_bruto: Number(projeto.pis.valor_bruto),
+      cliente_id: projeto.pis.cliente_id || null,
     } : null,
     tipo_cobranca: projeto.tipo_cobranca,
     agencia_id: projeto.agencia_id,
@@ -134,6 +135,7 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
     id: pi.id,
     identificador: pi.identificador,
     valor_bruto: Number(pi.valor_bruto),
+    cliente_id: pi.cliente_id || null,
   }))
 
   const agenciasFormatted = agencias.map(agencia => ({
