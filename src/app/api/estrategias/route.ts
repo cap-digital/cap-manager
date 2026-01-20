@@ -177,6 +177,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json()
+    console.log('Payload recebido em POST /api/estrategias:', JSON.stringify(data, null, 2))
 
     if (!data.projeto_id) {
       return NextResponse.json({ error: 'ID do projeto é obrigatório' }, { status: 400 })

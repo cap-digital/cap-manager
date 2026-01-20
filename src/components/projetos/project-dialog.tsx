@@ -417,6 +417,13 @@ export function ProjectDialog({
         if (!currentProjetoId) return
         setIsLoading(true)
 
+        // Helper para limpar valores monetários (remove tudo que não é dígito)
+        const parseMoney = (val: any) => {
+            if (!val) return 0
+            const str = val.toString().replace(/\D/g, '')
+            return str ? parseInt(str, 10) / 100 : 0
+        }
+
         const payload = {
             projeto_id: currentProjetoId,
             plataforma: estrategiaForm.plataforma,
@@ -426,14 +433,14 @@ export function ProjectDialog({
             estrategia: estrategiaForm.estrategia || null,
             kpi: estrategiaForm.kpi || null,
             status: estrategiaForm.status,
-            valor_bruto: estrategiaForm.valor_bruto ? parseInt(estrategiaForm.valor_bruto, 10) / 100 : 0,
-            porcentagem_agencia: estrategiaForm.porcentagem_agencia ? parseFloat(estrategiaForm.porcentagem_agencia.toString()) : 0,
-            porcentagem_plataforma: estrategiaForm.porcentagem_plataforma ? parseFloat(estrategiaForm.porcentagem_plataforma.toString()) : 0,
-            entrega_contratada: estrategiaForm.entrega_contratada ? parseInt(estrategiaForm.entrega_contratada, 10) : null,
-            estimativa_resultado: estrategiaForm.estimativa_resultado ? parseFloat(estrategiaForm.estimativa_resultado) : null,
-            estimativa_sucesso: estrategiaForm.estimativa_sucesso ? parseFloat(estrategiaForm.estimativa_sucesso) : null,
-            gasto_ate_momento: estrategiaForm.gasto_ate_momento ? parseFloat(estrategiaForm.gasto_ate_momento) : null,
-            entregue_ate_momento: estrategiaForm.entregue_ate_momento ? parseFloat(estrategiaForm.entregue_ate_momento) : null,
+            valor_bruto: parseMoney(estrategiaForm.valor_bruto),
+            porcentagem_agencia: estrategiaForm.porcentagem_agencia ? parseFloat(estrategiaForm.porcentagem_agencia.toString().replace(',', '.')) : 0,
+            porcentagem_plataforma: estrategiaForm.porcentagem_plataforma ? parseFloat(estrategiaForm.porcentagem_plataforma.toString().replace(',', '.')) : 0,
+            entrega_contratada: estrategiaForm.entrega_contratada ? parseInt(estrategiaForm.entrega_contratada.replace(/\D/g, ''), 10) : null,
+            estimativa_resultado: estrategiaForm.estimativa_resultado ? parseFloat(estrategiaForm.estimativa_resultado.toString().replace(',', '.')) : null,
+            estimativa_sucesso: estrategiaForm.estimativa_sucesso ? parseFloat(estrategiaForm.estimativa_sucesso.toString().replace(',', '.')) : null,
+            gasto_ate_momento: parseMoney(estrategiaForm.gasto_ate_momento),
+            entregue_ate_momento: estrategiaForm.entregue_ate_momento ? parseFloat(estrategiaForm.entregue_ate_momento.toString().replace(',', '.')) : null,
             data_atualizacao: estrategiaForm.data_atualizacao || null,
             observacao: estrategiaForm.observacao || null,
             plataforma_custom: estrategiaForm.plataforma_custom || null,
