@@ -33,6 +33,7 @@ import {
   Sun,
   Moon,
   Briefcase,
+  ScrollText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,7 @@ const mainNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard-gerencial', icon: BarChart3 },
   { name: 'Agências', href: '/agencias', icon: Building2 },
   { name: 'Clientes', href: '/clientes', icon: Users },
+  { name: 'Contratos', href: '/contratos', icon: ScrollText },
   { name: 'PIs', href: '/pi', icon: FileText },
   { name: 'Projetos', href: '/projetos', icon: Briefcase },
 ]

@@ -38,7 +38,28 @@ export const TABLES = {
   follow_ups: 'cap_manager_follow_ups',
   alertas: 'cap_manager_alertas',
   comentarios_tarefa: 'cap_manager_comentarios_tarefa',
+  contratos: 'cap_manager_contratos',
 } as const
+
+// Tipos para o banco de dados
+// ... (existente)
+
+export interface Contrato {
+  id: number
+  cliente_id: number
+  recorrente: boolean
+  data_inicio: string
+  data_fim?: string | null
+  valor: number
+  ativo: boolean
+  observacao?: string | null
+  created_at: string
+  updated_at: string
+  cliente?: Cliente
+}
+
+// ... (interfaces existentes)
+
 
 // Tipos para o banco de dados
 export type Role = 'admin' | 'trader' | 'gestor' | 'cliente'
