@@ -339,14 +339,14 @@ export function ProjetosClient({
                               {projeto.nome}
                               {getStatusBadge(projeto.status)}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                            <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
                               {projeto.agencia && (
                                 <>
                                   <Building2 className="h-3 w-3" />
                                   {projeto.agencia.nome}
                                 </>
                               )}
-                            </p>
+                            </div>
                           </div>
                           {projeto.pi && (
                             <div className="text-right">
@@ -362,16 +362,16 @@ export function ProjetosClient({
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-2">
                           <div>
                             <p className="text-muted-foreground text-xs uppercase">Trader</p>
-                            <p className="font-medium flex items-center gap-1">
+                            <div className="font-medium flex items-center gap-1">
                               <User className="h-3 w-3" /> {projeto.trader?.nome || '-'}
-                            </p>
+                            </div>
                           </div>
                           <div>
                             <p className="text-muted-foreground text-xs uppercase">Periodo</p>
-                            <p className="font-medium flex items-center gap-1">
+                            <div className="font-medium flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {projeto.data_inicio ? formatDate(projeto.data_inicio) : '?'} - {projeto.data_fim ? formatDate(projeto.data_fim) : '?'}
-                            </p>
+                            </div>
                           </div>
                           <div>
                             <p className="text-muted-foreground text-xs uppercase">Estrategias</p>
