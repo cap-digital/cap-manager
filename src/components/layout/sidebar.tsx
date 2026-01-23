@@ -98,6 +98,7 @@ const inteligenciaSubCategory: NavSubCategory = {
   name: 'Inteligência',
   icon: PieChart,
   items: [
+    { name: 'Projetos', href: '/inteligencia-projetos', icon: FolderKanban },
     { name: 'Dashboards', href: '/dashboards', icon: BarChart3 },
     { name: 'GTM', href: '/gtm', icon: Tag },
     { name: 'Sites/LP', href: '/sites-lp', icon: Globe },
@@ -402,13 +403,15 @@ export function Sidebar({ user }: SidebarProps) {
               )}
               onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             >
-              {resolvedTheme === 'dark' ? (
+              {mounted && resolvedTheme === 'dark' ? (
                 <Sun className="h-5 w-5 shrink-0" />
-              ) : (
+              ) : mounted ? (
                 <Moon className="h-5 w-5 shrink-0" />
+              ) : (
+                <div className="h-5 w-5 shrink-0" />
               )}
               {!isCollapsed && (
-                <span>{resolvedTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+                <span>{mounted && resolvedTheme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
               )}
             </Button>
           </div>

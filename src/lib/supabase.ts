@@ -39,6 +39,7 @@ export const TABLES = {
   alertas: 'cap_manager_alertas',
   comentarios_tarefa: 'cap_manager_comentarios_tarefa',
   contratos: 'cap_manager_contratos',
+  inteligencia_projetos: 'cap_manager_inteligencia_projetos',
 } as const
 
 // Tipos para o banco de dados
@@ -321,3 +322,23 @@ export interface Comentario {
   created_at: string
   usuario?: Usuario | null
 }
+
+export interface InteligenciaProjeto {
+  id: number
+  nome_projeto: string
+  data_criacao?: string | null
+  link_lovable?: string | null
+  link_vercel?: string | null
+  link_render_railway?: string | null
+  link_dominio?: string | null
+  feito_por_id?: number | null
+  revisado_por_id?: number | null
+  cliente_id?: number | null
+  created_at: string
+  updated_at: string
+  cliente?: Cliente | null
+  feito_por?: Usuario | null
+  revisado_por?: Usuario | null
+}
+
+

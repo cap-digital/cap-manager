@@ -268,3 +268,21 @@ export interface NomenclaturaConfig {
   formato: string
   data: string
 }
+// ==================== INTELIGÊNCIA PROJETOS ====================
+export interface InteligenciaProjeto {
+  id: number
+  nome_projeto: string
+  data_criacao: string | null
+  link_lovable: string | null
+  link_vercel: string | null
+  link_render_railway: string | null
+  link_dominio: string | null
+  feito_por_id: number | null
+  revisado_por_id: number | null
+  cliente_id: number | null
+  cliente?: Cliente
+  feito_por?: Usuario
+  revisado_por?: Usuario
+  created_at: string
+  updated_at: string
+}

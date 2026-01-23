@@ -1,10 +1,34 @@
-import { ScrollText } from 'lucide-react'
+'use client'
 
-// ... existing imports ...
+import { useState, useMemo } from 'react'
+import {
+    ScrollText,
+    DollarSign,
+    Briefcase,
+    Target,
+    TrendingUp,
+    Search,
+    ArrowUpRight
+} from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table'
+import { formatCurrency } from '@/lib/utils'
+import type { Projeto, Contrato } from '@/lib/supabase'
 
 interface Props {
-    initialProjetos: any[]
-    initialContratos: any[]
+    initialProjetos: Projeto[]
+    initialContratos: Contrato[]
 }
 
 export function DashboardGerencialClient({ initialProjetos, initialContratos }: Props) {
