@@ -47,9 +47,19 @@ import {
   Building2,
   Search,
   Loader2,
+  LayoutGrid,
+  List,
 } from 'lucide-react'
 import type { Agencia } from '@/types'
 import { formatPhone, maskPhone, maskCNPJ, formatCNPJ } from '@/lib/utils'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface SimplifiedCliente {
   id: number
@@ -96,6 +106,7 @@ export function ClientesClient({
     whatsapp: '',
     tipo_cobranca: 'td' as 'td' | 'fee',
   })
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const router = useRouter()
   const { toast } = useToast()
 
@@ -477,88 +488,161 @@ export function ClientesClient({
         </Dialog>
       </div>
 
-      {/* Clientes Grid */}
+      {/* View Toggle */}
+      <div className="flex justify-end p-1">
+        <div className="flex items-center space-x-2 border rounded-md p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="h-8 px-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className="h-8 px-2"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Clientes Grid/List */}
       {filteredClientes.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredClientes.map(cliente => (
-            <Card key={cliente.id} className="group">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 mt-1">
-                    <Users className="h-5 w-5 text-primary" />
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {filteredClientes.map(cliente => (
+              <Card key={cliente.id} className="group">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 mt-1">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {cliente.nome}
+                        <Badge variant={cliente.tipo_cobranca === 'td' ? 'default' : 'secondary'}>
+                          {cliente.tipo_cobranca.toUpperCase()}
+                        </Badge>
+                        {!cliente.ativo && (
+                          <Badge variant="outline">Inativo</Badge>
+                        )}
+                      </CardTitle>
+                      {cliente.agencia && (
+                        <CardDescription className="flex items-center gap-1 mt-1">
+                          <Building2 className="h-3 w-3" />
+                          {cliente.agencia.nome}
+                        </CardDescription>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {cliente.nome}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEditDialog(cliente)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(cliente.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {cliente.email && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span className="truncate">{cliente.email}</span>
+                      </div>
+                    )}
+                    {cliente.whatsapp && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>{formatPhone(cliente.whatsapp)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {cliente.cnpj && (
+                    <p className="text-sm text-muted-foreground">
+                      CNPJ: {formatCNPJ(cliente.cnpj)}
+                    </p>
+                  )}
+                  {cliente.contato && (
+                    <p className="text-sm text-muted-foreground">
+                      Contato: {cliente.contato}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Agência</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>WhatsApp</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredClientes.map(cliente => (
+                  <TableRow key={cliente.id}>
+                    <TableCell className="font-medium">{cliente.nome}</TableCell>
+                    <TableCell>
                       <Badge variant={cliente.tipo_cobranca === 'td' ? 'default' : 'secondary'}>
                         {cliente.tipo_cobranca.toUpperCase()}
                       </Badge>
-                      {!cliente.ativo && (
-                        <Badge variant="outline">Inativo</Badge>
-                      )}
-                    </CardTitle>
-                    {cliente.agencia && (
-                      <CardDescription className="flex items-center gap-1 mt-1">
-                        <Building2 className="h-3 w-3" />
-                        {cliente.agencia.nome}
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEditDialog(cliente)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(cliente.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {cliente.email && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{cliente.email}</span>
-                    </div>
-                  )}
-                  {cliente.whatsapp && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <span>{formatPhone(cliente.whatsapp)}</span>
-                    </div>
-                  )}
-                </div>
-                {cliente.cnpj && (
-                  <p className="text-sm text-muted-foreground">
-                    CNPJ: {formatCNPJ(cliente.cnpj)}
-                  </p>
-                )}
-                {cliente.contato && (
-                  <p className="text-sm text-muted-foreground">
-                    Contato: {cliente.contato}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    </TableCell>
+                    <TableCell>{cliente.agencia?.nome || '-'}</TableCell>
+                    <TableCell>{cliente.contato || '-'}</TableCell>
+                    <TableCell>{cliente.email || '-'}</TableCell>
+                    <TableCell>{cliente.whatsapp ? formatPhone(cliente.whatsapp) : '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDialog(cliente)}>
+                            <Pencil className="h-4 w-4 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(cliente.id)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
       ) : (
         <Card className="p-12">
           <div className="text-center">

@@ -25,6 +25,11 @@ export default async function DashboardGerencialPage() {
     `)
         .order('created_at', { ascending: false })
 
+    const { data: contratos } = await supabaseAdmin
+        .from(TABLES.contratos)
+        .select('*')
+        .eq('ativo', true)
+
     if (error) {
         console.error('Erro ao buscar dados para dashboard:', error)
     }
@@ -33,7 +38,7 @@ export default async function DashboardGerencialPage() {
         <div className="flex flex-col min-h-screen">
             <Header title="Dashboard Gerencial" subtitle="Visão consolidada de FEE e TD" />
             <div className="flex-1 p-4 lg:p-8 space-y-6">
-                <DashboardGerencialClient initialProjetos={projetos || []} />
+                <DashboardGerencialClient initialProjetos={projetos || []} initialContratos={contratos || []} />
             </div>
         </div>
     )

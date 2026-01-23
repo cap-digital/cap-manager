@@ -52,6 +52,7 @@ export interface Contrato {
   data_fim?: string | null
   valor: number
   ativo: boolean
+  pago?: boolean
   observacao?: string | null
   created_at: string
   updated_at: string

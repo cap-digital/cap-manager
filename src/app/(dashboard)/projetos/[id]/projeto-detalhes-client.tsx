@@ -613,6 +613,21 @@ export function ProjetoDetalhesClient({
       data_atualizacao: estrategiaForm.data_atualizacao || null,
     }
 
+    // Auto-update data_atualizacao if metrics changed
+    if (editingEstrategia) {
+      const metricsChanged =
+        payload.gasto_ate_momento !== editingEstrategia.gasto_ate_momento ||
+        payload.entregue_ate_momento !== editingEstrategia.entregue_ate_momento;
+
+      if (metricsChanged && !payload.data_atualizacao) {
+        payload.data_atualizacao = new Date().toISOString().split('T')[0];
+      }
+    } else if (payload.gasto_ate_momento || payload.entregue_ate_momento) {
+      if (!payload.data_atualizacao) {
+        payload.data_atualizacao = new Date().toISOString().split('T')[0];
+      }
+    }
+
     // Função para converter resposta da API para formato do estado local
     const formatEstrategiaFromApi = (apiData: Record<string, unknown>): SimplifiedEstrategia => ({
       id: apiData.id as number,
@@ -1391,7 +1406,7 @@ export function ProjetoDetalhesClient({
               </div>
 
               <div className="space-y-2">
-                <Label>Valor Bruto (R$)</Label>
+                <Label>{projeto.tipo_cobranca === 'fee' ? 'Valor Plataforma (R$)' : 'Valor Bruto (R$)'}</Label>
                 <Input type="number" step="0.01" value={estrategiaForm.valor_bruto} onChange={e => setEstrategiaForm(p => ({ ...p, valor_bruto: e.target.value }))} />
               </div>
 

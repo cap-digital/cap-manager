@@ -10,6 +10,7 @@ import {
   TrendingUp,
   AlertCircle,
   Calendar,
+  ScrollText,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -22,6 +23,7 @@ export default async function DashboardPage() {
     tarefasPendentesResult,
     projetosRecentesResult,
     tarefasUrgentesResult,
+    contratosResult,
   ] = await Promise.all([
     supabaseAdmin.from(TABLES.clientes).select('id', { count: 'exact', head: true }),
     supabaseAdmin.from(TABLES.agencias).select('id', { count: 'exact', head: true }),
@@ -39,6 +41,7 @@ export default async function DashboardPage() {
       .neq('status', 'done')
       .order('created_at', { ascending: false })
       .limit(5),
+    supabaseAdmin.from(TABLES.contratos).select('id', { count: 'exact', head: true }),
   ])
 
   const clientesCount = clientesResult.count || 0
@@ -47,6 +50,7 @@ export default async function DashboardPage() {
   const tarefasPendentesCount = tarefasPendentesResult.count || 0
   const projetosRecentes = projetosRecentesResult.data || []
   const tarefasUrgentes = tarefasUrgentesResult.data || []
+  const contratosCount = contratosResult.count || 0
 
   const stats = [
     {
@@ -80,6 +84,14 @@ export default async function DashboardPage() {
       href: '/tarefas',
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
+    },
+    {
+      name: 'Contratos',
+      value: contratosCount || 0,
+      icon: ScrollText,
+      href: '/contratos',
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-100',
     },
   ]
 

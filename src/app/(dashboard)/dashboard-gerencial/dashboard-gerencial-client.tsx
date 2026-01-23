@@ -1,80 +1,21 @@
-'use client'
+import { ScrollText } from 'lucide-react'
 
-import { useState, useMemo } from 'react'
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
-} from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/components/ui/table'
-import {
-    DollarSign,
-    Briefcase,
-    TrendingUp,
-    CheckCircle2,
-    Search,
-    ArrowUpRight,
-    Target
-} from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
-
-interface Estrategia {
-    id: number
-    plataforma: string
-    status: string
-    valor_bruto: number
-    gasto_ate_momento: number
-    entregue_ate_momento: number
-    estimativa_resultado: number
-    kpi: string
-    estrategia: string
-}
-
-interface Cliente {
-    id: number
-    nome: string
-}
-
-interface Projeto {
-    id: number
-    nome: string
-    tipo_cobranca: 'td' | 'fee'
-    status: string
-    cliente?: Cliente
-    estrategias?: Estrategia[]
-}
+// ... existing imports ...
 
 interface Props {
-    initialProjetos: any[] // Usando any para facilitar mapeamento inicial, mas idealmente tipado
+    initialProjetos: any[]
+    initialContratos: any[]
 }
 
-export function DashboardGerencialClient({ initialProjetos }: Props) {
+export function DashboardGerencialClient({ initialProjetos, initialContratos }: Props) {
     const [search, setSearch] = useState('')
 
     // Processar dados
     const stats = useMemo(() => {
         let totalProjetos = 0
         let totalEstrategiasAtivas = 0
-        let totalValorFEE = 0 // Valor bruto das estratégias de projetos FEE (se houver) ou talvez valor do projeto?
-        // NOTA: Para FEE, as estratégias têm valor_bruto? Sim, na tabela estrategias.
-        // Mas geralmente FEE é valor fixo. O usuário pediu "quebras de FEE e TD".
-        // Vou somar valor_bruto das estratégias para ambos.
-
+        let totalPlataformaFEE = 0 // Antigo "Valor FEE" (soma das estratégias de projetos FEE)
         let totalInvestidoTD = 0
-        let totalInvestidoFEE = 0
 
         // Projetos
         const projetosFEE: Projeto[] = []
@@ -98,27 +39,58 @@ export function DashboardGerencialClient({ initialProjetos }: Props) {
 
             if (p.tipo_cobranca === 'fee') {
                 projetosFEE.push(p)
-                totalInvestidoFEE += valorTotalProjeto
+                totalPlataformaFEE += valorTotalProjeto
             } else {
                 projetosTD.push(p)
                 totalInvestidoTD += valorTotalProjeto
             }
         })
 
+        // Contratos Stats
+        const contratosAtivos = initialContratos.filter(c => c.ativo)
+        const qtdContratos = contratosAtivos.length
+        const valorContratosFEE = contratosAtivos
+            .filter(c => c.recorrente)
+            .reduce((acc: number, c: any) => acc + Number(c.valor || 0), 0)
+
         return {
             totalProjetos,
             totalEstrategiasAtivas,
-            totalInvestidoFEE,
+            totalPlataformaFEE,
             totalInvestidoTD,
             projetosFEE,
-            projetosTD
+            projetosTD,
+            qtdContratos,
+            valorContratosFEE
         }
-    }, [initialProjetos, search])
+    }, [initialProjetos, initialContratos, search])
 
     return (
         <div className="space-y-6">
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Contratos Ativos</CardTitle>
+                        <ScrollText className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.qtdContratos}</div>
+                        <p className="text-xs text-muted-foreground">Total de contratos ativos</p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Receita FEE (Contratos)</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(stats.valorContratosFEE)}</div>
+                        <p className="text-xs text-muted-foreground">Valor mensal contratos recorrentes</p>
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Projetos</CardTitle>
@@ -143,23 +115,23 @@ export function DashboardGerencialClient({ initialProjetos }: Props) {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Investimento TD (Total)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Investimento TD</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{formatCurrency(stats.totalInvestidoTD)}</div>
-                        <p className="text-xs text-muted-foreground">Soma bruta estratégias TD</p>
+                        <p className="text-xs text-muted-foreground">Mídia veiculada (TD)</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Valor FEE (Total)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Valor Plataforma (FEE)</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(stats.totalInvestidoFEE)}</div>
-                        <p className="text-xs text-muted-foreground">Soma bruta estratégias FEE</p>
+                        <div className="text-2xl font-bold">{formatCurrency(stats.totalPlataformaFEE)}</div>
+                        <p className="text-xs text-muted-foreground">Veiculado via FEE</p>
                     </CardContent>
                 </Card>
             </div>

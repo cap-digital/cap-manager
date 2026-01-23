@@ -153,8 +153,75 @@ export function ContratosClient({ initialContratos, clientes }: ContratosClientP
         c.observacao?.toLowerCase().includes(search.toLowerCase())
     )
 
+    const togglePago = async (contrato: Contrato, novoStatus: boolean) => {
+        try {
+            const res = await fetch(`/api/contratos?id=${contrato.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pago: novoStatus })
+            })
+
+            if (!res.ok) throw new Error('Falha ao atualizar pagamento')
+
+            setContratos(prev => prev.map(c => c.id === contrato.id ? { ...c, pago: novoStatus } : c))
+            toast({ title: novoStatus ? 'Contrato marcado como pago' : 'Contrato marcado como não pago' })
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Erro',
+                description: 'Erro ao atualizar status de pagamento.'
+            })
+        }
+    }
+
+    const stats = {
+        total: contratos.length,
+        valorTotal: contratos.reduce((acc, c) => acc + c.valor, 0),
+        ativos: contratos.filter(c => c.ativo).length,
+        recorrentes: contratos.filter(c => c.recorrente).length
+    }
+
     return (
         <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total de Contratos</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.total}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(stats.valorTotal)}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Contratos Ativos</CardTitle>
+                        <Badge variant="default" className="bg-green-600">Ativos</Badge>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.ativos}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Recorrentes</CardTitle>
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{stats.recorrentes}</div>
+                    </CardContent>
+                </Card>
+            </div>
+
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="relative w-full max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -277,14 +344,15 @@ export function ContratosClient({ initialContratos, clientes }: ContratosClientP
                             <TableHead>Tipo</TableHead>
                             <TableHead>Vigência</TableHead>
                             <TableHead className="text-right">Valor</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                            <TableHead className="text-center">Pago?</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredContratos.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                                     Nenhum contrato encontrado.
                                 </TableCell>
                             </TableRow>
@@ -293,11 +361,13 @@ export function ContratosClient({ initialContratos, clientes }: ContratosClientP
                                 <TableRow key={contrato.id}>
                                     <TableCell className="font-medium">{contrato.cliente?.nome}</TableCell>
                                     <TableCell>
-                                        {contrato.recorrente ? (
-                                            <Badge variant="secondary">Recorrente</Badge>
-                                        ) : (
-                                            <Badge variant="outline">Pontual</Badge>
-                                        )}
+                                        <div className="flex flex-col gap-1">
+                                            {contrato.recorrente ? (
+                                                <Badge variant="secondary">Recorrente</Badge>
+                                            ) : (
+                                                <Badge variant="outline">Pontual</Badge>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
                                         <div className="flex items-center gap-1">
@@ -309,10 +379,21 @@ export function ContratosClient({ initialContratos, clientes }: ContratosClientP
                                     <TableCell className="text-right font-medium">
                                         {formatCurrency(contrato.valor)}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         <Badge variant={contrato.ativo ? 'default' : 'secondary'} className={contrato.ativo ? 'bg-green-600 hover:bg-green-700' : ''}>
                                             {contrato.ativo ? 'Ativo' : 'Inativo'}
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Switch
+                                                checked={!!contrato.pago}
+                                                onCheckedChange={(checked) => togglePago(contrato, checked)}
+                                            />
+                                            {contrato.recorrente && !contrato.pago && (
+                                                <Badge variant="destructive" className="text-[10px]">Follow-up</Badge>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">

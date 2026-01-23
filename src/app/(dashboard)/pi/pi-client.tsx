@@ -49,9 +49,19 @@ import {
   Building2,
   Users,
   X,
+  LayoutGrid,
+  List,
 } from 'lucide-react'
 import { formatCurrency, maskCurrency, parseCurrency } from '@/lib/utils'
 import type { Agencia, Cliente } from '@/types'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface SimplifiedAgencia {
   id: number
@@ -89,6 +99,7 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
   const [isOpen, setIsOpen] = useState(false)
   const [editingPi, setEditingPi] = useState<Pi | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   // Filter states
   const [agenciaFilter, setAgenciaFilter] = useState<string>('all')
@@ -599,74 +610,143 @@ export function PiClient({ pis: initialPis, agencias, clientes }: PiClientProps)
         </DialogContent>
       </Dialog>
 
-      {/* PIs Grid */}
-      {filteredPis.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredPis.map(pi => (
-            <Card key={pi.id} className="group">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="p-2 rounded-lg bg-primary/10 mt-1">
-                    <FileText className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {pi.identificador}
-                      <Badge variant="outline" className="ml-auto">
-                        {pi.projetos_count} projeto{pi.projetos_count !== 1 ? 's' : ''}
-                      </Badge>
-                    </CardTitle>
-                    {pi.agencia && (
-                      <CardDescription className="flex items-center gap-1 mt-1">
-                        <Building2 className="h-3 w-3" />
-                        {pi.agencia.nome}
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEditDialog(pi)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(pi)}
-                      className="text-destructive"
-                      disabled={pi.projetos_count > 0}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {pi.cliente && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{pi.cliente.nome}</span>
-                  </div>
-                )}
-                <div className="pt-2 border-t">
-                  <p className="text-sm text-muted-foreground mb-1">Valor Bruto</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(pi.valor_bruto)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* View Toggle */}
+      <div className="flex justify-end p-1">
+        <div className="flex items-center space-x-2 border rounded-md p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="h-8 px-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className="h-8 px-2"
+          >
+            <List className="h-4 w-4" />
+          </Button>
         </div>
+      </div>
+
+      {/* PIs Grid/List */}
+      {filteredPis.length > 0 ? (
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {filteredPis.map(pi => (
+              <Card key={pi.id} className="group">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 rounded-lg bg-primary/10 mt-1">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {pi.identificador}
+                        <Badge variant="outline" className="ml-auto">
+                          {pi.projetos_count} projeto{pi.projetos_count !== 1 ? 's' : ''}
+                        </Badge>
+                      </CardTitle>
+                      {pi.agencia && (
+                        <CardDescription className="flex items-center gap-1 mt-1">
+                          <Building2 className="h-3 w-3" />
+                          {pi.agencia.nome}
+                        </CardDescription>
+                      )}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEditDialog(pi)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(pi)}
+                        className="text-destructive"
+                        disabled={pi.projetos_count > 0}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {pi.cliente && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>{pi.cliente.nome}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground mb-1">Valor Bruto</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {formatCurrency(pi.valor_bruto)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Identificador</TableHead>
+                  <TableHead>Agência</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="text-right">Valor Bruto</TableHead>
+                  <TableHead className="text-center">Projetos</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPis.map(pi => (
+                  <TableRow key={pi.id}>
+                    <TableCell className="font-medium">{pi.identificador}</TableCell>
+                    <TableCell>{pi.agencia?.nome || '-'}</TableCell>
+                    <TableCell>{pi.cliente?.nome || '-'}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(pi.valor_bruto)}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">{pi.projetos_count}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDialog(pi)}>
+                            <Pencil className="h-4 w-4 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(pi)} className="text-destructive" disabled={pi.projetos_count > 0}>
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
       ) : (
         <Card className="p-12">
           <div className="text-center">

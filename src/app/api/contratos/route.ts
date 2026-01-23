@@ -60,7 +60,8 @@ export async function POST(request: Request) {
             data_fim: data.data_fim || null,
             valor: parseFloat(data.valor),
             observacao: data.observacao || null,
-            ativo: true
+            ativo: true,
+            pago: !!data.pago
         }
 
         const { data: contrato, error } = await supabaseAdmin
@@ -108,6 +109,7 @@ export async function PUT(request: Request) {
         if (data.valor) updateData.valor = parseFloat(data.valor)
         if (data.observacao !== undefined) updateData.observacao = data.observacao
         if (data.ativo !== undefined) updateData.ativo = !!data.ativo
+        if (data.pago !== undefined) updateData.pago = !!data.pago
 
         updateData.updated_at = new Date().toISOString()
 
