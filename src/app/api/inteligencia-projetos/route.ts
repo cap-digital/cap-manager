@@ -16,8 +16,8 @@ export async function GET() {
             .select(`
                 *, 
                 cliente:${TABLES.clientes}(nome),
-                feito_por:${TABLES.usuarios}(nome),
-                revisado_por:${TABLES.usuarios}(nome)
+                feito_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_feito_por_id_fkey(nome),
+                revisado_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_revisado_por_id_fkey(nome)
             `)
             .order('created_at', { ascending: false })
 
@@ -58,8 +58,8 @@ export async function POST(request: Request) {
             .select(`
                 *, 
                 cliente:${TABLES.clientes}(nome),
-                feito_por:${TABLES.usuarios}(nome),
-                revisado_por:${TABLES.usuarios}(nome)
+                feito_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_feito_por_id_fkey(nome),
+                revisado_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_revisado_por_id_fkey(nome)
             `)
             .single()
 
@@ -108,8 +108,8 @@ export async function PUT(request: Request) {
             .select(`
                 *, 
                 cliente:${TABLES.clientes}(nome),
-                feito_por:${TABLES.usuarios}(nome),
-                revisado_por:${TABLES.usuarios}(nome)
+                feito_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_feito_por_id_fkey(nome),
+                revisado_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_revisado_por_id_fkey(nome)
             `)
             .single()
 

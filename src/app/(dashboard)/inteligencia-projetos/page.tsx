@@ -19,8 +19,8 @@ export default async function InteligenciaProjetosPage() {
             .select(`
                 *, 
                 cliente:${TABLES.clientes}(nome),
-                feito_por:${TABLES.usuarios}(nome),
-                revisado_por:${TABLES.usuarios}(nome)
+                feito_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_feito_por_id_fkey(nome),
+                revisado_por:${TABLES.usuarios}!cap_manager_inteligencia_projetos_revisado_por_id_fkey(nome)
             `)
             .order('created_at', { ascending: false }),
         supabaseAdmin
