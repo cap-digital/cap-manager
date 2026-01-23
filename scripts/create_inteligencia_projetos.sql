@@ -1,5 +1,8 @@
+-- Drop table and related objects to ensure clean install (Warning: all data in this table will be lost)
+DROP TABLE IF EXISTS cap_manager_inteligencia_projetos CASCADE;
+
 -- Create table for Inteligência Projetos
-CREATE TABLE IF NOT EXISTS cap_manager_inteligencia_projetos (
+CREATE TABLE cap_manager_inteligencia_projetos (
     id SERIAL PRIMARY KEY,
     nome_projeto TEXT NOT NULL,
     data_criacao DATE DEFAULT CURRENT_DATE,
@@ -18,12 +21,13 @@ CREATE TABLE IF NOT EXISTS cap_manager_inteligencia_projetos (
 ALTER TABLE cap_manager_inteligencia_projetos ENABLE ROW LEVEL SECURITY;
 
 -- Create policy to allow all access to authenticated users (standard for this app)
+-- No need to drop since table was dropped above
 CREATE POLICY "Allow all access to authenticated users" ON cap_manager_inteligencia_projetos
     FOR ALL
     USING (auth.role() = 'authenticated')
     WITH CHECK (auth.role() = 'authenticated');
 
--- Create trigger for updated_at
+-- Create trigger for updated_at (function might already exist, so we use OR REPLACE)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
