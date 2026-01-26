@@ -1065,8 +1065,6 @@ export function ProjetoDetalhesClient({
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-2 font-medium">ID Conta</th>
-                    <th className="text-left p-2 font-medium">Conta</th>
                     <th className="text-left p-2 font-medium">Plataforma</th>
                     <th className="text-left p-2 font-medium">Estratégia</th>
                     <th className="text-left p-2 font-medium">KPI</th>
@@ -1085,10 +1083,6 @@ export function ProjetoDetalhesClient({
 
                     return (
                       <tr key={estrategia.id} className={`border-t hover:bg-muted/30 ${alertaAtualizacao ? 'bg-red-50' : ''}`}>
-                        <td className="p-2 font-mono text-xs">{estrategia.id_conta || '-'}</td>
-                        <td className="p-2 max-w-[150px] truncate" title={estrategia.nome_conta || ''}>
-                          {estrategia.nome_conta || '-'}
-                        </td>
                         <td className="p-2 capitalize">{plataformaLabel}</td>
                         <td className="p-2">{estrategia.estrategia || '-'}</td>
                         <td className="p-2">{estrategia.kpi || '-'}</td>
