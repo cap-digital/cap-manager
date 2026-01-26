@@ -79,6 +79,10 @@ export function InteligenciaProjetosClient({
     const [editingProjeto, setEditingProjeto] = useState<InteligenciaProjeto | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+    const [filtroCliente, setFiltroCliente] = useState<string>('all')
+    const [filtroTipo, setFiltroTipo] = useState<string>('all')
+    const [filtroFeitoPor, setFiltroFeitoPor] = useState<string>('all')
+    const [filtroRevisadoPor, setFiltroRevisadoPor] = useState<string>('all')
 
     const [formData, setFormData] = useState({
         nome_projeto: '',
@@ -98,10 +102,27 @@ export function InteligenciaProjetosClient({
     const { toast } = useToast()
 
     const filteredProjetos = projetos.filter(
-        p =>
-            p.nome_projeto.toLowerCase().includes(search.toLowerCase()) ||
-            p.cliente?.nome.toLowerCase().includes(search.toLowerCase()) ||
-            (p.feito_por?.nome && p.feito_por.nome.toLowerCase().includes(search.toLowerCase()))
+        p => {
+            // Filtro de busca
+            const matchesSearch = 
+                p.nome_projeto.toLowerCase().includes(search.toLowerCase()) ||
+                p.cliente?.nome.toLowerCase().includes(search.toLowerCase()) ||
+                (p.feito_por?.nome && p.feito_por.nome.toLowerCase().includes(search.toLowerCase()))
+            
+            // Filtro de cliente
+            const matchesCliente = filtroCliente === 'all' || p.cliente_id?.toString() === filtroCliente
+            
+            // Filtro de tipo
+            const matchesTipo = filtroTipo === 'all' || p.tipo_projeto === filtroTipo
+            
+            // Filtro de feito por
+            const matchesFeitoPor = filtroFeitoPor === 'all' || p.feito_por_id?.toString() === filtroFeitoPor
+            
+            // Filtro de revisado por
+            const matchesRevisadoPor = filtroRevisadoPor === 'all' || p.revisado_por_id?.toString() === filtroRevisadoPor
+            
+            return matchesSearch && matchesCliente && matchesTipo && matchesFeitoPor && matchesRevisadoPor
+        }
     )
 
     const resetForm = () => {
@@ -213,27 +234,80 @@ export function InteligenciaProjetosClient({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar projetos..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="pl-9"
-                    />
+            {/* Filtros */}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar projetos..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="pl-9"
+                        />
+                    </div>
+
+                    <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filtrar por cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos os clientes</SelectItem>
+                            {clientes.map(c => (
+                                <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filtrar por tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos os tipos</SelectItem>
+                            <SelectItem value="dashboard">Dashboard</SelectItem>
+                            <SelectItem value="lp">LP (Landing Page)</SelectItem>
+                            <SelectItem value="site">Site</SelectItem>
+                            <SelectItem value="saas">SaaS</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={filtroFeitoPor} onValueChange={setFiltroFeitoPor}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filtrar por feito por" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            {usuarios.map(u => (
+                                <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={filtroRevisadoPor} onValueChange={setFiltroRevisadoPor}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filtrar por revisado por" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            {usuarios.map(u => (
+                                <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                <Dialog open={isOpen} onOpenChange={open => {
-                    setIsOpen(open)
-                    if (!open) resetForm()
-                }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Novo Projeto
-                        </Button>
-                    </DialogTrigger>
+                <div className="flex justify-end">
+                    <Dialog open={isOpen} onOpenChange={open => {
+                        setIsOpen(open)
+                        if (!open) resetForm()
+                    }}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Novo Projeto
+                            </Button>
+                        </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <form onSubmit={handleSubmit}>
                             <DialogHeader>
