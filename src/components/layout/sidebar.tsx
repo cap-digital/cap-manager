@@ -73,7 +73,6 @@ const mainNavigation: NavItem[] = [
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Contratos', href: '/contratos', icon: ScrollText },
   { name: 'PIs', href: '/pi', icon: FileText },
-  { name: 'Projetos', href: '/projetos', icon: Briefcase },
 ]
 
 // Subcategorias dentro de Gestão de Projetos
