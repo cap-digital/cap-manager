@@ -742,13 +742,16 @@ export function ProjetoDetalhesClient({
   const diasVeiculacao = getDiasVeiculacao()
   const totalValorBruto = projeto.estrategias.reduce((acc, e) => acc + e.valor_bruto, 0)
   const totalGasto = projeto.estrategias.reduce((acc, e) => acc + (e.gasto_ate_momento || 0), 0)
-  const totalLiquido = projeto.estrategias.reduce((acc, e) => {
-    const calc = calcularValoresEstrategia(e)
-    return acc + calc.valorPlataforma
-  }, 0)
-  const totalRestante = totalLiquido - totalGasto
-
-  const isFee = projetoForm.tipo_cobranca === 'fee'
+  const isFee = projeto.tipo_cobranca === 'fee'
+  // Valor Líquido: se for FEE, é igual ao Valor Total, senão calcula normalmente
+  const totalLiquido = isFee 
+    ? totalValorBruto
+    : projeto.estrategias.reduce((acc, e) => {
+        const calc = calcularValoresEstrategia(e)
+        return acc + calc.valorPlataforma
+      }, 0)
+  // Restante = Valor Total - Gasto Total
+  const totalRestante = totalValorBruto - totalGasto
 
   return (
     <div className="space-y-6">
@@ -1028,7 +1031,7 @@ export function ProjetoDetalhesClient({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <p className="text-sm text-muted-foreground">Valor Total Bruto</p>
+              <p className="text-sm text-muted-foreground">Valor Total</p>
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalValorBruto)}</p>
             </div>
             <div>
@@ -1158,33 +1161,39 @@ export function ProjetoDetalhesClient({
             <Target className="h-4 w-4" />
             ENTREGAS
           </CardTitle>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={showEntregas}
+              onCheckedChange={setShowEntregas}
+            />
+            <Label className="text-sm">Apenas com entregas</Label>
+          </div>
         </CardHeader>
         <CardContent>
           {projeto.estrategias.length > 0 ? (
-            <div className="flex gap-4">
-              <div className="flex-1 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left p-2 font-medium">Plataforma</th>
-                      <th className="text-left p-2 font-medium">Estratégia</th>
-                      <th className="text-right p-2 font-medium">Entrega Contratada</th>
-                      <th className="text-right p-2 font-medium">Entregue até o Momento</th>
-                      <th className="text-right p-2 font-medium">% Entrega</th>
-                      <th className="text-right p-2 font-medium">Custo/Resultado</th>
-                      <th className="text-right p-2 font-medium">Meta Custo/Resultado</th>
-                      <th className="text-right p-2 font-medium">Estimativa Resultado</th>
-                      <th className="text-right p-2 font-medium">Estimativa Sucesso</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projeto.estrategias
-                      .filter(estrategia => {
-                        if (!showEntregas) return true
-                        // Filtro: mostrar apenas estratégias com dados de entrega
-                        return estrategia.entrega_contratada !== null || estrategia.entregue_ate_momento !== null
-                      })
-                      .map(estrategia => {
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Plataforma</th>
+                    <th className="text-left p-2 font-medium">Estratégia</th>
+                    <th className="text-right p-2 font-medium">Entrega Contratada</th>
+                    <th className="text-right p-2 font-medium">Entregue até o Momento</th>
+                    <th className="text-right p-2 font-medium">% Entrega</th>
+                    <th className="text-right p-2 font-medium">Custo/Resultado</th>
+                    <th className="text-right p-2 font-medium">Meta Custo/Resultado</th>
+                    <th className="text-right p-2 font-medium">Estimativa Resultado</th>
+                    <th className="text-right p-2 font-medium">Estimativa Sucesso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projeto.estrategias
+                    .filter(estrategia => {
+                      if (!showEntregas) return true
+                      // Filtro: mostrar apenas estratégias com dados de entrega
+                      return estrategia.entrega_contratada !== null || estrategia.entregue_ate_momento !== null
+                    })
+                    .map(estrategia => {
                         const calc = calcularValoresEstrategia(estrategia)
                         const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label?.split(' ')[0] || estrategia.plataforma
                         
@@ -1256,21 +1265,6 @@ export function ProjetoDetalhesClient({
                       })}
                   </tbody>
                 </table>
-              </div>
-              <div className="w-64 border-l pl-4 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Filtros</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={showEntregas}
-                        onCheckedChange={setShowEntregas}
-                      />
-                      <Label className="text-sm">Apenas com entregas</Label>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="text-center py-12 border rounded-lg">
