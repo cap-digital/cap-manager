@@ -68,12 +68,12 @@ interface NavSubCategory {
 // Itens principais (sem categoria)
 const mainNavigation: NavItem[] = [
   { name: 'Visão Geral', href: '/', icon: LayoutDashboard },
+  { name: 'Meus Projetos', href: '/meus-projetos', icon: Briefcase },
   { name: 'Dashboard', href: '/dashboard-gerencial', icon: BarChart3 },
   { name: 'Agências', href: '/agencias', icon: Building2 },
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Contratos', href: '/contratos', icon: ScrollText },
   { name: 'PIs', href: '/pi', icon: FileText },
-  { name: 'Meus Projetos', href: '/meus-projetos', icon: Briefcase },
 ]
 
 // Subcategorias dentro de Gestão de Projetos

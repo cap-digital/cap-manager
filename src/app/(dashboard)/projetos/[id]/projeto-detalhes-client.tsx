@@ -47,7 +47,8 @@ import {
   Activity,
   BarChart3,
 } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, maskCurrency, parseCurrency } from '@/lib/utils'
+import { Switch } from '@/components/ui/switch'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 
 type TipoCobranca = 'td' | 'fee'
@@ -215,6 +216,7 @@ export function ProjetoDetalhesClient({
   const [isProjetoOpen, setIsProjetoOpen] = useState(false)
   const [editingEstrategia, setEditingEstrategia] = useState<SimplifiedEstrategia | null>(null)
   const [showPerformance, setShowPerformance] = useState(true)
+  const [showEntregas, setShowEntregas] = useState(false)
 
   const [projetoForm, setProjetoForm] = useState({
     cliente_id: projeto.cliente_id,
@@ -608,7 +610,7 @@ export function ProjetoDetalhesClient({
       porcentagem_agencia: estrategiaForm.porcentagem_agencia ? parseFloat(estrategiaForm.porcentagem_agencia) : 0,
       porcentagem_plataforma: estrategiaForm.porcentagem_plataforma ? parseFloat(estrategiaForm.porcentagem_plataforma) : 0,
       entrega_contratada: estrategiaForm.entrega_contratada ? parseFloat(estrategiaForm.entrega_contratada) : null,
-      gasto_ate_momento: estrategiaForm.gasto_ate_momento ? parseFloat(estrategiaForm.gasto_ate_momento) : null,
+      gasto_ate_momento: estrategiaForm.gasto_ate_momento ? (typeof estrategiaForm.gasto_ate_momento === 'string' ? parseFloat(estrategiaForm.gasto_ate_momento) : estrategiaForm.gasto_ate_momento) : null,
       entregue_ate_momento: estrategiaForm.entregue_ate_momento ? parseFloat(estrategiaForm.entregue_ate_momento) : null,
       data_atualizacao: estrategiaForm.data_atualizacao || null,
     }
@@ -1121,7 +1123,7 @@ export function ProjetoDetalhesClient({
                                   porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
                                   porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
                                   entrega_contratada: estrategia.entrega_contratada?.toString() || '',
-                                  gasto_ate_momento: estrategia.gasto_ate_momento?.toString() || '',
+                                  gasto_ate_momento: estrategia.gasto_ate_momento ? estrategia.gasto_ate_momento.toString() : '',
                                   entregue_ate_momento: estrategia.entregue_ate_momento?.toString() || '',
                                   data_atualizacao: estrategia.data_atualizacao || '',
                                 })
@@ -1149,6 +1151,137 @@ export function ProjetoDetalhesClient({
               <Button className="mt-4" onClick={() => { resetEstrategiaForm(); setIsEstrategiaOpen(true) }}>
                 <Plus className="h-4 w-4 mr-2" />Adicionar Estratégia
               </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ENTREGAS - Seção com Performance */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4" />
+            ENTREGAS
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {projeto.estrategias.length > 0 ? (
+            <div className="flex gap-4">
+              <div className="flex-1 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-2 font-medium">Plataforma</th>
+                      <th className="text-left p-2 font-medium">Estratégia</th>
+                      <th className="text-right p-2 font-medium">Entrega Contratada</th>
+                      <th className="text-right p-2 font-medium">Entregue até o Momento</th>
+                      <th className="text-right p-2 font-medium">% Entrega</th>
+                      <th className="text-right p-2 font-medium">Custo/Resultado</th>
+                      <th className="text-right p-2 font-medium">Meta Custo/Resultado</th>
+                      <th className="text-right p-2 font-medium">Estimativa Resultado</th>
+                      <th className="text-right p-2 font-medium">Estimativa Sucesso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projeto.estrategias
+                      .filter(estrategia => {
+                        if (!showEntregas) return true
+                        // Filtro: mostrar apenas estratégias com dados de entrega
+                        return estrategia.entrega_contratada !== null || estrategia.entregue_ate_momento !== null
+                      })
+                      .map(estrategia => {
+                        const calc = calcularValoresEstrategia(estrategia)
+                        const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label?.split(' ')[0] || estrategia.plataforma
+                        
+                        // Usar valores calculados da estratégia quando disponíveis, senão calcular
+                        const percentualEntrega = estrategia.percentual_entrega !== null && estrategia.percentual_entrega !== undefined
+                          ? estrategia.percentual_entrega
+                          : (estrategia.entrega_contratada && estrategia.entregue_ate_momento
+                            ? (estrategia.entregue_ate_momento / estrategia.entrega_contratada) * 100
+                            : null)
+                        
+                        const custoResultado = estrategia.custo_resultado !== null && estrategia.custo_resultado !== undefined
+                          ? estrategia.custo_resultado
+                          : (estrategia.entregue_ate_momento && estrategia.gasto_ate_momento && estrategia.entregue_ate_momento > 0
+                            ? estrategia.gasto_ate_momento / estrategia.entregue_ate_momento
+                            : null)
+
+                        const valorPlataforma = estrategia.valor_plataforma !== null && estrategia.valor_plataforma !== undefined
+                          ? estrategia.valor_plataforma
+                          : calc.valorPlataforma
+
+                        const metaCustoResultado = estrategia.meta_custo_resultado !== null && estrategia.meta_custo_resultado !== undefined
+                          ? estrategia.meta_custo_resultado
+                          : (estrategia.entrega_contratada && valorPlataforma && estrategia.kpi
+                            ? (() => {
+                                const divisorKpi = estrategia.kpi === 'CPM' ? 1000 : 1
+                                return valorPlataforma / (estrategia.entrega_contratada / divisorKpi)
+                              })()
+                            : null)
+
+                        const estimativaResultado = estrategia.estimativa_resultado !== null && estrategia.estimativa_resultado !== undefined
+                          ? estrategia.estimativa_resultado
+                          : (custoResultado && custoResultado > 0 && valorPlataforma
+                            ? valorPlataforma / custoResultado
+                            : null)
+
+                        const estimativaSucesso = estrategia.estimativa_sucesso !== null && estrategia.estimativa_sucesso !== undefined
+                          ? estrategia.estimativa_sucesso
+                          : (estimativaResultado && estrategia.entrega_contratada && estrategia.entrega_contratada > 0
+                            ? (estimativaResultado / estrategia.entrega_contratada) * 100
+                            : null)
+
+                        return (
+                          <tr key={estrategia.id} className="border-t hover:bg-muted/30">
+                            <td className="p-2 capitalize">{plataformaLabel}</td>
+                            <td className="p-2">{estrategia.estrategia || '-'}</td>
+                            <td className="p-2 text-right">
+                              {estrategia.entrega_contratada !== null ? estrategia.entrega_contratada.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
+                            </td>
+                            <td className="p-2 text-right">
+                              {estrategia.entregue_ate_momento !== null ? estrategia.entregue_ate_momento.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
+                            </td>
+                            <td className={`p-2 text-right font-medium ${percentualEntrega !== null && percentualEntrega >= 100 ? 'text-green-600' : percentualEntrega !== null && percentualEntrega >= 70 ? 'text-blue-600' : percentualEntrega !== null ? 'text-amber-600' : ''}`}>
+                              {percentualEntrega !== null ? `${percentualEntrega.toFixed(1)}%` : '-'}
+                            </td>
+                            <td className="p-2 text-right">
+                              {custoResultado !== null ? formatCurrency(custoResultado) : '-'}
+                            </td>
+                            <td className="p-2 text-right">
+                              {metaCustoResultado !== null ? formatCurrency(metaCustoResultado) : '-'}
+                            </td>
+                            <td className="p-2 text-right">
+                              {estimativaResultado !== null ? estimativaResultado.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
+                            </td>
+                            <td className={`p-2 text-right font-medium ${estimativaSucesso !== null && estimativaSucesso >= 100 ? 'text-green-600' : estimativaSucesso !== null && estimativaSucesso >= 80 ? 'text-yellow-600' : estimativaSucesso !== null ? 'text-red-600' : ''}`}>
+                              {estimativaSucesso !== null ? `${estimativaSucesso.toFixed(1)}%` : '-'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="w-64 border-l pl-4 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Filtros</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={showEntregas}
+                        onCheckedChange={setShowEntregas}
+                      />
+                      <Label className="text-sm">Apenas com entregas</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 border rounded-lg">
+              <Target className="h-12 w-12 mx-auto text-muted-foreground/50" />
+              <h3 className="mt-4 text-lg font-semibold">Nenhuma estratégia cadastrada</h3>
+              <p className="text-muted-foreground mt-1">Adicione estratégias para ver dados de entregas</p>
             </div>
           )}
         </CardContent>
@@ -1410,7 +1543,7 @@ export function ProjetoDetalhesClient({
                 <Input type="number" step="0.01" value={estrategiaForm.valor_bruto} onChange={e => setEstrategiaForm(p => ({ ...p, valor_bruto: e.target.value }))} />
               </div>
 
-              {projeto.tipo_cobranca === 'td' && (
+              {projeto.tipo_cobranca === 'td' && !editingEstrategia && (
                 <>
                   <div className="space-y-2">
                     <Label>% Agência</Label>
@@ -1429,6 +1562,38 @@ export function ProjetoDetalhesClient({
                 <Input type="number" step="0.01" value={estrategiaForm.entrega_contratada} onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))} />
               </div>
 
+              {/* Campos de Margem - Mostrar sempre em modo de edição para TD */}
+              {projeto.tipo_cobranca === 'td' && editingEstrategia && (
+                <div className="md:col-span-3 border-t pt-4 mt-2">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">Margem (editar valores)</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>% Agência</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        max="100"
+                        placeholder="0"
+                        value={estrategiaForm.porcentagem_agencia}
+                        onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_agencia: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>% Plataforma</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        max="100"
+                        placeholder="0"
+                        value={estrategiaForm.porcentagem_plataforma}
+                        onChange={e => setEstrategiaForm(p => ({ ...p, porcentagem_plataforma: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Campos de Acompanhamento */}
               <div className="md:col-span-3 border-t pt-4 mt-2">
                 <p className="text-sm font-medium text-muted-foreground mb-3">Acompanhamento (atualizado pelo trader)</p>
@@ -1436,11 +1601,21 @@ export function ProjetoDetalhesClient({
                   <div className="space-y-2">
                     <Label>Gasto até o Momento (R$)</Label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      value={estrategiaForm.gasto_ate_momento}
-                      onChange={e => setEstrategiaForm(p => ({ ...p, gasto_ate_momento: e.target.value }))}
+                      type="text"
+                      inputMode="decimal"
+                      value={estrategiaForm.gasto_ate_momento ? maskCurrency(estrategiaForm.gasto_ate_momento.toString().replace(/\D/g, '')) : ''}
+                      onChange={e => {
+                        const rawValue = e.target.value.replace(/\D/g, '')
+                        if (!rawValue) {
+                          setEstrategiaForm(p => ({ ...p, gasto_ate_momento: '' }))
+                          return
+                        }
+                        // Converte para número (divide por 100 para considerar centavos)
+                        const numericValue = parseInt(rawValue, 10) / 100
+                        setEstrategiaForm(p => ({ ...p, gasto_ate_momento: numericValue.toString() }))
+                      }}
                       className="border-amber-300 focus:border-amber-500"
+                      placeholder="R$ 0,00"
                     />
                   </div>
 
@@ -1448,7 +1623,7 @@ export function ProjetoDetalhesClient({
                     <Label>Entregue até o Momento</Label>
                     <Input
                       type="number"
-                      step="0.01"
+                      step="1"
                       value={estrategiaForm.entregue_ate_momento}
                       onChange={e => setEstrategiaForm(p => ({ ...p, entregue_ate_momento: e.target.value }))}
                       className="border-amber-300 focus:border-amber-500"
