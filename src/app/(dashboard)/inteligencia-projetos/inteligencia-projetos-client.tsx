@@ -50,7 +50,8 @@ import {
     User,
     CheckCircle2,
 } from 'lucide-react'
-import type { InteligenciaProjeto, Cliente, Usuario } from '@/lib/supabase'
+import type { InteligenciaProjeto, Cliente, Usuario, TipoProjeto } from '@/lib/supabase'
+import { BarChart3 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import {
     Table,
@@ -81,11 +82,13 @@ export function InteligenciaProjetosClient({
 
     const [formData, setFormData] = useState({
         nome_projeto: '',
+        tipo_projeto: 'lp' as TipoProjeto,
         data_criacao: new Date().toISOString().split('T')[0],
         link_lovable: '',
         link_vercel: '',
         link_render_railway: '',
         link_dominio: '',
+        link_looker_studio: '',
         feito_por_id: '',
         revisado_por_id: '',
         cliente_id: '',
@@ -104,11 +107,13 @@ export function InteligenciaProjetosClient({
     const resetForm = () => {
         setFormData({
             nome_projeto: '',
+            tipo_projeto: 'lp' as TipoProjeto,
             data_criacao: new Date().toISOString().split('T')[0],
             link_lovable: '',
             link_vercel: '',
             link_render_railway: '',
             link_dominio: '',
+            link_looker_studio: '',
             feito_por_id: '',
             revisado_por_id: '',
             cliente_id: '',
@@ -120,11 +125,13 @@ export function InteligenciaProjetosClient({
         setEditingProjeto(projeto)
         setFormData({
             nome_projeto: projeto.nome_projeto,
+            tipo_projeto: (projeto.tipo_projeto || 'lp') as TipoProjeto,
             data_criacao: projeto.data_criacao || '',
             link_lovable: projeto.link_lovable || '',
             link_vercel: projeto.link_vercel || '',
             link_render_railway: projeto.link_render_railway || '',
             link_dominio: projeto.link_dominio || '',
+            link_looker_studio: projeto.link_looker_studio || '',
             feito_por_id: projeto.feito_por_id?.toString() || '',
             revisado_por_id: projeto.revisado_por_id?.toString() || '',
             cliente_id: projeto.cliente_id?.toString() || '',
@@ -239,7 +246,7 @@ export function InteligenciaProjetosClient({
                             </DialogHeader>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                                <div className="space-y-2 md:col-span-2">
+                                <div className="space-y-2">
                                     <Label htmlFor="nome_projeto">Nome do Projeto *</Label>
                                     <Input
                                         id="nome_projeto"
@@ -248,6 +255,24 @@ export function InteligenciaProjetosClient({
                                         onChange={e => setFormData(prev => ({ ...prev, nome_projeto: e.target.value }))}
                                         required
                                     />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="tipo_projeto">Tipo de Projeto</Label>
+                                    <Select
+                                        value={formData.tipo_projeto}
+                                        onValueChange={v => setFormData(prev => ({ ...prev, tipo_projeto: v as TipoProjeto }))}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione o tipo" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="dashboard">Dashboard</SelectItem>
+                                            <SelectItem value="lp">LP (Landing Page)</SelectItem>
+                                            <SelectItem value="site">Site</SelectItem>
+                                            <SelectItem value="saas">SaaS</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="space-y-2">
@@ -354,6 +379,16 @@ export function InteligenciaProjetosClient({
                                         onChange={e => setFormData(prev => ({ ...prev, link_dominio: e.target.value }))}
                                     />
                                 </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="link_looker_studio">Link Looker Studio</Label>
+                                    <Input
+                                        id="link_looker_studio"
+                                        placeholder="https://lookerstudio.google.com/..."
+                                        value={formData.link_looker_studio}
+                                        onChange={e => setFormData(prev => ({ ...prev, link_looker_studio: e.target.value }))}
+                                    />
+                                </div>
                             </div>
 
                             <DialogFooter>
@@ -428,6 +463,14 @@ export function InteligenciaProjetosClient({
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex flex-wrap gap-2 text-xs">
+                                        {projeto.tipo_projeto && (
+                                            <div className="px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded flex items-center gap-1 font-medium">
+                                                {projeto.tipo_projeto === 'dashboard' && 'Dashboard'}
+                                                {projeto.tipo_projeto === 'lp' && 'LP'}
+                                                {projeto.tipo_projeto === 'site' && 'Site'}
+                                                {projeto.tipo_projeto === 'saas' && 'SaaS'}
+                                            </div>
+                                        )}
                                         {projeto.data_criacao && (
                                             <div className="px-2 py-1 bg-muted rounded flex items-center gap-1">
                                                 Criado: {formatDate(projeto.data_criacao)}
@@ -466,6 +509,11 @@ export function InteligenciaProjetosClient({
                                                 <Globe className="h-3 w-3" /> Domínio
                                             </a>
                                         )}
+                                        {projeto.link_looker_studio && (
+                                            <a href={projeto.link_looker_studio} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-orange-600 hover:underline font-medium">
+                                                <BarChart3 className="h-3 w-3" /> Looker Studio
+                                            </a>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -477,6 +525,7 @@ export function InteligenciaProjetosClient({
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Projeto</TableHead>
+                                    <TableHead>Tipo</TableHead>
                                     <TableHead>Cliente</TableHead>
                                     <TableHead>Criação</TableHead>
                                     <TableHead>Feito por</TableHead>
@@ -489,15 +538,26 @@ export function InteligenciaProjetosClient({
                                 {filteredProjetos.map(projeto => (
                                     <TableRow key={projeto.id}>
                                         <TableCell className="font-medium">{projeto.nome_projeto}</TableCell>
+                                        <TableCell>
+                                            {projeto.tipo_projeto && (
+                                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded text-xs font-medium">
+                                                    {projeto.tipo_projeto === 'dashboard' && 'Dashboard'}
+                                                    {projeto.tipo_projeto === 'lp' && 'LP'}
+                                                    {projeto.tipo_projeto === 'site' && 'Site'}
+                                                    {projeto.tipo_projeto === 'saas' && 'SaaS'}
+                                                </span>
+                                            )}
+                                        </TableCell>
                                         <TableCell>{projeto.cliente?.nome || '-'}</TableCell>
                                         <TableCell>{projeto.data_criacao ? formatDate(projeto.data_criacao) : '-'}</TableCell>
                                         <TableCell>{projeto.feito_por?.nome || '-'}</TableCell>
                                         <TableCell>{projeto.revisado_por?.nome || '-'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                {projeto.link_lovable && <a href={projeto.link_lovable} title="Lovable"><Code2 className="h-4 w-4" /></a>}
-                                                {projeto.link_vercel && <a href={projeto.link_vercel} title="Vercel"><ExternalLink className="h-4 w-4" /></a>}
-                                                {projeto.link_dominio && <a href={projeto.link_dominio} title="Domínio"><Globe className="h-4 w-4" /></a>}
+                                                {projeto.link_lovable && <a href={projeto.link_lovable} target="_blank" rel="noopener noreferrer" title="Lovable"><Code2 className="h-4 w-4" /></a>}
+                                                {projeto.link_vercel && <a href={projeto.link_vercel} target="_blank" rel="noopener noreferrer" title="Vercel"><ExternalLink className="h-4 w-4" /></a>}
+                                                {projeto.link_dominio && <a href={projeto.link_dominio} target="_blank" rel="noopener noreferrer" title="Domínio"><Globe className="h-4 w-4" /></a>}
+                                                {projeto.link_looker_studio && <a href={projeto.link_looker_studio} target="_blank" rel="noopener noreferrer" title="Looker Studio"><BarChart3 className="h-4 w-4 text-orange-600" /></a>}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">

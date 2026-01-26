@@ -46,11 +46,13 @@ export async function POST(request: Request) {
             .from(TABLES.inteligencia_projetos)
             .insert({
                 nome_projeto: data.nome_projeto,
+                tipo_projeto: data.tipo_projeto || 'lp',
                 data_criacao: data.data_criacao || null,
                 link_lovable: data.link_lovable || null,
                 link_vercel: data.link_vercel || null,
                 link_render_railway: data.link_render_railway || null,
                 link_dominio: data.link_dominio || null,
+                link_looker_studio: data.link_looker_studio || null,
                 feito_por_id: data.feito_por_id || null,
                 revisado_por_id: data.revisado_por_id || null,
                 cliente_id: data.cliente_id || null,
@@ -95,11 +97,13 @@ export async function PUT(request: Request) {
             .from(TABLES.inteligencia_projetos)
             .update({
                 nome_projeto: data.nome_projeto,
+                tipo_projeto: data.tipo_projeto || 'lp',
                 data_criacao: data.data_criacao || null,
                 link_lovable: data.link_lovable || null,
                 link_vercel: data.link_vercel || null,
                 link_render_railway: data.link_render_railway || null,
                 link_dominio: data.link_dominio || null,
+                link_looker_studio: data.link_looker_studio || null,
                 feito_por_id: data.feito_por_id || null,
                 revisado_por_id: data.revisado_por_id || null,
                 cliente_id: data.cliente_id || null,

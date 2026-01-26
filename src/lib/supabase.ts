@@ -323,14 +323,18 @@ export interface Comentario {
   usuario?: Usuario | null
 }
 
+export type TipoProjeto = 'dashboard' | 'lp' | 'site' | 'saas'
+
 export interface InteligenciaProjeto {
   id: number
   nome_projeto: string
+  tipo_projeto?: TipoProjeto | null
   data_criacao?: string | null
   link_lovable?: string | null
   link_vercel?: string | null
   link_render_railway?: string | null
   link_dominio?: string | null
+  link_looker_studio?: string | null
   feito_por_id?: number | null
   revisado_por_id?: number | null
   cliente_id?: number | null
