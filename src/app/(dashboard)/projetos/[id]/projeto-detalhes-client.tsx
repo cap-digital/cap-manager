@@ -333,7 +333,8 @@ export function ProjetoDetalhesClient({
     const percentualEntrega = e.entrega_contratada && e.entregue_ate_momento
       ? (e.entregue_ate_momento / e.entrega_contratada) * 100
       : null
-    const valorRestante = e.gasto_ate_momento !== null ? valorPlataforma - e.gasto_ate_momento : valorPlataforma
+    // Restante = Valor Bruto - Gasto até o momento
+    const valorRestante = e.gasto_ate_momento !== null ? e.valor_bruto - e.gasto_ate_momento : e.valor_bruto
     const custoResultado = e.entregue_ate_momento && e.gasto_ate_momento
       ? e.gasto_ate_momento / e.entregue_ate_momento
       : null
