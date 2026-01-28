@@ -323,12 +323,12 @@ export interface Comentario {
   usuario?: Usuario | null
 }
 
-export type TipoProjeto = 'dashboard' | 'lp' | 'site' | 'saas'
+export type TipoProjeto = 'Landing Page' | 'Site' | 'Dashboard' | 'Automação' | 'CRM' | 'GTM/GA4' | 'Outro' | 'lp' | 'saas'
 
 export interface InteligenciaProjeto {
   id: number
   nome_projeto: string
-  tipo_projeto?: TipoProjeto | null
+  tipo_projeto?: TipoProjeto | string | null
   data_criacao?: string | null
   link_lovable?: string | null
   link_vercel?: string | null

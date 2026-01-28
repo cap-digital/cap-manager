@@ -166,6 +166,9 @@ function SortableCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mt-3">
+        <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-none text-[10px] h-5">
+          {card.status.replace(/_/g, ' ')}
+        </Badge>
         <Badge className={prioridadeColors[card.prioridade]} variant="secondary">
           {card.prioridade}
         </Badge>

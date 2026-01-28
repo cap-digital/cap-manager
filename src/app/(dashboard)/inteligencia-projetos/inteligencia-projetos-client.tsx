@@ -49,6 +49,8 @@ import {
     Code2,
     User,
     CheckCircle2,
+    X,
+    Calendar,
 } from 'lucide-react'
 import type { InteligenciaProjeto, Cliente, Usuario, TipoProjeto } from '@/lib/supabase'
 import { BarChart3 } from 'lucide-react'
@@ -61,6 +63,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+
+const PROJECT_TYPES = [
+    'Landing Page',
+    'Site',
+    'Dashboard',
+    'Automação',
+    'CRM',
+    'GTM/GA4',
+    'Outro'
+]
 
 interface InteligenciaProjetosClientProps {
     projetos: InteligenciaProjeto[]
@@ -83,10 +96,13 @@ export function InteligenciaProjetosClient({
     const [filtroTipo, setFiltroTipo] = useState<string>('all')
     const [filtroFeitoPor, setFiltroFeitoPor] = useState<string>('all')
     const [filtroRevisadoPor, setFiltroRevisadoPor] = useState<string>('all')
+    const [filterDate, setFilterDate] = useState<string>('')
+    const [selectedProjeto, setSelectedProjeto] = useState<InteligenciaProjeto | null>(null)
+    const [isDetailOpen, setIsDetailOpen] = useState(false)
 
     const [formData, setFormData] = useState({
         nome_projeto: '',
-        tipo_projeto: 'lp' as TipoProjeto,
+        tipo_projeto: '' as TipoProjeto | string,
         data_criacao: new Date().toISOString().split('T')[0],
         link_lovable: '',
         link_vercel: '',
@@ -103,32 +119,30 @@ export function InteligenciaProjetosClient({
 
     const filteredProjetos = projetos.filter(
         p => {
-            // Filtro de busca
-            const matchesSearch = 
+            const matchesSearch =
                 p.nome_projeto.toLowerCase().includes(search.toLowerCase()) ||
                 p.cliente?.nome.toLowerCase().includes(search.toLowerCase()) ||
                 (p.feito_por?.nome && p.feito_por.nome.toLowerCase().includes(search.toLowerCase()))
-            
-            // Filtro de cliente
+
             const matchesCliente = filtroCliente === 'all' || p.cliente_id?.toString() === filtroCliente
-            
-            // Filtro de tipo
             const matchesTipo = filtroTipo === 'all' || p.tipo_projeto === filtroTipo
-            
-            // Filtro de feito por
             const matchesFeitoPor = filtroFeitoPor === 'all' || p.feito_por_id?.toString() === filtroFeitoPor
-            
-            // Filtro de revisado por
             const matchesRevisadoPor = filtroRevisadoPor === 'all' || p.revisado_por_id?.toString() === filtroRevisadoPor
-            
-            return matchesSearch && matchesCliente && matchesTipo && matchesFeitoPor && matchesRevisadoPor
+            const matchesDate = !filterDate || (p.data_criacao && p.data_criacao >= filterDate)
+
+            return matchesSearch && matchesCliente && matchesTipo && matchesFeitoPor && matchesRevisadoPor && matchesDate
         }
     )
+
+    const stats = PROJECT_TYPES.map(type => ({
+        type,
+        count: projetos.filter(p => p.tipo_projeto === type).length
+    })).filter(s => s.count > 0)
 
     const resetForm = () => {
         setFormData({
             nome_projeto: '',
-            tipo_projeto: 'lp' as TipoProjeto,
+            tipo_projeto: '' as TipoProjeto | string,
             data_criacao: new Date().toISOString().split('T')[0],
             link_lovable: '',
             link_vercel: '',
@@ -146,7 +160,7 @@ export function InteligenciaProjetosClient({
         setEditingProjeto(projeto)
         setFormData({
             nome_projeto: projeto.nome_projeto,
-            tipo_projeto: (projeto.tipo_projeto || 'lp') as TipoProjeto,
+            tipo_projeto: (projeto.tipo_projeto || '') as TipoProjeto | string,
             data_criacao: projeto.data_criacao || '',
             link_lovable: projeto.link_lovable || '',
             link_vercel: projeto.link_vercel || '',
@@ -158,6 +172,11 @@ export function InteligenciaProjetosClient({
             cliente_id: projeto.cliente_id?.toString() || '',
         })
         setIsOpen(true)
+    }
+
+    const openDetails = (projeto: InteligenciaProjeto) => {
+        setSelectedProjeto(projeto)
+        setIsDetailOpen(true)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -234,7 +253,7 @@ export function InteligenciaProjetosClient({
 
     return (
         <div className="space-y-6">
-            {/* Filtros */}
+            {/* Filtros e Ações */}
             <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1 max-w-md">
@@ -259,22 +278,9 @@ export function InteligenciaProjetosClient({
                         </SelectContent>
                     </Select>
 
-                    <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filtrar por tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos os tipos</SelectItem>
-                            <SelectItem value="dashboard">Dashboard</SelectItem>
-                            <SelectItem value="lp">LP (Landing Page)</SelectItem>
-                            <SelectItem value="site">Site</SelectItem>
-                            <SelectItem value="saas">SaaS</SelectItem>
-                        </SelectContent>
-                    </Select>
-
                     <Select value={filtroFeitoPor} onValueChange={setFiltroFeitoPor}>
                         <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filtrar por feito por" />
+                            <SelectValue placeholder="Feito por" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todos</SelectItem>
@@ -286,7 +292,7 @@ export function InteligenciaProjetosClient({
 
                     <Select value={filtroRevisadoPor} onValueChange={setFiltroRevisadoPor}>
                         <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Filtrar por revisado por" />
+                            <SelectValue placeholder="Revisado por" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todos</SelectItem>
@@ -308,180 +314,229 @@ export function InteligenciaProjetosClient({
                                 Novo Projeto
                             </Button>
                         </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <form onSubmit={handleSubmit}>
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {editingProjeto ? 'Editar Projeto' : 'Novo Projeto'}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    Preencha os detalhes do projeto técnico.
-                                </DialogDescription>
-                            </DialogHeader>
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <form onSubmit={handleSubmit}>
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {editingProjeto ? 'Editar Projeto' : 'Novo Projeto'}
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        Preencha os detalhes do projeto técnico.
+                                    </DialogDescription>
+                                </DialogHeader>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="nome_projeto">Nome do Projeto *</Label>
-                                    <Input
-                                        id="nome_projeto"
-                                        placeholder="Ex: Landing Page Campanha X"
-                                        value={formData.nome_projeto}
-                                        onChange={e => setFormData(prev => ({ ...prev, nome_projeto: e.target.value }))}
-                                        required
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="nome_projeto">Nome do Projeto *</Label>
+                                        <Input
+                                            id="nome_projeto"
+                                            placeholder="Ex: Landing Page Campanha X"
+                                            value={formData.nome_projeto}
+                                            onChange={e => setFormData(prev => ({ ...prev, nome_projeto: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tipo_projeto">Tipo de Projeto</Label>
+                                        <Select
+                                            value={formData.tipo_projeto}
+                                            onValueChange={v => setFormData(prev => ({ ...prev, tipo_projeto: v }))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o tipo" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {PROJECT_TYPES.map(t => (
+                                                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="cliente_id">Cliente</Label>
+                                        <Select
+                                            value={formData.cliente_id}
+                                            onValueChange={v => setFormData(prev => ({ ...prev, cliente_id: v }))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o cliente" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {clientes.map(c => (
+                                                    <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="data_criacao">Data de Criação</Label>
+                                        <Input
+                                            id="data_criacao"
+                                            type="date"
+                                            value={formData.data_criacao}
+                                            onChange={e => setFormData(prev => ({ ...prev, data_criacao: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="feito_por_id">Feito por</Label>
+                                        <Select
+                                            value={formData.feito_por_id}
+                                            onValueChange={v => setFormData(prev => ({ ...prev, feito_por_id: v }))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o desenvolvedor" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {usuarios.map(u => (
+                                                    <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="revisado_por_id">Revisado por</Label>
+                                        <Select
+                                            value={formData.revisado_por_id}
+                                            onValueChange={v => setFormData(prev => ({ ...prev, revisado_por_id: v }))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o revisor" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {usuarios.map(u => (
+                                                    <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-2 md:col-span-2 border-t pt-4 mt-2">
+                                        <Label className="text-primary font-bold">Links do Projeto</Label>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="link_lovable">Link do Lovable</Label>
+                                        <Input
+                                            id="link_lovable"
+                                            placeholder="https://lovable.dev/..."
+                                            value={formData.link_lovable}
+                                            onChange={e => setFormData(prev => ({ ...prev, link_lovable: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="link_vercel">Link do Vercel</Label>
+                                        <Input
+                                            id="link_vercel"
+                                            placeholder="https://project.vercel.app"
+                                            value={formData.link_vercel}
+                                            onChange={e => setFormData(prev => ({ ...prev, link_vercel: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="link_render_railway">Link do Render/Railway</Label>
+                                        <Input
+                                            id="link_render_railway"
+                                            placeholder="https://render.com/..."
+                                            value={formData.link_render_railway}
+                                            onChange={e => setFormData(prev => ({ ...prev, link_render_railway: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="link_dominio">Link do Domínio</Label>
+                                        <Input
+                                            id="link_dominio"
+                                            placeholder="https://www.cliente.com.br"
+                                            value={formData.link_dominio}
+                                            onChange={e => setFormData(prev => ({ ...prev, link_dominio: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="link_looker_studio">Link Looker Studio</Label>
+                                        <Input
+                                            id="link_looker_studio"
+                                            placeholder="https://lookerstudio.google.com/..."
+                                            value={formData.link_looker_studio}
+                                            onChange={e => setFormData(prev => ({ ...prev, link_looker_studio: e.target.value }))}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="tipo_projeto">Tipo de Projeto</Label>
-                                    <Select
-                                        value={formData.tipo_projeto}
-                                        onValueChange={v => setFormData(prev => ({ ...prev, tipo_projeto: v as TipoProjeto }))}
+                                <DialogFooter>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsOpen(false)}
                                     >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione o tipo" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="dashboard">Dashboard</SelectItem>
-                                            <SelectItem value="lp">LP (Landing Page)</SelectItem>
-                                            <SelectItem value="site">Site</SelectItem>
-                                            <SelectItem value="saas">SaaS</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="cliente_id">Cliente</Label>
-                                    <Select
-                                        value={formData.cliente_id}
-                                        onValueChange={v => setFormData(prev => ({ ...prev, cliente_id: v }))}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione o cliente" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {clientes.map(c => (
-                                                <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="data_criacao">Data de Criação</Label>
-                                    <Input
-                                        id="data_criacao"
-                                        type="date"
-                                        value={formData.data_criacao}
-                                        onChange={e => setFormData(prev => ({ ...prev, data_criacao: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="feito_por_id">Feito por</Label>
-                                    <Select
-                                        value={formData.feito_por_id}
-                                        onValueChange={v => setFormData(prev => ({ ...prev, feito_por_id: v }))}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione o desenvolvedor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {usuarios.map(u => (
-                                                <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="revisado_por_id">Revisado por</Label>
-                                    <Select
-                                        value={formData.revisado_por_id}
-                                        onValueChange={v => setFormData(prev => ({ ...prev, revisado_por_id: v }))}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione o revisor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {usuarios.map(u => (
-                                                <SelectItem key={u.id} value={u.id.toString()}>{u.nome}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2 md:col-span-2 border-t pt-4 mt-2">
-                                    <Label className="text-primary font-bold">Links do Projeto</Label>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="link_lovable">Link do Lovable</Label>
-                                    <Input
-                                        id="link_lovable"
-                                        placeholder="https://lovable.dev/..."
-                                        value={formData.link_lovable}
-                                        onChange={e => setFormData(prev => ({ ...prev, link_lovable: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="link_vercel">Link do Vercel</Label>
-                                    <Input
-                                        id="link_vercel"
-                                        placeholder="https://project.vercel.app"
-                                        value={formData.link_vercel}
-                                        onChange={e => setFormData(prev => ({ ...prev, link_vercel: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="link_render_railway">Link do Render/Railway</Label>
-                                    <Input
-                                        id="link_render_railway"
-                                        placeholder="https://render.com/..."
-                                        value={formData.link_render_railway}
-                                        onChange={e => setFormData(prev => ({ ...prev, link_render_railway: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="link_dominio">Link do Domínio</Label>
-                                    <Input
-                                        id="link_dominio"
-                                        placeholder="https://www.cliente.com.br"
-                                        value={formData.link_dominio}
-                                        onChange={e => setFormData(prev => ({ ...prev, link_dominio: e.target.value }))}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="link_looker_studio">Link Looker Studio</Label>
-                                    <Input
-                                        id="link_looker_studio"
-                                        placeholder="https://lookerstudio.google.com/..."
-                                        value={formData.link_looker_studio}
-                                        onChange={e => setFormData(prev => ({ ...prev, link_looker_studio: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            <DialogFooter>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button type="submit" disabled={isLoading}>
-                                    {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    {editingProjeto ? 'Salvar Alterações' : 'Criar Projeto'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                                        Cancelar
+                                    </Button>
+                                    <Button type="submit" disabled={isLoading}>
+                                        {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                        {editingProjeto ? 'Salvar Alterações' : 'Criar Projeto'}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
+
+            {/* Indicadores */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                {stats.map(s => (
+                    <Card key={s.type} className="bg-primary/5 border-primary/10">
+                        <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                            <span className="text-2xl font-bold text-primary">{s.count}</span>
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-1">{s.type}</span>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Filtros Secundários */}
+            <Card className="p-4 border-dashed bg-muted/30">
+                <div className="flex flex-wrap gap-4 items-end">
+                    <div className="space-y-1.5 flex-1 min-w-[200px]">
+                        <Label className="text-xs uppercase text-muted-foreground font-bold">Tipo de Projeto</Label>
+                        <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                            <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="Todos os tipos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos os tipos</SelectItem>
+                                {PROJECT_TYPES.map(t => (
+                                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-1.5 flex-1 min-w-[200px]">
+                        <Label className="text-xs uppercase text-muted-foreground font-bold">Criado a partir de</Label>
+                        <div className="relative">
+                            <Input
+                                type="date"
+                                className="bg-background pl-9"
+                                value={filterDate}
+                                onChange={e => setFilterDate(e.target.value)}
+                            />
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        </div>
+                    </div>
+
+                    <Button variant="outline" size="icon" onClick={() => { setFiltroTipo('all'); setFilterDate(''); setSearch(''); setFiltroCliente('all'); setFiltroFeitoPor('all'); setFiltroRevisadoPor('all'); }}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            </Card>
 
             <div className="flex justify-end p-1">
                 <div className="flex items-center space-x-2 border rounded-md p-1">
@@ -504,11 +559,12 @@ export function InteligenciaProjetosClient({
                 </div>
             </div>
 
+            {/* Listagem de Projetos */}
             {filteredProjetos.length > 0 ? (
                 viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredProjetos.map(projeto => (
-                            <Card key={projeto.id} className="group overflow-hidden">
+                            <Card key={projeto.id} className="group overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer" onClick={() => openDetails(projeto)}>
                                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                                     <div className="flex items-start gap-3">
                                         <div className="p-2 rounded-lg bg-primary/10">
@@ -516,20 +572,27 @@ export function InteligenciaProjetosClient({
                                         </div>
                                         <div>
                                             <CardTitle className="text-lg line-clamp-1">{projeto.nome_projeto}</CardTitle>
-                                            <CardDescription>{projeto.cliente?.nome || 'Sem cliente'}</CardDescription>
+                                            <CardDescription className="flex items-center gap-2">
+                                                {projeto.cliente?.nome || 'Sem cliente'}
+                                                {projeto.tipo_projeto && (
+                                                    <Badge variant="outline" className="text-[10px] py-0 px-1 font-normal opacity-80">
+                                                        {projeto.tipo_projeto}
+                                                    </Badge>
+                                                )}
+                                            </CardDescription>
                                         </div>
                                     </div>
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
+                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                             <Button variant="ghost" size="icon" className="h-8 w-8">
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => openEditDialog(projeto)}>
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditDialog(projeto) }}>
                                                 <Pencil className="h-4 w-4 mr-2" /> Editar
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(projeto.id)} className="text-destructive">
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(projeto.id) }} className="text-destructive">
                                                 <Trash2 className="h-4 w-4 mr-2" /> Excluir
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -539,10 +602,7 @@ export function InteligenciaProjetosClient({
                                     <div className="flex flex-wrap gap-2 text-xs">
                                         {projeto.tipo_projeto && (
                                             <div className="px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded flex items-center gap-1 font-medium">
-                                                {projeto.tipo_projeto === 'dashboard' && 'Dashboard'}
-                                                {projeto.tipo_projeto === 'lp' && 'LP'}
-                                                {projeto.tipo_projeto === 'site' && 'Site'}
-                                                {projeto.tipo_projeto === 'saas' && 'SaaS'}
+                                                {projeto.tipo_projeto}
                                             </div>
                                         )}
                                         {projeto.data_criacao && (
@@ -562,7 +622,7 @@ export function InteligenciaProjetosClient({
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
                                         {projeto.link_lovable && (
                                             <a href={projeto.link_lovable} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-primary hover:underline">
                                                 <ExternalLink className="h-3 w-3" /> Lovable
@@ -610,18 +670,16 @@ export function InteligenciaProjetosClient({
                             </TableHeader>
                             <TableBody>
                                 {filteredProjetos.map(projeto => (
-                                    <TableRow key={projeto.id}>
-                                        <TableCell className="font-medium">{projeto.nome_projeto}</TableCell>
-                                        <TableCell>
-                                            {projeto.tipo_projeto && (
-                                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded text-xs font-medium">
-                                                    {projeto.tipo_projeto === 'dashboard' && 'Dashboard'}
-                                                    {projeto.tipo_projeto === 'lp' && 'LP'}
-                                                    {projeto.tipo_projeto === 'site' && 'Site'}
-                                                    {projeto.tipo_projeto === 'saas' && 'SaaS'}
-                                                </span>
-                                            )}
+                                    <TableRow key={projeto.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetails(projeto)}>
+                                        <TableCell className="font-medium">
+                                            <div className="flex flex-col">
+                                                <span>{projeto.nome_projeto}</span>
+                                                {projeto.tipo_projeto && (
+                                                    <span className="text-[10px] text-muted-foreground">{projeto.tipo_projeto}</span>
+                                                )}
+                                            </div>
                                         </TableCell>
+                                        <TableCell>{projeto.tipo_projeto || '-'}</TableCell>
                                         <TableCell>{projeto.cliente?.nome || '-'}</TableCell>
                                         <TableCell>{projeto.data_criacao ? formatDate(projeto.data_criacao) : '-'}</TableCell>
                                         <TableCell>{projeto.feito_por?.nome || '-'}</TableCell>
@@ -636,7 +694,7 @@ export function InteligenciaProjetosClient({
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
+                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8">
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
@@ -658,22 +716,137 @@ export function InteligenciaProjetosClient({
                     </div>
                 )
             ) : (
-                <Card className="p-12">
-                    <div className="text-center">
-                        <Code2 className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                        <h3 className="mt-4 text-lg font-semibold">Nenhum projeto de inteligência encontrado</h3>
-                        <p className="text-muted-foreground mt-2">
-                            {search ? 'Tente buscar com outros termos' : 'Comece registrando seu primeiro projeto técnico'}
-                        </p>
-                        {!search && (
-                            <Button className="mt-4" onClick={() => setIsOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Registrar Projeto
-                            </Button>
-                        )}
+                <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/10 border-dashed">
+                    <div className="p-4 rounded-full bg-muted mb-4">
+                        <Search className="h-8 w-8 text-muted-foreground" />
                     </div>
-                </Card>
+                    <h3 className="text-lg font-semibold">Nenhum projeto encontrado</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                        Não encontramos nenhum projeto com os filtros aplicados. Tente ajustar sua busca ou filtros.
+                    </p>
+                    <Button variant="outline" className="mt-4" onClick={() => { setSearch(''); setFiltroTipo('all'); setFilterDate(''); setFiltroCliente('all'); setFiltroFeitoPor('all'); setFiltroRevisadoPor('all'); }}>
+                        Limpar todos os filtros
+                    </Button>
+                </div>
             )}
+
+            {/* Modal de Detalhes */}
+            <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                <DialogContent className="max-w-3xl">
+                    {selectedProjeto && (
+                        <>
+                            <DialogHeader>
+                                <div className="flex items-center justify-between pr-8">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                                {selectedProjeto.tipo_projeto || 'Sem Tipo'}
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground">ID: #{selectedProjeto.id}</span>
+                                        </div>
+                                        <DialogTitle className="text-2xl">{selectedProjeto.nome_projeto}</DialogTitle>
+                                        <DialogDescription className="text-base font-medium text-foreground/80 mt-1">
+                                            Cliente: {selectedProjeto.cliente?.nome || 'Não informado'}
+                                        </DialogDescription>
+                                    </div>
+                                </div>
+                            </DialogHeader>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
+                                <div className="space-y-6">
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider border-b pb-2">Informações Gerais</h4>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Calendar className="h-4 w-4 text-primary" />
+                                                <span className="font-medium">Data de Criação:</span>
+                                                <span>{selectedProjeto.data_criacao ? formatDate(selectedProjeto.data_criacao) : '-'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <User className="h-4 w-4 text-primary" />
+                                                <span className="font-medium">Responsável:</span>
+                                                <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                                    {selectedProjeto.feito_por?.nome || '-'}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <CheckCircle2 className="h-4 w-4 text-primary" />
+                                                <span className="font-medium">Revisado por:</span>
+                                                <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                    {selectedProjeto.revisado_por?.nome || '-'}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider border-b pb-2">Ambientes e Links</h4>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {selectedProjeto.link_dominio && (
+                                                <a href={selectedProjeto.link_dominio} target="_blank" rel="noopener noreferrer"
+                                                    className="flex items-center justify-between p-3 rounded-lg border bg-primary/5 hover:bg-primary/10 transition-colors group">
+                                                    <div className="flex items-center gap-3">
+                                                        <Globe className="h-5 w-5 text-primary" />
+                                                        <span className="font-semibold text-sm">Domínio de Produção</span>
+                                                    </div>
+                                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                </a>
+                                            )}
+                                            {selectedProjeto.link_vercel && (
+                                                <a href={selectedProjeto.link_vercel} target="_blank" rel="noopener noreferrer"
+                                                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors group">
+                                                    <div className="flex items-center gap-3">
+                                                        <ExternalLink className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                                                        <span className="font-medium text-sm">Deploy Vercel</span>
+                                                    </div>
+                                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                </a>
+                                            )}
+                                            {selectedProjeto.link_lovable && (
+                                                <a href={selectedProjeto.link_lovable} target="_blank" rel="noopener noreferrer"
+                                                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors group">
+                                                    <div className="flex items-center gap-3">
+                                                        <Code2 className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                                                        <span className="font-medium text-sm">Protótipo Lovable</span>
+                                                    </div>
+                                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                </a>
+                                            )}
+                                            {selectedProjeto.link_render_railway && (
+                                                <a href={selectedProjeto.link_render_railway} target="_blank" rel="noopener noreferrer"
+                                                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors group">
+                                                    <div className="flex items-center gap-3">
+                                                        <ExternalLink className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                                                        <span className="font-medium text-sm">API (Render/Railway)</span>
+                                                    </div>
+                                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="bg-muted/50 rounded-xl p-6 border h-full flex flex-col items-center justify-center text-center space-y-4">
+                                        <div className="p-4 bg-background rounded-full border shadow-sm">
+                                            <Code2 className="h-10 w-10 text-primary/40" />
+                                        </div>
+                                        <div>
+                                            <h5 className="font-bold text-sm">Controle de Inteligência</h5>
+                                            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+                                                Este projeto segue os padrões técnicos da CAP para desenvolvimento e entrega contínua.
+                                            </p>
+                                        </div>
+                                        <Button variant="outline" size="sm" className="w-full mt-4" onClick={() => { setIsDetailOpen(false); openEditDialog(selectedProjeto); }}>
+                                            <Pencil className="h-3.5 w-3.5 mr-2" />
+                                            Editar Projeto
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
