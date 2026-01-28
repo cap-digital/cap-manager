@@ -744,12 +744,12 @@ export function ProjetoDetalhesClient({
   const totalGasto = projeto.estrategias.reduce((acc, e) => acc + (e.gasto_ate_momento || 0), 0)
   const isFee = projeto.tipo_cobranca === 'fee'
   // Valor Líquido: se for FEE, é igual ao Valor Total, senão calcula normalmente
-  const totalLiquido = isFee 
+  const totalLiquido = isFee
     ? totalValorBruto
     : projeto.estrategias.reduce((acc, e) => {
-        const calc = calcularValoresEstrategia(e)
-        return acc + calc.valorPlataforma
-      }, 0)
+      const calc = calcularValoresEstrategia(e)
+      return acc + calc.valorPlataforma
+    }, 0)
   // Restante = Valor Total - Gasto Total
   const totalRestante = totalValorBruto - totalGasto
 
@@ -1194,77 +1194,77 @@ export function ProjetoDetalhesClient({
                       return estrategia.entrega_contratada !== null || estrategia.entregue_ate_momento !== null
                     })
                     .map(estrategia => {
-                        const calc = calcularValoresEstrategia(estrategia)
-                        const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label?.split(' ')[0] || estrategia.plataforma
-                        
-                        // Usar valores calculados da estratégia quando disponíveis, senão calcular
-                        const percentualEntrega = estrategia.percentual_entrega !== null && estrategia.percentual_entrega !== undefined
-                          ? estrategia.percentual_entrega
-                          : (estrategia.entrega_contratada && estrategia.entregue_ate_momento
-                            ? (estrategia.entregue_ate_momento / estrategia.entrega_contratada) * 100
-                            : null)
-                        
-                        const custoResultado = estrategia.custo_resultado !== null && estrategia.custo_resultado !== undefined
-                          ? estrategia.custo_resultado
-                          : (estrategia.entregue_ate_momento && estrategia.gasto_ate_momento && estrategia.entregue_ate_momento > 0
-                            ? estrategia.gasto_ate_momento / estrategia.entregue_ate_momento
-                            : null)
+                      const calc = calcularValoresEstrategia(estrategia)
+                      const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label?.split(' ')[0] || estrategia.plataforma
 
-                        const valorPlataforma = estrategia.valor_plataforma !== null && estrategia.valor_plataforma !== undefined
-                          ? estrategia.valor_plataforma
-                          : calc.valorPlataforma
+                      // Usar valores calculados da estratégia quando disponíveis, senão calcular
+                      const percentualEntrega = estrategia.percentual_entrega !== null && estrategia.percentual_entrega !== undefined
+                        ? estrategia.percentual_entrega
+                        : (estrategia.entrega_contratada && estrategia.entregue_ate_momento
+                          ? (estrategia.entregue_ate_momento / estrategia.entrega_contratada) * 100
+                          : null)
 
-                        const metaCustoResultado = estrategia.meta_custo_resultado !== null && estrategia.meta_custo_resultado !== undefined
-                          ? estrategia.meta_custo_resultado
-                          : (estrategia.entrega_contratada && valorPlataforma && estrategia.kpi
-                            ? (() => {
-                                const divisorKpi = estrategia.kpi === 'CPM' ? 1000 : 1
-                                return valorPlataforma / (estrategia.entrega_contratada / divisorKpi)
-                              })()
-                            : null)
+                      const custoResultado = estrategia.custo_resultado !== null && estrategia.custo_resultado !== undefined
+                        ? estrategia.custo_resultado
+                        : (estrategia.entregue_ate_momento && estrategia.gasto_ate_momento && estrategia.entregue_ate_momento > 0
+                          ? estrategia.gasto_ate_momento / estrategia.entregue_ate_momento
+                          : null)
 
-                        const estimativaResultado = estrategia.estimativa_resultado !== null && estrategia.estimativa_resultado !== undefined
-                          ? estrategia.estimativa_resultado
-                          : (custoResultado && custoResultado > 0 && valorPlataforma
-                            ? valorPlataforma / custoResultado
-                            : null)
+                      const valorPlataforma = estrategia.valor_plataforma !== null && estrategia.valor_plataforma !== undefined
+                        ? estrategia.valor_plataforma
+                        : calc.valorPlataforma
 
-                        const estimativaSucesso = estrategia.estimativa_sucesso !== null && estrategia.estimativa_sucesso !== undefined
-                          ? estrategia.estimativa_sucesso
-                          : (estimativaResultado && estrategia.entrega_contratada && estrategia.entrega_contratada > 0
-                            ? (estimativaResultado / estrategia.entrega_contratada) * 100
-                            : null)
+                      const metaCustoResultado = estrategia.meta_custo_resultado !== null && estrategia.meta_custo_resultado !== undefined
+                        ? estrategia.meta_custo_resultado
+                        : (estrategia.entrega_contratada && valorPlataforma && estrategia.kpi
+                          ? (() => {
+                            const divisorKpi = estrategia.kpi === 'CPM' ? 1000 : 1
+                            return valorPlataforma / (estrategia.entrega_contratada / divisorKpi)
+                          })()
+                          : null)
 
-                        return (
-                          <tr key={estrategia.id} className="border-t hover:bg-muted/30">
-                            <td className="p-2 capitalize">{plataformaLabel}</td>
-                            <td className="p-2">{estrategia.estrategia || '-'}</td>
-                            <td className="p-2 text-right">
-                              {estrategia.entrega_contratada !== null ? estrategia.entrega_contratada.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
-                            </td>
-                            <td className="p-2 text-right">
-                              {estrategia.entregue_ate_momento !== null ? estrategia.entregue_ate_momento.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
-                            </td>
-                            <td className={`p-2 text-right font-medium ${percentualEntrega !== null && percentualEntrega >= 100 ? 'text-green-600' : percentualEntrega !== null && percentualEntrega >= 70 ? 'text-blue-600' : percentualEntrega !== null ? 'text-amber-600' : ''}`}>
-                              {percentualEntrega !== null ? `${percentualEntrega.toFixed(1)}%` : '-'}
-                            </td>
-                            <td className="p-2 text-right">
-                              {custoResultado !== null ? formatCurrency(custoResultado) : '-'}
-                            </td>
-                            <td className="p-2 text-right">
-                              {metaCustoResultado !== null ? formatCurrency(metaCustoResultado) : '-'}
-                            </td>
-                            <td className="p-2 text-right">
-                              {estimativaResultado !== null ? estimativaResultado.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
-                            </td>
-                            <td className={`p-2 text-right font-medium ${estimativaSucesso !== null && estimativaSucesso >= 100 ? 'text-green-600' : estimativaSucesso !== null && estimativaSucesso >= 80 ? 'text-yellow-600' : estimativaSucesso !== null ? 'text-red-600' : ''}`}>
-                              {estimativaSucesso !== null ? `${estimativaSucesso.toFixed(1)}%` : '-'}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                  </tbody>
-                </table>
+                      const estimativaResultado = estrategia.estimativa_resultado !== null && estrategia.estimativa_resultado !== undefined
+                        ? estrategia.estimativa_resultado
+                        : (custoResultado && custoResultado > 0 && valorPlataforma
+                          ? valorPlataforma / custoResultado
+                          : null)
+
+                      const estimativaSucesso = estrategia.estimativa_sucesso !== null && estrategia.estimativa_sucesso !== undefined
+                        ? estrategia.estimativa_sucesso
+                        : (estimativaResultado && estrategia.entrega_contratada && estrategia.entrega_contratada > 0
+                          ? (estimativaResultado / estrategia.entrega_contratada) * 100
+                          : null)
+
+                      return (
+                        <tr key={estrategia.id} className="border-t hover:bg-muted/30">
+                          <td className="p-2 capitalize">{plataformaLabel}</td>
+                          <td className="p-2">{estrategia.estrategia || '-'}</td>
+                          <td className="p-2 text-right">
+                            {estrategia.entrega_contratada !== null ? estrategia.entrega_contratada.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
+                          </td>
+                          <td className="p-2 text-right">
+                            {estrategia.entregue_ate_momento !== null ? estrategia.entregue_ate_momento.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
+                          </td>
+                          <td className={`p-2 text-right font-medium ${percentualEntrega !== null && percentualEntrega >= 100 ? 'text-green-600' : percentualEntrega !== null && percentualEntrega >= 70 ? 'text-blue-600' : percentualEntrega !== null ? 'text-amber-600' : ''}`}>
+                            {percentualEntrega !== null ? `${percentualEntrega.toFixed(1)}%` : '-'}
+                          </td>
+                          <td className="p-2 text-right">
+                            {custoResultado !== null ? formatCurrency(custoResultado) : '-'}
+                          </td>
+                          <td className="p-2 text-right">
+                            {metaCustoResultado !== null ? formatCurrency(metaCustoResultado) : '-'}
+                          </td>
+                          <td className="p-2 text-right">
+                            {estimativaResultado !== null ? estimativaResultado.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
+                          </td>
+                          <td className={`p-2 text-right font-medium ${estimativaSucesso !== null && estimativaSucesso >= 100 ? 'text-green-600' : estimativaSucesso !== null && estimativaSucesso >= 80 ? 'text-yellow-600' : estimativaSucesso !== null ? 'text-red-600' : ''}`}>
+                            {estimativaSucesso !== null ? `${estimativaSucesso.toFixed(1)}%` : '-'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="text-center py-12 border rounded-lg">
@@ -1592,7 +1592,7 @@ export function ProjetoDetalhesClient({
                     <Input
                       type="text"
                       inputMode="decimal"
-                      value={estrategiaForm.gasto_ate_momento ? maskCurrency(estrategiaForm.gasto_ate_momento.toString().replace(/\D/g, '')) : ''}
+                      value={estrategiaForm.gasto_ate_momento ? maskCurrency(parseFloat(estrategiaForm.gasto_ate_momento).toFixed(2)) : ''}
                       onChange={e => {
                         const rawValue = e.target.value.replace(/\D/g, '')
                         if (!rawValue) {
