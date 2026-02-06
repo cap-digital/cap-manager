@@ -1,6 +1,6 @@
 export type TipoCobranca = 'td' | 'fee'
 export type StatusProjeto = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
-export type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
+export type StatusEstrategia = 'planejada' | 'em_aprovacao' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
 export type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'kwai' | 'tinder' | 'programatica' | 'outro'
 export type GrupoRevisao = 'A' | 'B' | 'C'
 

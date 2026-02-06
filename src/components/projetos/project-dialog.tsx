@@ -38,7 +38,8 @@ import {
     Info,
     RefreshCw
 } from 'lucide-react'
-import { formatCurrency, formatDateInput, maskCurrency, parseCurrency, maskNumber, parseNumber } from '@/lib/utils'
+import { formatCurrency, maskCurrency, parseCurrency, maskNumber, parseNumber } from '@/lib/utils'
+import { DateInput } from '@/components/ui/date-input'
 import {
     SimplifiedProjeto,
     SimplifiedEstrategia,
@@ -203,19 +204,35 @@ export function ProjectDialog({
         return pisList.filter(pi => pi.cliente_id === formData.cliente_id)
     }, [pisList, formData.cliente_id])
 
-    // Auto-calculate Estimativa Sucesso (%) = (entregue_ate_momento / entrega_contratada) * 100
+    // Auto-calculate Estimativa de Resultado e Estimativa de Sucesso
+    // Estimativa Resultado = valorPlataforma / (gastoAteMomento / entregueAteMomento)
+    // Estimativa Sucesso (%) = (estimativaResultado / entregaContratada) * 100
     useEffect(() => {
+        const valorBruto = parseFloat(estrategiaForm.valor_bruto) || 0
+        const porcentagemAgencia = parseFloat(estrategiaForm.porcentagem_agencia) || 0
+        const porcentagemPlataforma = parseFloat(estrategiaForm.porcentagem_plataforma) || 0
+        const gastoAteMomento = parseFloat(estrategiaForm.gasto_ate_momento) || 0
         const entregue = parseFloat(estrategiaForm.entregue_ate_momento) || 0
         const contratada = parseFloat(estrategiaForm.entrega_contratada) || 0
 
-        if (contratada > 0 && entregue >= 0) {
-            const sucesso = (entregue / contratada) * 100
-            setEstrategiaForm(prev => ({
-                ...prev,
-                estimativa_sucesso: sucesso.toFixed(2)
-            }))
-        }
-    }, [estrategiaForm.entregue_ate_momento, estrategiaForm.entrega_contratada])
+        const valorLiquido = valorBruto - (valorBruto * porcentagemAgencia / 100)
+        const valorPlataforma = valorLiquido * (porcentagemPlataforma / 100)
+        const custoResultado = entregue > 0 && gastoAteMomento > 0 ? gastoAteMomento / entregue : null
+
+        const estimativaResultado = custoResultado && custoResultado > 0
+            ? valorPlataforma / custoResultado
+            : null
+
+        const estimativaSucesso = estimativaResultado && contratada > 0
+            ? (estimativaResultado / contratada) * 100
+            : null
+
+        setEstrategiaForm(prev => ({
+            ...prev,
+            estimativa_resultado: estimativaResultado !== null ? estimativaResultado.toFixed(2) : '',
+            estimativa_sucesso: estimativaSucesso !== null ? estimativaSucesso.toFixed(2) : '',
+        }))
+    }, [estrategiaForm.valor_bruto, estrategiaForm.porcentagem_agencia, estrategiaForm.porcentagem_plataforma, estrategiaForm.gasto_ate_momento, estrategiaForm.entregue_ate_momento, estrategiaForm.entrega_contratada])
 
     // Generate UTM parameters
     const gerarUTM = () => {
@@ -731,20 +748,18 @@ export function ProjectDialog({
 
                             <div className="space-y-2">
                                 <Label>Data Inicio</Label>
-                                <Input
-                                    type="date"
+                                <DateInput
                                     value={formData.data_inicio}
-                                    onChange={e => setFormData(p => ({ ...p, data_inicio: e.target.value }))}
+                                    onChange={v => setFormData(p => ({ ...p, data_inicio: v }))}
                                 />
                             </div>
 
                             <div className="space-y-2">
                                 <Label>Data Fim</Label>
                                 <div className="space-y-1">
-                                    <Input
-                                        type="date"
+                                    <DateInput
                                         value={formData.data_fim}
-                                        onChange={e => setFormData(p => ({ ...p, data_fim: e.target.value }))}
+                                        onChange={v => setFormData(p => ({ ...p, data_fim: v }))}
                                     />
                                     {calcularDiasAteAcabar !== null && (
                                         <p className={`text-xs ${calcularDiasAteAcabar < 7 ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>
@@ -852,8 +867,8 @@ export function ProjectDialog({
                                                     ? estrategia.plataforma_custom
                                                     : estrategia.plataforma}
                                             </span>
-                                            <Badge variant="outline" className={`text-xs ${estrategia.status === 'ativa' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' : ''}`}>
-                                                {estrategia.status}
+                                            <Badge variant="outline" className={`text-xs ${estrategia.status === 'ativa' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' : estrategia.status === 'em_aprovacao' ? 'bg-blue-500/10 text-blue-600 border-blue-200' : ''}`}>
+                                                {estrategia.status === 'em_aprovacao' ? 'Em Aprovação' : estrategia.status}
                                             </Badge>
                                             {estrategia.kpi && <Badge variant="secondary" className="text-[10px]">{estrategia.kpi}</Badge>}
                                             {estrategia.observacao && (
@@ -877,21 +892,21 @@ export function ProjectDialog({
                                             setEstrategiaForm({
                                                 plataforma: estrategia.plataforma,
                                                 nome_conta: estrategia.nome_conta || '',
-                                                id_conta: '',
-                                                campaign_id: '',
+                                                id_conta: estrategia.id_conta || '',
+                                                campaign_id: estrategia.campaign_id || '',
                                                 estrategia: estrategia.estrategia || '',
                                                 kpi: estrategia.kpi || '',
-                                                status: 'planejada',
+                                                status: estrategia.status,
                                                 valor_bruto: Math.round(estrategia.valor_bruto * 100).toString(),
                                                 porcentagem_agencia: estrategia.porcentagem_agencia.toString(),
                                                 porcentagem_plataforma: estrategia.porcentagem_plataforma.toString(),
                                                 entrega_contratada: estrategia.entrega_contratada?.toString() || '',
-                                                estimativa_resultado: '',
-                                                estimativa_sucesso: '',
-                                                gasto_ate_momento: '',
-                                                entregue_ate_momento: '',
-                                                data_atualizacao: '',
-                                                observacao: estrategia.observacao ? estrategia.observacao + ' (Cópia)' : '',
+                                                estimativa_resultado: estrategia.estimativa_resultado?.toString() || '',
+                                                estimativa_sucesso: estrategia.estimativa_sucesso?.toString() || '',
+                                                gasto_ate_momento: estrategia.gasto_ate_momento?.toString() || '',
+                                                entregue_ate_momento: estrategia.entregue_ate_momento?.toString() || '',
+                                                data_atualizacao: estrategia.data_atualizacao || '',
+                                                observacao: estrategia.observacao || '',
                                                 plataforma_custom: estrategia.plataforma_custom || '',
                                             })
                                             setIsEstrategiaOpen(true)
@@ -980,6 +995,7 @@ export function ProjectDialog({
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="planejada">Planejada</SelectItem>
+                                                    <SelectItem value="em_aprovacao">Em Aprovação</SelectItem>
                                                     <SelectItem value="ativa">Ativa</SelectItem>
                                                     <SelectItem value="pausada">Pausada</SelectItem>
                                                     <SelectItem value="finalizada">Finalizada</SelectItem>
@@ -1126,9 +1142,22 @@ export function ProjectDialog({
                                         <div className="space-y-2">
                                             <Label>Data Atualização</Label>
                                             <Input
-                                                type="date"
-                                                value={estrategiaForm.data_atualizacao}
-                                                onChange={e => setEstrategiaForm(p => ({ ...p, data_atualizacao: e.target.value }))}
+                                                placeholder="dd/mm/aaaa"
+                                                value={formatDateInput(estrategiaForm.data_atualizacao)}
+                                                onChange={e => {
+                                                    const masked = maskDateInput(e.target.value)
+                                                    if (isValidDateString(masked)) {
+                                                        setEstrategiaForm(p => ({ ...p, data_atualizacao: parseDateInput(masked) }))
+                                                    } else {
+                                                        setEstrategiaForm(p => ({ ...p, data_atualizacao: masked.length < 10 ? '' : p.data_atualizacao }))
+                                                    }
+                                                }}
+                                                onBlur={e => {
+                                                    const val = e.target.value
+                                                    if (val && !isValidDateString(val)) {
+                                                        setEstrategiaForm(p => ({ ...p, data_atualizacao: '' }))
+                                                    }
+                                                }}
                                             />
                                         </div>
                                     </div>

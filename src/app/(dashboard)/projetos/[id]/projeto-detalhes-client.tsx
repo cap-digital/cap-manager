@@ -47,7 +47,7 @@ import {
   Activity,
   BarChart3,
 } from 'lucide-react'
-import { formatCurrency, formatDate, maskCurrency, parseCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate, formatDateInput, parseDateInput, maskDateInput, isValidDateString, maskCurrency, parseCurrency } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 
@@ -152,6 +152,7 @@ const statusProjetoOptions: { value: StatusProjeto; label: string; color: string
 
 const statusEstrategiaOptions: { value: StatusEstrategia; label: string; color: string }[] = [
   { value: 'planejada', label: 'Planejada', color: 'secondary' },
+  { value: 'em_aprovacao', label: 'Em Aprovação', color: 'outline' },
   { value: 'ativa', label: 'Ativa', color: 'success' },
   { value: 'pausada', label: 'Pausada', color: 'warning' },
   { value: 'finalizada', label: 'Finalizada', color: 'default' },
@@ -1356,12 +1357,46 @@ export function ProjetoDetalhesClient({
 
               <div className="space-y-2">
                 <Label>Data Início</Label>
-                <Input type="date" value={projetoForm.data_inicio} onChange={e => setProjetoForm(p => ({ ...p, data_inicio: e.target.value }))} />
+                <Input
+                  placeholder="dd/mm/aaaa"
+                  value={formatDateInput(projetoForm.data_inicio)}
+                  onChange={e => {
+                    const masked = maskDateInput(e.target.value)
+                    if (isValidDateString(masked)) {
+                      setProjetoForm(p => ({ ...p, data_inicio: parseDateInput(masked) }))
+                    } else {
+                      setProjetoForm(p => ({ ...p, data_inicio: masked.length < 10 ? '' : p.data_inicio }))
+                    }
+                  }}
+                  onBlur={e => {
+                    const val = e.target.value
+                    if (val && !isValidDateString(val)) {
+                      setProjetoForm(p => ({ ...p, data_inicio: '' }))
+                    }
+                  }}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label>Data Fim</Label>
-                <Input type="date" value={projetoForm.data_fim} onChange={e => setProjetoForm(p => ({ ...p, data_fim: e.target.value }))} />
+                <Input
+                  placeholder="dd/mm/aaaa"
+                  value={formatDateInput(projetoForm.data_fim)}
+                  onChange={e => {
+                    const masked = maskDateInput(e.target.value)
+                    if (isValidDateString(masked)) {
+                      setProjetoForm(p => ({ ...p, data_fim: parseDateInput(masked) }))
+                    } else {
+                      setProjetoForm(p => ({ ...p, data_fim: masked.length < 10 ? '' : p.data_fim }))
+                    }
+                  }}
+                  onBlur={e => {
+                    const val = e.target.value
+                    if (val && !isValidDateString(val)) {
+                      setProjetoForm(p => ({ ...p, data_fim: '' }))
+                    }
+                  }}
+                />
               </div>
 
               <div className="space-y-2">
@@ -1504,11 +1539,22 @@ export function ProjetoDetalhesClient({
               <div className="space-y-2">
                 <Label>Data de Início</Label>
                 <Input
-                  type="date"
-                  value={estrategiaForm.data_inicio}
-                  onChange={e => setEstrategiaForm(p => ({ ...p, data_inicio: e.target.value }))}
-                  min={projeto.data_inicio || undefined}
-                  max={projeto.data_fim || undefined}
+                  placeholder="dd/mm/aaaa"
+                  value={formatDateInput(estrategiaForm.data_inicio)}
+                  onChange={e => {
+                    const masked = maskDateInput(e.target.value)
+                    if (isValidDateString(masked)) {
+                      setEstrategiaForm(p => ({ ...p, data_inicio: parseDateInput(masked) }))
+                    } else {
+                      setEstrategiaForm(p => ({ ...p, data_inicio: masked.length < 10 ? '' : p.data_inicio }))
+                    }
+                  }}
+                  onBlur={e => {
+                    const val = e.target.value
+                    if (val && !isValidDateString(val)) {
+                      setEstrategiaForm(p => ({ ...p, data_inicio: '' }))
+                    }
+                  }}
                 />
                 {projeto.data_inicio && projeto.data_fim && (
                   <p className="text-xs text-muted-foreground">
@@ -1622,9 +1668,22 @@ export function ProjetoDetalhesClient({
                   <div className="space-y-2">
                     <Label>Data de Atualização</Label>
                     <Input
-                      type="date"
-                      value={estrategiaForm.data_atualizacao}
-                      onChange={e => setEstrategiaForm(p => ({ ...p, data_atualizacao: e.target.value }))}
+                      placeholder="dd/mm/aaaa"
+                      value={formatDateInput(estrategiaForm.data_atualizacao)}
+                      onChange={e => {
+                        const masked = maskDateInput(e.target.value)
+                        if (isValidDateString(masked)) {
+                          setEstrategiaForm(p => ({ ...p, data_atualizacao: parseDateInput(masked) }))
+                        } else {
+                          setEstrategiaForm(p => ({ ...p, data_atualizacao: masked.length < 10 ? '' : p.data_atualizacao }))
+                        }
+                      }}
+                      onBlur={e => {
+                        const val = e.target.value
+                        if (val && !isValidDateString(val)) {
+                          setEstrategiaForm(p => ({ ...p, data_atualizacao: '' }))
+                        }
+                      }}
                       className="border-amber-300 focus:border-amber-500"
                     />
                   </div>

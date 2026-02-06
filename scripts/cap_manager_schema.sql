@@ -42,7 +42,7 @@ CREATE TYPE cap_manager.tipo_cobranca_type AS ENUM ('td', 'fee');
 CREATE TYPE cap_manager.status_projeto_type AS ENUM ('rascunho', 'ativo', 'pausado', 'finalizado', 'cancelado');
 CREATE TYPE cap_manager.grupo_revisao_type AS ENUM ('A', 'B', 'C');
 CREATE TYPE cap_manager.plataforma_type AS ENUM ('meta', 'google', 'tiktok', 'linkedin', 'twitter', 'pinterest', 'spotify', 'programatica', 'outro');
-CREATE TYPE cap_manager.status_estrategia_type AS ENUM ('planejada', 'ativa', 'pausada', 'finalizada', 'cancelada');
+CREATE TYPE cap_manager.status_estrategia_type AS ENUM ('planejada', 'em_aprovacao', 'ativa', 'pausada', 'finalizada', 'cancelada');
 CREATE TYPE cap_manager.status_tarefa_type AS ENUM ('backlog', 'todo', 'doing', 'review', 'done');
 CREATE TYPE cap_manager.prioridade_tarefa_type AS ENUM ('baixa', 'media', 'alta', 'urgente');
 CREATE TYPE cap_manager.tipo_followup_type AS ENUM ('nota', 'alerta', 'atualizacao', 'reuniao');

@@ -111,7 +111,7 @@ export interface ProjetoFormData {
 }
 
 // ==================== ESTRATEGIA ====================
-export type EstrategiaStatus = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
+export type EstrategiaStatus = 'planejada' | 'em_aprovacao' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
 
 export interface Estrategia {
   id: number
