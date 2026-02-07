@@ -69,6 +69,7 @@ interface NavSubCategory {
 const mainNavigation: NavItem[] = [
   { name: 'Visão Geral', href: '/', icon: LayoutDashboard },
   { name: 'Meus Projetos', href: '/meus-projetos', icon: Briefcase },
+  { name: 'Projetos', href: '/projetos', icon: FolderKanban },
   { name: 'Dashboard', href: '/dashboard-gerencial', icon: BarChart3 },
   { name: 'Agências', href: '/agencias', icon: Building2 },
   { name: 'Clientes', href: '/clientes', icon: Users },

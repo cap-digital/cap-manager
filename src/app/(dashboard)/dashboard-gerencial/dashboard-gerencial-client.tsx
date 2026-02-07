@@ -233,8 +233,9 @@ function ProjectsTable({ projects, showMargins = false }: { projects: Projeto[],
                         <TableHead>Estratégia / Plataforma</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Valor Bruto</TableHead>
+                        {showMargins && <TableHead className="text-right">Valor Plataforma</TableHead>}
                         <TableHead className="text-right">Gasto Atual</TableHead>
-                        {showMargins && <TableHead className="text-right">Margem Est.</TableHead>}
+                        {showMargins && <TableHead className="text-right">Valor Restante</TableHead>}
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -250,7 +251,7 @@ function ProjectsTable({ projects, showMargins = false }: { projects: Projeto[],
                                             <span>{projeto.nome}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell colSpan={showMargins ? 5 : 4} className="text-center text-muted-foreground text-sm">
+                                    <TableCell colSpan={showMargins ? 6 : 4} className="text-center text-muted-foreground text-sm">
                                         Sem estratégias cadastradas
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -295,6 +296,19 @@ function ProjectsTable({ projects, showMargins = false }: { projects: Projeto[],
                                 <TableCell className="text-right font-medium">
                                     {formatCurrency(Number(est.valor_bruto))}
                                 </TableCell>
+                                {showMargins && (() => {
+                                    // Calcular Valor Plataforma: valor_liquido * porcentagem_plataforma / 100
+                                    const valorLiquido = Number(est.valor_liquido || 0)
+                                    const porcentagemPlataforma = Number(est.porcentagem_plataforma || 0)
+                                    const valorPlataforma = est.valor_plataforma !== null && est.valor_plataforma !== undefined
+                                        ? Number(est.valor_plataforma)
+                                        : valorLiquido * (porcentagemPlataforma / 100)
+                                    return (
+                                        <TableCell className="text-right font-medium text-blue-600">
+                                            {formatCurrency(valorPlataforma)}
+                                        </TableCell>
+                                    )
+                                })()}
                                 <TableCell className="text-right">
                                     <div className="flex flex-col items-end">
                                         <span>{formatCurrency(Number(est.gasto_ate_momento || 0))}</span>
@@ -305,12 +319,21 @@ function ProjectsTable({ projects, showMargins = false }: { projects: Projeto[],
                                         </span>
                                     </div>
                                 </TableCell>
-                                {showMargins && (
-                                    <TableCell className="text-right">
-                                        {/* Calculo de margem aqui se tiver dados */}
-                                        -
-                                    </TableCell>
-                                )}
+                                {showMargins && (() => {
+                                    // Calcular Valor Restante: Valor Plataforma - Gasto até o momento
+                                    const valorLiquido = Number(est.valor_liquido || 0)
+                                    const porcentagemPlataforma = Number(est.porcentagem_plataforma || 0)
+                                    const valorPlataforma = est.valor_plataforma !== null && est.valor_plataforma !== undefined
+                                        ? Number(est.valor_plataforma)
+                                        : valorLiquido * (porcentagemPlataforma / 100)
+                                    const gastoAteMomento = Number(est.gasto_ate_momento || 0)
+                                    const valorRestante = valorPlataforma - gastoAteMomento
+                                    return (
+                                        <TableCell className={`text-right font-medium ${valorRestante >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {formatCurrency(valorRestante)}
+                                        </TableCell>
+                                    )
+                                })()}
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" asChild>
                                         <a href={`/projetos/${projeto.id}`}>
