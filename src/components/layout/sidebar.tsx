@@ -34,6 +34,7 @@ import {
   Moon,
   Briefcase,
   ScrollText,
+  Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -151,20 +152,45 @@ export function Sidebar({ user }: SidebarProps) {
   // Componente para renderizar um item de navegação
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = pathname === item.href
+    const isProjetos = item.href === '/projetos'
+
     return (
-      <Link
-        href={item.href}
-        onClick={() => setIsMobileOpen(false)}
-        className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-          isActive
-            ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+      <div className="group relative">
+        <Link
+          href={item.href}
+          onClick={() => setIsMobileOpen(false)}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+            isActive
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            isProjetos && !isCollapsed && "pr-10" // Space for the plus button
+          )}
+        >
+          <item.icon className="h-5 w-5 shrink-0" />
+          {!isCollapsed && <span>{item.name}</span>}
+        </Link>
+        {isProjetos && !isCollapsed && user?.role === 'admin' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 transition-opacity",
+              isActive
+                ? "text-primary-foreground hover:bg-primary-foreground/10"
+                : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+            asChild
+          >
+            <Link href="/projetos?new=true" onClick={(e) => {
+              e.stopPropagation();
+              setIsMobileOpen(false);
+            }}>
+              <Plus className="h-4 w-4" />
+            </Link>
+          </Button>
         )}
-      >
-        <item.icon className="h-5 w-5 shrink-0" />
-        {!isCollapsed && <span>{item.name}</span>}
-      </Link>
+      </div>
     )
   }
 
@@ -305,6 +331,25 @@ export function Sidebar({ user }: SidebarProps) {
               />
             </Button>
           </div>
+
+          {/* New Project Button - Only for admins */}
+          {user?.role === 'admin' && (
+            <div className="px-4 py-4">
+              <Button
+                asChild
+                className={cn(
+                  "w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all duration-200",
+                  isCollapsed ? "px-0 justify-center" : "justify-start gap-2"
+                )}
+                onClick={() => setIsMobileOpen(false)}
+              >
+                <Link href="/projetos?new=true">
+                  <Plus className="h-5 w-5 shrink-0" />
+                  {!isCollapsed && <span className="font-semibold">Novo Projeto</span>}
+                </Link>
+              </Button>
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

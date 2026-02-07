@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -79,6 +79,18 @@ export function ProjetosClient({
 
   const router = useRouter()
   const { toast } = useToast()
+
+  // Abrir modal de novo projeto se houver o parâmetro 'new' na URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('new') === 'true') {
+      setEditingProjeto(null)
+      setIsOpen(true)
+      // Remover o parâmetro da URL sem recarregar a página
+      const newUrl = window.location.pathname
+      window.history.replaceState({ ...window.history.state }, '', newUrl)
+    }
+  }, [])
 
   const filteredProjetos = projetos.filter(projeto => {
     const matchesSearch =
