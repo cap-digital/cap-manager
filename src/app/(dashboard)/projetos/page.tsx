@@ -16,7 +16,7 @@ export default async function ProjetosPage() {
     .lt('data_fim', hoje)
 
   const session = await getServerSession(authOptions)
-  if (!session || (session.user as any).role !== 'admin') {
+  if (!session) {
     redirect('/')
   }
 
