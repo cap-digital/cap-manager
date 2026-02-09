@@ -38,7 +38,7 @@ import {
     Info,
     RefreshCw
 } from 'lucide-react'
-import { formatCurrency, maskCurrency, parseCurrency, maskNumber, parseNumber } from '@/lib/utils'
+import { formatCurrency, maskCurrency, parseCurrency, maskNumber, parseNumber, formatDateInput, maskDateInput, isValidDateString, parseDateInput } from '@/lib/utils'
 import { DateInput } from '@/components/ui/date-input'
 import {
     SimplifiedProjeto,
