@@ -53,7 +53,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select'
 
 type TipoCobranca = 'td' | 'fee'
 type StatusProjeto = 'rascunho' | 'ativo' | 'pausado' | 'finalizado' | 'cancelado'
-type StatusEstrategia = 'planejada' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
+type StatusEstrategia = 'planejada' | 'em_aprovacao' | 'ativa' | 'pausada' | 'finalizada' | 'cancelada'
 type Plataforma = 'meta' | 'google' | 'tiktok' | 'linkedin' | 'twitter' | 'pinterest' | 'spotify' | 'kwai' | 'tinder' | 'programatica' | 'outro'
 type GrupoRevisao = 'A' | 'B' | 'C'
 
