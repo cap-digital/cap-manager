@@ -32,6 +32,7 @@ import {
   Building2,
   User,
   Calendar,
+  Briefcase,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ProjectDialog } from '@/components/projetos/project-dialog'
@@ -194,12 +195,19 @@ export function ProjetosClient({
             />
           </div>
 
-          <Button onClick={() => {
-            setEditingProjeto(null)
-            setIsOpen(true)
-          }}>
-            <Plus className="h-4 w-4 mr-2" />Novo Projeto
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/meus-projetos">
+                <Briefcase className="h-4 w-4 mr-2" />Meus Projetos
+              </Link>
+            </Button>
+            <Button onClick={() => {
+              setEditingProjeto(null)
+              setIsOpen(true)
+            }}>
+              <Plus className="h-4 w-4 mr-2" />Novo Projeto
+            </Button>
+          </div>
         </div>
 
         {/* Linha 2: Filtros organizados */}
