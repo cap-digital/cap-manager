@@ -70,12 +70,12 @@ interface NavSubCategory {
 const mainNavigation: NavItem[] = [
   { name: 'Visão Geral', href: '/', icon: LayoutDashboard },
   { name: 'Meus Projetos', href: '/meus-projetos', icon: Briefcase },
-  { name: 'Projetos', href: '/projetos', icon: FolderKanban },
   { name: 'Dashboard', href: '/dashboard-gerencial', icon: BarChart3 },
   { name: 'Agências', href: '/agencias', icon: Building2 },
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Contratos', href: '/contratos', icon: ScrollText },
   { name: 'PIs', href: '/pi', icon: FileText },
+  { name: 'Projetos', href: '/projetos', icon: FolderKanban },
 ]
 
 // Subcategorias dentro de Gestão de Projetos
@@ -170,7 +170,7 @@ export function Sidebar({ user }: SidebarProps) {
           <item.icon className="h-5 w-5 shrink-0" />
           {!isCollapsed && <span>{item.name}</span>}
         </Link>
-        {isProjetos && !isCollapsed && user?.role === 'admin' && (
+        {isProjetos && !isCollapsed && (
           <Button
             variant="ghost"
             size="icon"
@@ -332,24 +332,22 @@ export function Sidebar({ user }: SidebarProps) {
             </Button>
           </div>
 
-          {/* New Project Button - Only for admins */}
-          {user?.role === 'admin' && (
-            <div className="px-4 py-4">
-              <Button
-                asChild
-                className={cn(
-                  "w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all duration-200",
-                  isCollapsed ? "px-0 justify-center" : "justify-start gap-2"
-                )}
-                onClick={() => setIsMobileOpen(false)}
-              >
-                <Link href="/projetos?new=true">
-                  <Plus className="h-5 w-5 shrink-0" />
-                  {!isCollapsed && <span className="font-semibold">Novo Projeto</span>}
-                </Link>
-              </Button>
-            </div>
-          )}
+          {/* New Project Button - Available for everyone */}
+          <div className="px-4 py-4">
+            <Button
+              asChild
+              className={cn(
+                "w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all duration-200",
+                isCollapsed ? "px-0 justify-center" : "justify-start gap-2"
+              )}
+              onClick={() => setIsMobileOpen(false)}
+            >
+              <Link href="/projetos?new=true">
+                <Plus className="h-5 w-5 shrink-0" />
+                {!isCollapsed && <span className="font-semibold">Novo Projeto</span>}
+              </Link>
+            </Button>
+          </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
