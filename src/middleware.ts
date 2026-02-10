@@ -15,8 +15,12 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/registro', '/setup', '/api/setup', '/api/auth']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
-  // Se não está logado e não é rota pública, redireciona para login
+  // Se não está logado e não é rota pública
   if (!token && !isPublicRoute) {
+    // Para rotas de API, retornar 401 JSON ao invés de redirect HTML
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
     console.log('[MIDDLEWARE] No token, redirecting to login')
     const url = request.nextUrl.clone()
     url.pathname = '/login'
