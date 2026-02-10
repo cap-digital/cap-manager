@@ -37,6 +37,7 @@ interface ListViewProps {
   cards: CardKanban[]
   columns: Column[]
   projetos: { id: number; nome: string }[]
+  clientes?: { id: number; nome: string }[]
   usuarios: { id: number; nome: string }[]
   onEdit: (card: CardKanban) => void
   onDelete: (id: number) => void
@@ -54,6 +55,7 @@ export function ListView({
   cards,
   columns,
   projetos,
+  clientes,
   usuarios,
   onEdit,
   onDelete,
@@ -112,6 +114,7 @@ export function ListView({
                   <div className="divide-y">
                     {columnCards.map((card) => {
                       const projeto = projetos.find(p => p.id === card.projeto_id)
+                      const cliente = clientes?.find(c => c.id === card.cliente_id)
                       const responsavel = usuarios.find(u => u.id === card.trader_id)
 
                       return (
@@ -131,6 +134,12 @@ export function ListView({
                           <Badge className={prioridadeColors[card.prioridade]} variant="secondary">
                             {card.prioridade}
                           </Badge>
+
+                          {cliente && (
+                            <span className="hidden md:flex items-center gap-1 text-xs text-muted-foreground">
+                              <span className="truncate max-w-[100px]">{cliente.nome}</span>
+                            </span>
+                          )}
 
                           {projeto && (
                             <Link

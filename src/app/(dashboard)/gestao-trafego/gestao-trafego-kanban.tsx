@@ -94,6 +94,7 @@ import { SubtaskList } from './subtask-list'
 function SortableCard({
   card,
   projetos,
+  clientes,
   usuarios,
   onEdit,
   onView,
@@ -102,6 +103,7 @@ function SortableCard({
 }: {
   card: CardKanban
   projetos: { id: number; nome: string; tipo_cobranca: string }[]
+  clientes: { id: number; nome: string }[]
   usuarios: { id: number; nome: string }[]
   onEdit: (card: CardKanban) => void
   onView: (card: CardKanban) => void
@@ -123,6 +125,7 @@ function SortableCard({
   }
 
   const projeto = projetos.find(p => p.id === card.projeto_id)
+  const cliente = clientes.find(c => c.id === card.cliente_id)
   const trader = usuarios.find(u => u.id === card.trader_id)
   const responsavelRelatorio = usuarios.find(u => u.id === card.responsavel_relatorio_id)
   const responsavelRevisao = usuarios.find(u => u.id === card.responsavel_revisao_id)
@@ -184,6 +187,11 @@ function SortableCard({
         <Badge className={cn(prioridadeColors[card.prioridade], 'text-[10px] font-medium px-2 py-0.5')} variant="secondary">
           {card.prioridade}
         </Badge>
+        {cliente && (
+          <Badge variant="secondary" className="text-[10px] font-medium px-2 py-0.5">
+            <span className="max-w-[100px] truncate">{cliente.nome}</span>
+          </Badge>
+        )}
         {projeto && (
           <Link
             href={`/projetos/${projeto.id}`}
@@ -982,6 +990,7 @@ export function GestaoTrafegoKanban({
             cards={cards}
             columns={columns}
             projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
+            clientes={clientes}
             usuarios={usuarios}
             onEdit={(card) => {
               const fullCard = cards.find(c => c.id === card.id)
@@ -1000,6 +1009,7 @@ export function GestaoTrafegoKanban({
             cards={cards}
             columns={columns}
             projetos={projetos.map(p => ({ id: p.id, nome: p.nome }))}
+            clientes={clientes}
             usuarios={usuarios}
             onEdit={(card) => {
               const fullCard = cards.find(c => c.id === card.id)
@@ -1044,6 +1054,7 @@ export function GestaoTrafegoKanban({
                               key={card.id}
                               card={card}
                               projetos={projetos}
+                              clientes={clientes}
                               usuarios={usuarios}
                               onEdit={(card) => {
                                 setEditingCard(card)
