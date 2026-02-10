@@ -138,125 +138,130 @@ function SortableCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group bg-card border rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-200',
+        'group bg-card border rounded-lg shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all duration-200',
         isDragging && 'opacity-50 rotate-2 scale-105'
       )}
       onClick={() => onView(card)}
       {...attributes}
       {...listeners}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2 flex-1">
-          <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 shrink-0 hover:text-muted-foreground" />
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-sm leading-tight">{card.titulo}</h4>
-            {card.descricao && (
-              <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                {card.descricao}
-              </p>
-            )}
+      {/* Header: Cliente em destaque */}
+      {cliente && (
+        <div className="px-4 pt-3 pb-2 border-b border-dashed">
+          <span className="text-[11px] font-semibold text-primary uppercase tracking-wide">{cliente.nome}</span>
+        </div>
+      )}
+
+      <div className="p-4 pt-3">
+        {/* Título e ações */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 flex-1">
+            <GripVertical className="h-4 w-4 text-muted-foreground/50 mt-0.5 shrink-0 hover:text-muted-foreground" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-sm leading-tight">{card.titulo}</h4>
+              {card.descricao && (
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  {card.descricao}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 hover:bg-muted"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(card)
+              }}
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:bg-destructive/10"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(card.id)
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 hover:bg-muted"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit(card)
-            }}
-          >
-            <Edit className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-destructive hover:bg-destructive/10"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(card.id)
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 mt-3">
-        <Badge className={cn(prioridadeColors[card.prioridade], 'text-[10px] font-medium px-2 py-0.5')} variant="secondary">
-          {card.prioridade}
-        </Badge>
-        {cliente && (
-          <Badge variant="secondary" className="text-[10px] font-medium px-2 py-0.5">
-            <span className="max-w-[100px] truncate">{cliente.nome}</span>
+        {/* Badges: prioridade + projeto */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+          <Badge className={cn(prioridadeColors[card.prioridade], 'text-[10px] font-medium px-2 py-0.5')} variant="secondary">
+            {card.prioridade}
           </Badge>
-        )}
-        {projeto && (
-          <Link
-            href={`/projetos/${projeto.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="hover:opacity-80 transition-opacity"
-          >
-            <Badge variant="outline" className="text-[10px] cursor-pointer hover:bg-accent px-2 py-0.5">
-              <Folder className="h-3 w-3 mr-1" />
-              <span className="max-w-[100px] truncate">{projeto.nome}</span>
-              {projeto.tipo_cobranca === 'fee' && (
-                <span className="ml-1 text-purple-600 font-semibold">(FEE)</span>
-              )}
+          {projeto && (
+            <Link
+              href={`/projetos/${projeto.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <Badge variant="outline" className="text-[10px] cursor-pointer hover:bg-accent px-2 py-0.5">
+                <Folder className="h-3 w-3 mr-1" />
+                <span className="max-w-[100px] truncate">{projeto.nome}</span>
+                {projeto.tipo_cobranca === 'fee' && (
+                  <span className="ml-1 text-purple-600 font-semibold">(FEE)</span>
+                )}
+              </Badge>
+            </Link>
+          )}
+          {card.link_relatorio && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-green-600 border-green-200">
+              <Link2 className="h-3 w-3 mr-1" />
+              Relatório
             </Badge>
-          </Link>
-        )}
-      </div>
+          )}
+          {card.revisao_relatorio_ok && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-green-600 border-green-200">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Aprovado
+            </Badge>
+          )}
+        </div>
 
-      <div className="flex flex-col gap-1.5 mt-3 pt-3 border-t border-dashed text-xs text-muted-foreground">
-        {trader && (
-          <span className="flex items-center gap-1">
-            <User className="h-3 w-3" />
-            Trader: {trader.nome}
-          </span>
-        )}
-        {responsavelRelatorio && (
-          <span className="flex items-center gap-1">
-            <User className="h-3 w-3 text-orange-500" />
-            Relatorio: {responsavelRelatorio.nome}
-          </span>
-        )}
-        {responsavelRevisao && (
-          <span className="flex items-center gap-1">
-            <User className="h-3 w-3 text-pink-500" />
-            Revisao: {responsavelRevisao.nome}
-          </span>
-        )}
-        {observador && (
-          <span className="flex items-center gap-1">
-            <Eye className="h-3 w-3 text-purple-500" />
-            Obs: {observador.nome}
-          </span>
-        )}
-        {card.data_vencimento && (
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {new Date(card.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
-          </span>
-        )}
-        {card.link_relatorio && (
-          <span className="flex items-center gap-1 text-green-600">
-            <Link2 className="h-3 w-3" />
-            Link do relatorio
-          </span>
-        )}
-        {card.revisao_relatorio_ok && (
-          <span className="flex items-center gap-1 text-green-600">
-            <CheckCircle2 className="h-3 w-3" />
-            Revisao aprovada
-          </span>
-        )}
-      </div>
+        {/* Info grid simétrico */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 pt-3 border-t border-dashed text-xs text-muted-foreground">
+          {trader && (
+            <span className="flex items-center gap-1 truncate">
+              <User className="h-3 w-3 shrink-0" />
+              {trader.nome}
+            </span>
+          )}
+          {card.data_vencimento && (
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3 w-3 shrink-0" />
+              {new Date(card.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
+            </span>
+          )}
+          {responsavelRelatorio && (
+            <span className="flex items-center gap-1 truncate">
+              <User className="h-3 w-3 shrink-0 text-orange-500" />
+              {responsavelRelatorio.nome}
+            </span>
+          )}
+          {responsavelRevisao && (
+            <span className="flex items-center gap-1 truncate">
+              <User className="h-3 w-3 shrink-0 text-pink-500" />
+              {responsavelRevisao.nome}
+            </span>
+          )}
+          {observador && (
+            <span className="flex items-center gap-1 truncate">
+              <Eye className="h-3 w-3 shrink-0 text-purple-500" />
+              {observador.nome}
+            </span>
+          )}
+        </div>
 
-      {/* Botão de ação para relatório finalizado */}
-      {
-        isRelatorioFinalizado && card.link_relatorio && card.revisao_relatorio_ok && (
+        {/* Botão de ação para relatório finalizado */}
+        {isRelatorioFinalizado && card.link_relatorio && card.revisao_relatorio_ok && (
           <div className="flex gap-2 mt-3 pt-2 border-t">
             <Button
               size="sm"
@@ -271,9 +276,9 @@ function SortableCard({
               Concluir Projeto
             </Button>
           </div>
-        )
-      }
-    </div >
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -837,6 +842,24 @@ export function GestaoTrafegoKanban({
                       <div className="p-4 bg-muted/30 rounded-lg space-y-4">
                         <h4 className="font-medium text-sm text-muted-foreground uppercase">Vinculacao</h4>
                         <div className="space-y-3">
+                          <div>
+                            <Label>Cliente</Label>
+                            <Select
+                              value={formData.cliente_id}
+                              onValueChange={(v) => setFormData({ ...formData, cliente_id: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o cliente" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {clientes.map((c) => (
+                                  <SelectItem key={c.id} value={c.id.toString()}>
+                                    {c.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <div>
                             <Label>Projeto</Label>
                             <Select
