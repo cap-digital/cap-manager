@@ -1,8 +1,12 @@
 import { Resend } from 'resend'
 
-// Initialize Resend with API Key from environment variables
-// If key is missing, it will throw an error or handle gracefully depending on Resend sdk behavior
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization to avoid throwing at module load when API key is missing
+let resend: Resend | null = null
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null
+  if (!resend) resend = new Resend(process.env.RESEND_API_KEY)
+  return resend
+}
 
 // Define the sender email address (must be verified in Resend)
 const SENDER_EMAIL = 'onboarding@resend.dev' // Default testing email
@@ -20,7 +24,7 @@ export async function sendTaskCreatedEmail(
             return
         }
 
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend()!.emails.send({
             from: SENDER_EMAIL,
             to: [to],
             subject: `Nova Tarefa Atribuída: ${taskTitle}`,
@@ -71,7 +75,7 @@ export async function sendTaskUpdatedEmail(
 
         const statusDisplay = statusLabels[newStatus] || newStatus
 
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend()!.emails.send({
             from: SENDER_EMAIL,
             to: [to],
             subject: `Status Atualizado: ${taskTitle}`,
@@ -115,7 +119,7 @@ export async function sendNotificationEmail(
             ? `<a href="${baseUrl}${actionLink}" style="display: inline-block; background-color: #0099ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 16px;">Ver detalhes</a>`
             : ''
 
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend()!.emails.send({
             from: SENDER_EMAIL,
             to: [to],
             subject: `CAP Manager: ${title}`,

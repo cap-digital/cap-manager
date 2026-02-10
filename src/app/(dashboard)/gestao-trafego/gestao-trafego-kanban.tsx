@@ -464,14 +464,16 @@ export function GestaoTrafegoKanban({
           body: JSON.stringify(cardData),
         })
 
-        const contentType = response.headers.get('content-type')
-        if (!contentType?.includes('application/json')) {
-          throw new Error('Erro de sessão. Recarregue a página e tente novamente.')
-        }
-
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Erro ao atualizar task')
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Erro ao atualizar task')
+          }
+          if (response.status === 401) {
+            throw new Error('Sessão expirada. Recarregue a página e faça login novamente.')
+          }
+          throw new Error(`Erro do servidor (${response.status}). Tente novamente.`)
         }
 
         await response.json()
@@ -494,14 +496,16 @@ export function GestaoTrafegoKanban({
           body: JSON.stringify(cardData),
         })
 
-        const contentType = response.headers.get('content-type')
-        if (!contentType?.includes('application/json')) {
-          throw new Error('Erro de sessão. Recarregue a página e tente novamente.')
-        }
-
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Erro ao criar task')
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Erro ao criar task')
+          }
+          if (response.status === 401) {
+            throw new Error('Sessão expirada. Recarregue a página e faça login novamente.')
+          }
+          throw new Error(`Erro do servidor (${response.status}). Tente novamente.`)
         }
 
         const newCard = await response.json()

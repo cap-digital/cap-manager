@@ -91,50 +91,39 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
 
-    // Criar notificação e enviar email
-    if (card.trader_id) {
-      const { data: trader } = await supabaseAdmin
-        .from(TABLES.usuarios)
-        .select('name:nome, email, email_notificacoes')
-        .eq('id', card.trader_id)
-        .single()
+    // Notificações em background (não devem falhar a request principal)
+    try {
+      if (card.trader_id) {
+        const { data: trader } = await supabaseAdmin
+          .from(TABLES.usuarios)
+          .select('name:nome, email, email_notificacoes')
+          .eq('id', card.trader_id)
+          .single()
 
-      if (trader) {
-        let projectName = 'Geral'
-        if (card.projeto_id) {
-          const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
-          if (proj) projectName = proj.nome
-        }
+        if (trader) {
+          let projectName = 'Geral'
+          if (card.projeto_id) {
+            const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
+            if (proj) projectName = proj.nome
+          }
 
-        const tituloNotificacao = `Nova Tarefa: ${card.titulo}`
-        const mensagemNotificacao = `Uma nova tarefa foi atribuída a você no projeto ${projectName}.`
-        const emailPara = trader.email_notificacoes || trader.email
+          await supabaseAdmin.from(TABLES.alertas).insert({
+            tipo: 'tarefa',
+            titulo: `Nova Tarefa: ${card.titulo}`,
+            mensagem: `Uma nova tarefa foi atribuída a você no projeto ${projectName}.`,
+            destinatario_id: card.trader_id,
+            lido: false,
+            enviado_whatsapp: false
+          })
 
-        // Criar alerta no banco
-        await supabaseAdmin.from(TABLES.alertas).insert({
-          tipo: 'tarefa',
-          titulo: tituloNotificacao,
-          mensagem: mensagemNotificacao,
-          destinatario_id: card.trader_id,
-          lido: false,
-          enviado_whatsapp: false
-        })
-
-        // Enviar email
-        if (emailPara) {
-          // Utilizando a função existente ou a nova genérica se preferir, mas mantendo o padrão do arquivo de mail importado
-          // Como o usuário pediu para tudo ir pro email, vamos garantir o envio
-          try {
-            // Import sendNotificationEmail from '@/lib/mail' if needed or use existing. 
-            // Existing sendTaskCreatedEmail is specific, let's keep it but make sure it works fine.
-            // Actually, the user wants UNIFIED generic notification style likely.
-            // Let's use the legacy function for now but ensure it sends to the correct email.
+          const emailPara = trader.email_notificacoes || trader.email
+          if (emailPara) {
             await sendTaskCreatedEmail(emailPara, card.titulo, projectName, trader.name)
-          } catch (e) {
-            console.error('Erro ao enviar email:', e)
           }
         }
       }
+    } catch (notifError) {
+      console.error('Erro ao enviar notificações (card criado com sucesso):', notifError)
     }
 
     return NextResponse.json(card)
@@ -142,7 +131,6 @@ export async function POST(request: Request) {
     console.error('Erro ao criar card:', error)
     return NextResponse.json({
       error: error.message || 'Erro interno não tratado',
-      stack: error.stack
     }, { status: 500 })
   }
 }
@@ -194,74 +182,69 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 
-    // Se houve mudança de status e existe um responsável, notificar
-    if (data.status !== undefined && card.trader_id) {
-      const { data: trader } = await supabaseAdmin
-        .from(TABLES.usuarios)
-        .select('name:nome, email, email_notificacoes')
-        .eq('id', card.trader_id)
-        .single()
+    // Notificações em background (não devem falhar a request principal)
+    try {
+      // Se houve mudança de status e existe um responsável, notificar
+      if (data.status !== undefined && card.trader_id) {
+        const { data: trader } = await supabaseAdmin
+          .from(TABLES.usuarios)
+          .select('name:nome, email, email_notificacoes')
+          .eq('id', card.trader_id)
+          .single()
 
-      if (trader) {
-        const tituloNotificacao = `Status Atualizado: ${card.titulo}`
-        const mensagemNotificacao = `O status da tarefa foi atualizado para: ${card.status}`
-        const emailPara = trader.email_notificacoes || trader.email
+        if (trader) {
+          const tituloNotificacao = `Status Atualizado: ${card.titulo}`
+          const mensagemNotificacao = `O status da tarefa foi atualizado para: ${card.status}`
+          const emailPara = trader.email_notificacoes || trader.email
 
-        // Criar alerta
-        await supabaseAdmin.from(TABLES.alertas).insert({
-          tipo: 'tarefa',
-          titulo: tituloNotificacao,
-          mensagem: mensagemNotificacao,
-          destinatario_id: card.trader_id,
-          lido: false,
-          enviado_whatsapp: false
-        })
+          await supabaseAdmin.from(TABLES.alertas).insert({
+            tipo: 'tarefa',
+            titulo: tituloNotificacao,
+            mensagem: mensagemNotificacao,
+            destinatario_id: card.trader_id,
+            lido: false,
+            enviado_whatsapp: false
+          })
 
-        // Enviar email
-        if (emailPara) {
-          try {
+          if (emailPara) {
             await sendTaskUpdatedEmail(emailPara, card.titulo, card.status, trader.name)
-          } catch (e) { console.error(e) }
+          }
         }
       }
-    }
 
-    // Se houve mudança de reponsável, notificar o novo responsável
-    if (data.trader_id !== undefined && data.trader_id !== card.trader_id) {
-      // Lógica para notificar novo responsável (similar ao create)
-      const { data: trader } = await supabaseAdmin
-        .from(TABLES.usuarios)
-        .select('name:nome, email, email_notificacoes')
-        .eq('id', data.trader_id)
-        .single()
+      // Se houve mudança de responsável, notificar o novo responsável
+      if (data.trader_id !== undefined && data.trader_id !== card.trader_id) {
+        const { data: trader } = await supabaseAdmin
+          .from(TABLES.usuarios)
+          .select('name:nome, email, email_notificacoes')
+          .eq('id', data.trader_id)
+          .single()
 
-      if (trader) {
-        // Buscar nome projeto
-        let projectName = 'Geral'
-        if (card.projeto_id) {
-          const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
-          if (proj) projectName = proj.nome
-        }
+        if (trader) {
+          let projectName = 'Geral'
+          if (card.projeto_id) {
+            const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
+            if (proj) projectName = proj.nome
+          }
 
-        const tituloNotificacao = `Nova Tarefa Atribuída: ${card.titulo}`
-        const mensagemNotificacao = `Você foi definido como responsável por esta tarefa.`
-        const emailPara = trader.email_notificacoes || trader.email
+          const emailPara = trader.email_notificacoes || trader.email
 
-        await supabaseAdmin.from(TABLES.alertas).insert({
-          tipo: 'tarefa',
-          titulo: tituloNotificacao,
-          mensagem: mensagemNotificacao,
-          destinatario_id: data.trader_id,
-          lido: false,
-          enviado_whatsapp: false
-        })
+          await supabaseAdmin.from(TABLES.alertas).insert({
+            tipo: 'tarefa',
+            titulo: `Nova Tarefa Atribuída: ${card.titulo}`,
+            mensagem: `Você foi definido como responsável por esta tarefa.`,
+            destinatario_id: data.trader_id,
+            lido: false,
+            enviado_whatsapp: false
+          })
 
-        if (emailPara) {
-          try {
+          if (emailPara) {
             await sendTaskCreatedEmail(emailPara, card.titulo, projectName, trader.name)
-          } catch (e) { console.error(e) }
+          }
         }
       }
+    } catch (notifError) {
+      console.error('Erro ao enviar notificações (card salvo com sucesso):', notifError)
     }
 
     return NextResponse.json(card)
