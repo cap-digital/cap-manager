@@ -174,6 +174,7 @@ export async function PUT(request: Request) {
     if (data.trader_id !== undefined) updateData.trader_id = data.trader_id
     if (data.responsavel_relatorio_id !== undefined) updateData.responsavel_relatorio_id = data.responsavel_relatorio_id
     if (data.responsavel_revisao_id !== undefined) updateData.responsavel_revisao_id = data.responsavel_revisao_id
+    if (data.revisao_relatorio_ok !== undefined) updateData.revisao_relatorio_ok = data.revisao_relatorio_ok
     if (data.link_relatorio !== undefined) updateData.link_relatorio = data.link_relatorio
     if (data.data_vencimento !== undefined) updateData.data_vencimento = data.data_vencimento
     if (data.data_inicio !== undefined) updateData.data_inicio = data.data_inicio

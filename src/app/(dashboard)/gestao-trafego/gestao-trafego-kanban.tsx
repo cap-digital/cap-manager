@@ -464,12 +464,17 @@ export function GestaoTrafegoKanban({
           body: JSON.stringify(cardData),
         })
 
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('application/json')) {
+          throw new Error('Erro de sessão. Recarregue a página e tente novamente.')
+        }
+
         if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.error || 'Erro ao atualizar task')
         }
 
-        const updated = await response.json()
+        await response.json()
         setCards(cards.map(c => c.id === editingCard.id ? {
           ...c,
           ...cardData,
@@ -488,6 +493,11 @@ export function GestaoTrafegoKanban({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cardData),
         })
+
+        const contentType = response.headers.get('content-type')
+        if (!contentType?.includes('application/json')) {
+          throw new Error('Erro de sessão. Recarregue a página e tente novamente.')
+        }
 
         if (!response.ok) {
           const errorData = await response.json()
