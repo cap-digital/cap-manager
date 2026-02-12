@@ -49,7 +49,6 @@ import {
   BarChart3,
 } from 'lucide-react'
 import { formatCurrency, formatDate, formatDateInput, parseDateInput, maskDateInput, isValidDateString, maskCurrency, parseCurrency } from '@/lib/utils'
-import { Switch } from '@/components/ui/switch'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 
 type TipoCobranca = 'td' | 'fee'
@@ -218,7 +217,6 @@ export function ProjetoDetalhesClient({
   const [isProjetoOpen, setIsProjetoOpen] = useState(false)
   const [editingEstrategia, setEditingEstrategia] = useState<SimplifiedEstrategia | null>(null)
   const [showPerformance, setShowPerformance] = useState(true)
-  const [showEntregas, setShowEntregas] = useState(false)
 
   const [projetoForm, setProjetoForm] = useState({
     cliente_id: projeto.cliente_id,
@@ -1072,7 +1070,7 @@ export function ProjetoDetalhesClient({
           {projeto.estrategias.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50">
+                <thead>
                   <tr>
                     <th className="text-left p-2 font-medium">Plataforma</th>
                     <th className="text-left p-2 font-medium">Estratégia</th>
@@ -1162,18 +1160,11 @@ export function ProjetoDetalhesClient({
 
       {/* ENTREGAS - Seção com Performance */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Target className="h-4 w-4" />
             ENTREGAS
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={showEntregas}
-              onCheckedChange={setShowEntregas}
-            />
-            <Label className="text-sm">Apenas com entregas</Label>
-          </div>
         </CardHeader>
         <CardContent>
           {projeto.estrategias.length > 0 ? (
@@ -1193,13 +1184,7 @@ export function ProjetoDetalhesClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {projeto.estrategias
-                    .filter(estrategia => {
-                      if (!showEntregas) return true
-                      // Filtro: mostrar apenas estratégias com dados de entrega
-                      return estrategia.entrega_contratada !== null || estrategia.entregue_ate_momento !== null
-                    })
-                    .map(estrategia => {
+                  {projeto.estrategias.map(estrategia => {
                       const calc = calcularValoresEstrategia(estrategia)
                       const plataformaLabel = plataformaOptions.find(p => p.value === estrategia.plataforma)?.label?.split(' ')[0] || estrategia.plataforma
 
