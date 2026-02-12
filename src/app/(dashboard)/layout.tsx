@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MainContent } from '@/components/layout/main-content'
+import { SessionTimeout } from '@/components/auth/session-timeout'
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-muted/30">
+      <SessionTimeout />
       <Sidebar
         user={
           userData
