@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
 import { sendWhatsAppMessage, messageTemplates } from '@/lib/whatsapp'
+import { sendNotificationEmail } from '@/lib/mail'
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,6 +90,18 @@ async function handleTaskAssigned(data: {
     message,
   })
 
+  // Enviar email de notificação
+  const emailTo = responsavel.email_notificacoes || responsavel.email
+  if (emailTo) {
+    await sendNotificationEmail(
+      emailTo,
+      responsavel.nome,
+      `Tarefa atribuída: ${tarefa.titulo}`,
+      message,
+      `/tarefas/${tarefa.id}`
+    )
+  }
+
   // Registrar alerta
   await supabaseAdmin.from(TABLES.alertas).insert({
     tipo: 'tarefa',
@@ -160,6 +173,17 @@ async function handleCustomAlert(data: {
     to: destinatario.whatsapp,
     message,
   })
+
+  // Enviar email de notificação
+  const emailTo = destinatario.email_notificacoes || destinatario.email
+  if (emailTo) {
+    await sendNotificationEmail(
+      emailTo,
+      destinatario.nome,
+      data.titulo,
+      data.mensagem
+    )
+  }
 
   // Registrar alerta
   await supabaseAdmin.from(TABLES.alertas).insert({
