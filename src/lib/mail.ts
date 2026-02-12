@@ -9,8 +9,7 @@ function getResend(): Resend | null {
 }
 
 // Define the sender email address (must be verified in Resend)
-const SENDER_EMAIL = 'onboarding@resend.dev' // Default testing email
-// For production, change this to: 'notifications@capdigital.company' (after domain verification)
+const SENDER_EMAIL = 'dados@capdigital.company' // Production email
 
 export async function sendTaskCreatedEmail(
     to: string,
