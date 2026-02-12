@@ -14,7 +14,8 @@ export function MainContent({ children }: MainContentProps) {
     <div
       className={cn(
         'transition-all duration-300 ease-in-out',
-        isCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+        // 12px sidebar margin + sidebar width + 16px gap
+        isCollapsed ? 'lg:pl-[100px]' : 'lg:pl-[288px]'
       )}
     >
       <main className="min-h-screen p-6">{children}</main>

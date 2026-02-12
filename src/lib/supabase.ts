@@ -345,4 +345,3 @@ export interface InteligenciaProjeto {
   revisado_por?: Usuario | null
 }
 
-
