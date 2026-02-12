@@ -18,7 +18,7 @@ async function testEmail() {
   try {
     const { data, error } = await resend.emails.send({
       from: 'dados@capdigital.company',
-      to: ['gustavolemosbhz@gmail.com'], // Testar com qualquer email agora
+      to: ['gustavo@capdigital.company'],
       subject: 'Teste CAP Manager - Notificações',
       html: `
         <h1>Teste de Notificação</h1>
@@ -34,7 +34,7 @@ async function testEmail() {
 
     console.log('✅ Email enviado com sucesso!')
     console.log('📧 ID:', data.id)
-    console.log('\n⚠️  IMPORTANTE: Verifique sua caixa de entrada (e spam) em: gustavolemosbhz@gmail.com')
+    console.log('\n⚠️  IMPORTANTE: Verifique sua caixa de entrada (e spam) em: gustavo@capdigital.company')
   } catch (err) {
     console.error('❌ Erro inesperado:', err)
   }
