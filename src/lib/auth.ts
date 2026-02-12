@@ -105,6 +105,26 @@ export const authOptions: NextAuthOptions = {
           }
         }
       }
+      // Log de login
+      try {
+        const { data: dbUser } = await supabaseAdmin
+          .from(TABLES.usuarios)
+          .select('id')
+          .eq('email', user.email!)
+          .single()
+
+        if (dbUser) {
+          await supabaseAdmin
+            .from(TABLES.login_logs)
+            .insert({
+              usuario_id: dbUser.id,
+              provider: account?.provider || 'credentials',
+            })
+        }
+      } catch (e) {
+        console.error('[AUTH] Erro ao registrar login:', e)
+      }
+
       console.log('[AUTH] signIn callback returning true')
       return true
     },

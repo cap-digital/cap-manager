@@ -40,6 +40,7 @@ export const TABLES = {
   comentarios_tarefa: 'cap_manager_comentarios_tarefa',
   contratos: 'cap_manager_contratos',
   inteligencia_projetos: 'cap_manager_inteligencia_projetos',
+  login_logs: 'cap_manager_login_logs',
 } as const
 
 // Tipos para o banco de dados
