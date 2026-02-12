@@ -91,10 +91,10 @@ async function handleTaskAssigned(data: {
   })
 
   // Enviar email de notificação
-  const emailTo = responsavel.email_notificacoes || responsavel.email
-  if (emailTo) {
+  if (responsavel.email) {
+    console.log(`[EMAIL] Enviando para ${responsavel.email}: Tarefa atribuída`)
     await sendNotificationEmail(
-      emailTo,
+      responsavel.email,
       responsavel.nome,
       `Tarefa atribuída: ${tarefa.titulo}`,
       message,
@@ -175,10 +175,10 @@ async function handleCustomAlert(data: {
   })
 
   // Enviar email de notificação
-  const emailTo = destinatario.email_notificacoes || destinatario.email
-  if (emailTo) {
+  if (destinatario.email) {
+    console.log(`[EMAIL] Enviando para ${destinatario.email}: ${data.titulo}`)
     await sendNotificationEmail(
-      emailTo,
+      destinatario.email,
       destinatario.nome,
       data.titulo,
       data.mensagem

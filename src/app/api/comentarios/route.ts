@@ -95,7 +95,7 @@ export async function POST(request: Request) {
             const mentionedNames = mentions.map(m => m[1])
             const { data: usuariosMencionados } = await supabaseAdmin
                 .from(TABLES.usuarios)
-                .select('id, nome, email, email_notificacoes')
+                .select('id, nome, email')
                 .in('nome', mentionedNames)
 
             // Enviar email para cada usuário mencionado
@@ -104,10 +104,10 @@ export async function POST(request: Request) {
                     // Não enviar email para o próprio autor
                     if (usuario.id === data.usuario_id) continue
 
-                    const emailTo = usuario.email_notificacoes || usuario.email
-                    if (emailTo) {
+                    if (usuario.email) {
+                        console.log(`[EMAIL] Enviando para ${usuario.email}: Menção de ${autor.nome}`)
                         await sendNotificationEmail(
-                            emailTo,
+                            usuario.email,
                             usuario.nome,
                             `${autor.nome} mencionou você em uma tarefa`,
                             `"${data.conteudo.slice(0, 200)}${data.conteudo.length > 200 ? '...' : ''}"`,

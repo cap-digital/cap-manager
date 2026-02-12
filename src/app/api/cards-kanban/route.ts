@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       for (const usuarioId of Array.from(usuariosParaNotificar)) {
         const { data: usuario } = await supabaseAdmin
           .from(TABLES.usuarios)
-          .select('id, nome, email, email_notificacoes')
+          .select('id, nome, email')
           .eq('id', usuarioId)
           .single()
 
@@ -127,9 +127,9 @@ export async function POST(request: Request) {
           })
 
           // Enviar email
-          const emailPara = usuario.email_notificacoes || usuario.email
-          if (emailPara) {
-            await sendTaskCreatedEmail(emailPara, card.titulo, projectName, usuario.nome)
+          if (usuario.email) {
+            console.log(`[EMAIL] Enviando para ${usuario.email}: Nova tarefa "${card.titulo}"`)
+            await sendTaskCreatedEmail(usuario.email, card.titulo, projectName, usuario.nome)
           }
         }
       }
