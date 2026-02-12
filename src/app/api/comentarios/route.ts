@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin, TABLES } from '@/lib/supabase'
+import { sendNotificationEmail } from '@/lib/mail'
 
 // GET - List comments for a task
 export async function GET(request: Request) {
@@ -69,6 +70,61 @@ export async function POST(request: Request) {
         if (error) {
             console.error('Erro ao criar comentário:', error)
             return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+        }
+
+        // Detectar menções no comentário (@usuario)
+        const mentionRegex = /@([^\s]+)/g
+        const mentions = [...data.conteudo.matchAll(mentionRegex)]
+
+        if (mentions.length > 0) {
+            // Buscar tarefa para contexto
+            const { data: tarefa } = await supabaseAdmin
+                .from(TABLES.tarefas)
+                .select('id, titulo')
+                .eq('id', data.tarefa_id)
+                .single()
+
+            // Buscar autor do comentário
+            const { data: autor } = await supabaseAdmin
+                .from(TABLES.usuarios)
+                .select('nome')
+                .eq('id', data.usuario_id)
+                .single()
+
+            // Buscar todos os usuários mencionados pelo nome
+            const mentionedNames = mentions.map(m => m[1])
+            const { data: usuariosMencionados } = await supabaseAdmin
+                .from(TABLES.usuarios)
+                .select('id, nome, email, email_notificacoes')
+                .in('nome', mentionedNames)
+
+            // Enviar email para cada usuário mencionado
+            if (usuariosMencionados && tarefa && autor) {
+                for (const usuario of usuariosMencionados) {
+                    // Não enviar email para o próprio autor
+                    if (usuario.id === data.usuario_id) continue
+
+                    const emailTo = usuario.email_notificacoes || usuario.email
+                    if (emailTo) {
+                        await sendNotificationEmail(
+                            emailTo,
+                            usuario.nome,
+                            `${autor.nome} mencionou você em uma tarefa`,
+                            `"${data.conteudo.slice(0, 200)}${data.conteudo.length > 200 ? '...' : ''}"`,
+                            `/tarefas`
+                        )
+
+                        // Registrar alerta
+                        await supabaseAdmin.from(TABLES.alertas).insert({
+                            tipo: 'mencao',
+                            titulo: `${autor.nome} mencionou você`,
+                            mensagem: `Na tarefa "${tarefa.titulo}": ${data.conteudo.slice(0, 100)}${data.conteudo.length > 100 ? '...' : ''}`,
+                            destinatario_id: usuario.id,
+                            lido: false,
+                        })
+                    }
+                }
+            }
         }
 
         return NextResponse.json(comentario)

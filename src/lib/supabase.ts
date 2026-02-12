@@ -74,7 +74,7 @@ export type StatusEstrategia = 'planejada' | 'em_aprovacao' | 'ativa' | 'pausada
 export type StatusTarefa = 'backlog' | 'todo' | 'doing' | 'review' | 'done'
 export type PrioridadeTarefa = 'baixa' | 'media' | 'alta' | 'urgente'
 export type TipoFollowUp = 'nota' | 'alerta' | 'atualizacao' | 'reuniao'
-export type TipoAlerta = 'cobranca' | 'campanha' | 'tarefa' | 'sistema'
+export type TipoAlerta = 'cobranca' | 'campanha' | 'tarefa' | 'sistema' | 'mencao'
 export type AreaKanban = 'gestao_trafego' | 'faturamento' | 'dashboards' | 'gtm' | 'sites_lp' | 'projetos_concluidos' | 'relatorios'
 export type AcaoSubtarefa = 'criada' | 'atualizada' | 'concluida' | 'reaberta'
 

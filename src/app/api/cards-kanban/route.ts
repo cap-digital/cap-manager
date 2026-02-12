@@ -93,32 +93,43 @@ export async function POST(request: Request) {
 
     // Notificações em background (não devem falhar a request principal)
     try {
-      if (card.trader_id) {
-        const { data: trader } = await supabaseAdmin
+      // Buscar nome do projeto para contexto
+      let projectName = 'Geral'
+      if (card.projeto_id) {
+        const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
+        if (proj) projectName = proj.nome
+      }
+
+      // Lista de usuários para notificar (sem duplicatas)
+      const usuariosParaNotificar = new Set<number>()
+      if (card.trader_id) usuariosParaNotificar.add(card.trader_id)
+      if (card.responsavel_relatorio_id) usuariosParaNotificar.add(card.responsavel_relatorio_id)
+      if (card.responsavel_revisao_id) usuariosParaNotificar.add(card.responsavel_revisao_id)
+      if (card.observador_id) usuariosParaNotificar.add(card.observador_id)
+
+      // Enviar notificações para todos os responsáveis
+      for (const usuarioId of Array.from(usuariosParaNotificar)) {
+        const { data: usuario } = await supabaseAdmin
           .from(TABLES.usuarios)
-          .select('name:nome, email, email_notificacoes')
-          .eq('id', card.trader_id)
+          .select('id, nome, email, email_notificacoes')
+          .eq('id', usuarioId)
           .single()
 
-        if (trader) {
-          let projectName = 'Geral'
-          if (card.projeto_id) {
-            const { data: proj } = await supabaseAdmin.from(TABLES.projetos).select('nome').eq('id', card.projeto_id).single()
-            if (proj) projectName = proj.nome
-          }
-
+        if (usuario) {
+          // Criar alerta no sistema
           await supabaseAdmin.from(TABLES.alertas).insert({
             tipo: 'tarefa',
             titulo: `Nova Tarefa: ${card.titulo}`,
             mensagem: `Uma nova tarefa foi atribuída a você no projeto ${projectName}.`,
-            destinatario_id: card.trader_id,
+            destinatario_id: usuario.id,
             lido: false,
             enviado_whatsapp: false
           })
 
-          const emailPara = trader.email_notificacoes || trader.email
+          // Enviar email
+          const emailPara = usuario.email_notificacoes || usuario.email
           if (emailPara) {
-            await sendTaskCreatedEmail(emailPara, card.titulo, projectName, trader.name)
+            await sendTaskCreatedEmail(emailPara, card.titulo, projectName, usuario.nome)
           }
         }
       }

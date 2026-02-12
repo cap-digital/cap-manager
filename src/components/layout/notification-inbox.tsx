@@ -22,7 +22,8 @@ import {
     Calendar,
     DollarSign,
     LayoutGrid,
-    Filter
+    Filter,
+    AtSign
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -38,6 +39,7 @@ const tipoIcons: Record<TipoAlerta, React.ReactNode> = {
     campanha: <Bell className="h-4 w-4" />,
     cobranca: <DollarSign className="h-4 w-4" />,
     sistema: <AlertCircle className="h-4 w-4" />,
+    mencao: <AtSign className="h-4 w-4" />,
 }
 
 const tipoColors: Record<TipoAlerta, string> = {
@@ -45,6 +47,7 @@ const tipoColors: Record<TipoAlerta, string> = {
     campanha: 'bg-purple-100 text-purple-700',
     cobranca: 'bg-green-100 text-green-700',
     sistema: 'bg-orange-100 text-orange-700',
+    mencao: 'bg-amber-100 text-amber-700',
 }
 
 const tipoLabels: Record<TipoAlerta, string> = {
@@ -52,6 +55,7 @@ const tipoLabels: Record<TipoAlerta, string> = {
     campanha: 'Campanha',
     cobranca: 'Cobrança',
     sistema: 'Sistema',
+    mencao: 'Menção',
 }
 
 export function NotificationInbox({ userId }: NotificationInboxProps) {
