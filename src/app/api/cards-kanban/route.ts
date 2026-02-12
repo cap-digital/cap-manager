@@ -129,7 +129,15 @@ export async function POST(request: Request) {
           // Enviar email
           if (usuario.email) {
             console.log(`[EMAIL] Enviando para ${usuario.email}: Nova tarefa "${card.titulo}"`)
-            await sendTaskCreatedEmail(usuario.email, card.titulo, projectName, usuario.nome)
+            await sendTaskCreatedEmail(
+              usuario.email,
+              card.titulo,
+              projectName,
+              usuario.nome,
+              card.area,
+              card.data_vencimento || undefined,
+              card.id
+            )
           }
         }
       }
@@ -199,14 +207,13 @@ export async function PUT(request: Request) {
       if (data.status !== undefined && card.trader_id) {
         const { data: trader } = await supabaseAdmin
           .from(TABLES.usuarios)
-          .select('name:nome, email, email_notificacoes')
+          .select('name:nome, email')
           .eq('id', card.trader_id)
           .single()
 
         if (trader) {
           const tituloNotificacao = `Status Atualizado: ${card.titulo}`
           const mensagemNotificacao = `O status da tarefa foi atualizado para: ${card.status}`
-          const emailPara = trader.email_notificacoes || trader.email
 
           await supabaseAdmin.from(TABLES.alertas).insert({
             tipo: 'tarefa',
@@ -217,8 +224,8 @@ export async function PUT(request: Request) {
             enviado_whatsapp: false
           })
 
-          if (emailPara) {
-            await sendTaskUpdatedEmail(emailPara, card.titulo, card.status, trader.name)
+          if (trader.email) {
+            await sendTaskUpdatedEmail(trader.email, card.titulo, card.status, trader.name)
           }
         }
       }
@@ -227,7 +234,7 @@ export async function PUT(request: Request) {
       if (data.trader_id !== undefined && data.trader_id !== card.trader_id) {
         const { data: trader } = await supabaseAdmin
           .from(TABLES.usuarios)
-          .select('name:nome, email, email_notificacoes')
+          .select('name:nome, email')
           .eq('id', data.trader_id)
           .single()
 
@@ -238,8 +245,6 @@ export async function PUT(request: Request) {
             if (proj) projectName = proj.nome
           }
 
-          const emailPara = trader.email_notificacoes || trader.email
-
           await supabaseAdmin.from(TABLES.alertas).insert({
             tipo: 'tarefa',
             titulo: `Nova Tarefa Atribuída: ${card.titulo}`,
@@ -249,8 +254,16 @@ export async function PUT(request: Request) {
             enviado_whatsapp: false
           })
 
-          if (emailPara) {
-            await sendTaskCreatedEmail(emailPara, card.titulo, projectName, trader.name)
+          if (trader.email) {
+            await sendTaskCreatedEmail(
+              trader.email,
+              card.titulo,
+              projectName,
+              trader.name,
+              card.area,
+              card.data_vencimento || undefined,
+              card.id
+            )
           }
         }
       }

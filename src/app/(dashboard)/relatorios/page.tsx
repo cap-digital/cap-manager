@@ -37,6 +37,7 @@ export default async function RelatoriosPage() {
     const { data: usuarios } = await supabaseAdmin
         .from(TABLES.usuarios)
         .select('id, nome')
+        .eq('ativo', true)
         .order('nome', { ascending: true })
 
     // Transformar IDs para números
