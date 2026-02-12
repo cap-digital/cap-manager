@@ -17,8 +17,8 @@ console.log('🔑 API Key:', process.env.RESEND_API_KEY ? 'Configurada' : 'NÃO 
 async function testEmail() {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: ['gustavolemos.analytics@gmail.com'], // Email cadastrado no Resend
+      from: 'dados@capdigital.company',
+      to: ['gustavolemosbhz@gmail.com'], // Testar com qualquer email agora
       subject: 'Teste CAP Manager - Notificações',
       html: `
         <h1>Teste de Notificação</h1>
