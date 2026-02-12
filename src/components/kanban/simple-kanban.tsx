@@ -131,7 +131,7 @@ function SortableCard({
         <div className="flex items-start gap-2 flex-1 min-w-0">
           <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm truncate">{card.titulo}</h4>
+            <h4 className="font-medium text-sm break-words">{card.titulo}</h4>
             {card.descricao && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {card.descricao}
