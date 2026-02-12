@@ -128,7 +128,7 @@ function SortableCard({
       {...listeners}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2 flex-1">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
           <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm truncate">{card.titulo}</h4>
