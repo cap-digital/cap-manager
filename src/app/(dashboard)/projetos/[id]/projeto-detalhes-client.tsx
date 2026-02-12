@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -251,6 +252,7 @@ export function ProjetoDetalhesClient({
     gasto_ate_momento: '',
     entregue_ate_momento: '',
     data_atualizacao: '',
+    observacao: '',
   })
 
   const router = useRouter()
@@ -297,6 +299,7 @@ export function ProjetoDetalhesClient({
       gasto_ate_momento: '',
       entregue_ate_momento: '',
       data_atualizacao: '',
+      observacao: '',
     })
     setEditingEstrategia(null)
   }
@@ -615,6 +618,7 @@ export function ProjetoDetalhesClient({
       gasto_ate_momento: estrategiaForm.gasto_ate_momento ? (typeof estrategiaForm.gasto_ate_momento === 'string' ? parseFloat(estrategiaForm.gasto_ate_momento) : estrategiaForm.gasto_ate_momento) : null,
       entregue_ate_momento: estrategiaForm.entregue_ate_momento ? parseFloat(estrategiaForm.entregue_ate_momento) : null,
       data_atualizacao: estrategiaForm.data_atualizacao || null,
+      observacao: estrategiaForm.observacao || null,
     }
 
     // Auto-update data_atualizacao if metrics changed
@@ -1125,6 +1129,7 @@ export function ProjetoDetalhesClient({
                                   gasto_ate_momento: estrategia.gasto_ate_momento ? estrategia.gasto_ate_momento.toString() : '',
                                   entregue_ate_momento: estrategia.entregue_ate_momento?.toString() || '',
                                   data_atualizacao: estrategia.data_atualizacao || '',
+                                  observacao: estrategia.observacao || '',
                                 })
                                 setIsEstrategiaOpen(true)
                               }}>
@@ -1595,6 +1600,16 @@ export function ProjetoDetalhesClient({
               <div className="space-y-2">
                 <Label>Entrega Contratada</Label>
                 <Input type="number" step="0.01" value={estrategiaForm.entrega_contratada} onChange={e => setEstrategiaForm(p => ({ ...p, entrega_contratada: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2 md:col-span-3">
+                <Label>Observação</Label>
+                <Textarea
+                  value={estrategiaForm.observacao}
+                  onChange={e => setEstrategiaForm(p => ({ ...p, observacao: e.target.value }))}
+                  placeholder="Anotações sobre esta estratégia"
+                  rows={3}
+                />
               </div>
 
               {/* Campos de Margem - Mostrar sempre em modo de edição para TD */}
