@@ -115,6 +115,8 @@ export default async function ProjetosPage() {
     })),
     created_at: projeto.created_at,
     updated_at: projeto.updated_at,
+    editado_por_id: projeto.editado_por_id || null,
+    editado_por_nome: projeto.editado_por_nome || null,
   }))
 
   const pisFormatted = pis.map(pi => ({

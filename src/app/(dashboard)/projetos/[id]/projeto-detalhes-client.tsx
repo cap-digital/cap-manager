@@ -839,16 +839,16 @@ export function ProjetoDetalhesClient({
         </Card>
 
         {/* Card Dias Restantes */}
-        <Card className={`h-full ${diasAteAcabar !== null && diasAteAcabar <= 7 && diasAteAcabar >= 0 ? 'bg-red-50 border-red-200' : diasAteAcabar !== null && diasAteAcabar < 0 ? 'bg-gray-50' : ''}`}>
+        <Card className={`h-full ${diasAteAcabar !== null && diasAteAcabar <= 7 && diasAteAcabar >= 0 ? 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900' : diasAteAcabar !== null && diasAteAcabar < 0 ? 'bg-gray-50 dark:bg-gray-900' : ''}`}>
           <CardContent className="p-4 h-full flex flex-col items-center justify-center">
             <p className="text-xs text-muted-foreground mb-1">Dias Restantes</p>
             {diasAteAcabar !== null ? (
               <>
-                <p className={`text-3xl font-bold ${diasAteAcabar <= 7 && diasAteAcabar >= 0 ? 'text-red-600' : diasAteAcabar < 0 ? 'text-gray-400' : 'text-primary'}`}>
+                <p className={`text-3xl font-bold ${diasAteAcabar <= 7 && diasAteAcabar >= 0 ? 'text-red-600 dark:text-red-400' : diasAteAcabar < 0 ? 'text-gray-400' : 'text-primary'}`}>
                   {diasAteAcabar < 0 ? '0' : diasAteAcabar}
                 </p>
                 {diasAteAcabar < 0 && <p className="text-xs text-gray-500">Encerrado</p>}
-                {diasAteAcabar <= 7 && diasAteAcabar >= 0 && <p className="text-xs text-red-600 font-medium">Atenção!</p>}
+                {diasAteAcabar <= 7 && diasAteAcabar >= 0 && <p className="text-xs text-red-600 dark:text-red-400 font-medium">Atenção!</p>}
               </>
             ) : (
               <p className="text-2xl font-bold text-muted-foreground">-</p>
@@ -945,7 +945,7 @@ export function ProjetoDetalhesClient({
                       ? projeto.estrategias.reduce((acc, e) => acc + (e.estimativa_sucesso || 0), 0) / projeto.estrategias.filter(e => e.estimativa_sucesso).length || 0
                       : 0
                     return (
-                      <span className={`font-bold ${avgEstimativaSucesso >= 100 ? 'text-green-600' : avgEstimativaSucesso >= 80 ? 'text-yellow-600' : 'text-red-600'
+                      <span className={`font-bold ${avgEstimativaSucesso >= 100 ? 'text-green-600 dark:text-green-400' : avgEstimativaSucesso >= 80 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
                         }`}>
                         {Math.round(avgEstimativaSucesso)}%
                       </span>
@@ -968,7 +968,7 @@ export function ProjetoDetalhesClient({
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Valor Restante: {formatCurrency(totalRestante)}</span>
-                  <span className={totalRestante < 0 ? 'text-red-600 font-medium' : ''}>
+                  <span className={totalRestante < 0 ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
                     {totalRestante < 0 ? 'Estourado!' : 'Dentro do orçamento'}
                   </span>
                 </div>
@@ -1057,7 +1057,7 @@ export function ProjetoDetalhesClient({
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Restante</p>
-              <p className={`text-xl font-bold ${totalRestante < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+              <p className={`text-xl font-bold ${totalRestante < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
                 {formatCurrency(totalRestante)}
               </p>
             </div>
@@ -1099,7 +1099,7 @@ export function ProjetoDetalhesClient({
                     const alertaAtualizacao = verificarAlertaAtualizacao(estrategia)
 
                     return (
-                      <tr key={estrategia.id} className={`border-t hover:bg-muted/30 ${alertaAtualizacao ? 'bg-red-50' : ''}`}>
+                      <tr key={estrategia.id} className={`border-t hover:bg-muted/30 ${alertaAtualizacao ? 'bg-red-50 dark:bg-red-950/30' : ''}`}>
                         <td className="p-2 capitalize">{plataformaLabel}</td>
                         <td className="p-2">{estrategia.estrategia || '-'}</td>
                         <td className="p-2">{estrategia.kpi || '-'}</td>
@@ -1108,7 +1108,7 @@ export function ProjetoDetalhesClient({
                         <td className="p-2 text-right text-amber-600">
                           {estrategia.gasto_ate_momento !== null ? formatCurrency(estrategia.gasto_ate_momento) : '-'}
                         </td>
-                        <td className={`p-2 text-right font-semibold ${calc.valorRestante < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                        <td className={`p-2 text-right font-semibold ${calc.valorRestante < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
                           {formatCurrency(calc.valorRestante)}
                         </td>
                         <td className="p-2">
@@ -1258,7 +1258,7 @@ export function ProjetoDetalhesClient({
                           <td className="p-2 text-right">
                             {estimativaResultado !== null ? estimativaResultado.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : '-'}
                           </td>
-                          <td className={`p-2 text-right font-medium ${estimativaSucesso !== null && estimativaSucesso >= 100 ? 'text-green-600' : estimativaSucesso !== null && estimativaSucesso >= 80 ? 'text-yellow-600' : estimativaSucesso !== null ? 'text-red-600' : ''}`}>
+                          <td className={`p-2 text-right font-medium ${estimativaSucesso !== null && estimativaSucesso >= 100 ? 'text-green-600 dark:text-green-400' : estimativaSucesso !== null && estimativaSucesso >= 80 ? 'text-yellow-600 dark:text-yellow-400' : estimativaSucesso !== null ? 'text-red-600 dark:text-red-400' : ''}`}>
                             {estimativaSucesso !== null ? `${estimativaSucesso.toFixed(1)}%` : '-'}
                           </td>
                         </tr>
@@ -1748,7 +1748,7 @@ export function ProjetoDetalhesClient({
                       </div>
                       <div className="p-3 bg-muted/50 rounded-lg">
                         <p className="text-xs text-muted-foreground">Estimativa Sucesso</p>
-                        <p className={`font-semibold ${calc.estimativaSucesso && calc.estimativaSucesso >= 100 ? 'text-green-600' : calc.estimativaSucesso ? 'text-red-600' : ''}`}>
+                        <p className={`font-semibold ${calc.estimativaSucesso && calc.estimativaSucesso >= 100 ? 'text-green-600 dark:text-green-400' : calc.estimativaSucesso ? 'text-red-600 dark:text-red-400' : ''}`}>
                           {calc.estimativaSucesso ? `${calc.estimativaSucesso.toFixed(1)}%` : '-'}
                         </p>
                       </div>
@@ -1762,7 +1762,7 @@ export function ProjetoDetalhesClient({
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div className="p-3 bg-muted/50 rounded-lg">
                         <p className="text-xs text-muted-foreground">Valor Restante</p>
-                        <p className={`font-semibold ${calc.valorRestante < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                        <p className={`font-semibold ${calc.valorRestante < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
                           {formatCurrency(calc.valorRestante)}
                         </p>
                       </div>
@@ -1783,17 +1783,17 @@ export function ProjetoDetalhesClient({
                     {/* Linha 4: Valores Brutos e Indicadores de Margem (TD apenas) */}
                     {!calc.isFee && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
                           <p className="text-xs text-muted-foreground">Gasto Bruto</p>
-                          <p className="font-semibold text-amber-700">{calc.gastoAteMomentoBruto ? formatCurrency(calc.gastoAteMomentoBruto) : '-'}</p>
+                          <p className="font-semibold text-amber-700 dark:text-amber-400">{calc.gastoAteMomentoBruto ? formatCurrency(calc.gastoAteMomentoBruto) : '-'}</p>
                         </div>
-                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
                           <p className="text-xs text-muted-foreground">Restante Bruto</p>
-                          <p className="font-semibold text-amber-700">{calc.valorRestanteBruto ? formatCurrency(calc.valorRestanteBruto) : '-'}</p>
+                          <p className="font-semibold text-amber-700 dark:text-amber-400">{calc.valorRestanteBruto ? formatCurrency(calc.valorRestanteBruto) : '-'}</p>
                         </div>
-                        <div className={`p-3 rounded-lg border ${calc.podeAbaixarMargem ? 'bg-green-50 border-green-200' : calc.podeAumentarMargem ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                        <div className={`p-3 rounded-lg border ${calc.podeAbaixarMargem ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900' : calc.podeAumentarMargem ? 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900' : 'bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-gray-700'}`}>
                           <p className="text-xs text-muted-foreground">Sugestão de Margem</p>
-                          <p className={`font-semibold ${calc.podeAbaixarMargem ? 'text-green-600' : calc.podeAumentarMargem ? 'text-red-600' : 'text-gray-600'}`}>
+                          <p className={`font-semibold ${calc.podeAbaixarMargem ? 'text-green-600 dark:text-green-400' : calc.podeAumentarMargem ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                             {calc.podeAbaixarMargem ? 'Pode Abaixar' : calc.podeAumentarMargem ? 'Pode Aumentar' : 'Ideal'}
                           </p>
                         </div>

@@ -400,7 +400,7 @@ export function ProjetosClient({
                           <div>
                             <p className="text-muted-foreground text-xs uppercase">Status Prazo</p>
                             {dias !== null && (
-                              <span className={`font-medium ${dias < 7 ? 'text-red-500' : 'text-green-600'}`}>
+                              <span className={`font-medium ${dias < 7 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                 {dias < 0 ? 'Expirado' : `${dias} dias restantes`}
                               </span>
                             )}
@@ -409,17 +409,24 @@ export function ProjetosClient({
                         </div>
 
                         {/* Quick actions for links */}
-                        <div className="flex gap-3 mt-4 pt-4 border-t">
-                          {projeto.link_proposta && (
-                            <a href={projeto.link_proposta} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
-                              <ExternalLink className="h-3 w-3" /> Ver Proposta
-                            </a>
+                        <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t items-center">
+                          {projeto.editado_por_nome && projeto.updated_at && (
+                            <span className="text-[11px] text-muted-foreground">
+                              editado por {projeto.editado_por_nome} às {new Date(projeto.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           )}
-                          {projeto.url_destino && (
-                            <a href={projeto.url_destino} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
-                              <ExternalLink className="h-3 w-3" /> Ver URL Destino
-                            </a>
-                          )}
+                          <div className="flex gap-3 ml-auto">
+                            {projeto.link_proposta && (
+                              <a href={projeto.link_proposta} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                <ExternalLink className="h-3 w-3" /> Ver Proposta
+                              </a>
+                            )}
+                            {projeto.url_destino && (
+                              <a href={projeto.url_destino} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center gap-1 text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                <ExternalLink className="h-3 w-3" /> Ver URL Destino
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
