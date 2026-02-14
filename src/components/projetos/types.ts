@@ -62,6 +62,8 @@ export interface SimplifiedProjeto {
     estrategias: SimplifiedEstrategia[]
     created_at: string
     updated_at: string
+    editado_por_id?: number | null
+    editado_por_nome?: string | null
     cliente: { id: number; nome: string } | null
     trader: { id: number; nome: string } | null
     colaborador: { id: number; nome: string } | null

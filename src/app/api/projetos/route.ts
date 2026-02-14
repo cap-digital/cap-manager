@@ -125,6 +125,9 @@ export async function PUT(request: Request) {
         link_proposta: data.link_proposta || null,
         url_destino: data.url_destino || null,
         grupo_revisao: data.grupo_revisao || null,
+        editado_por_id: session.user?.id ? parseInt(session.user.id as string) : null,
+        editado_por_nome: (session.user?.name as string) || null,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', parseInt(id))
       .select(`

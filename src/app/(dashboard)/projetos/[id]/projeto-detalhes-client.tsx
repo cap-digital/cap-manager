@@ -129,6 +129,8 @@ interface SimplifiedProjeto {
   estrategias: SimplifiedEstrategia[]
   created_at: string
   updated_at: string
+  editado_por_id: number | null
+  editado_por_nome: string | null
   cliente: { id: number; nome: string } | null
   trader: { id: number; nome: string } | null
   colaborador: { id: number; nome: string } | null
@@ -527,29 +529,32 @@ export function ProjetoDetalhesClient({
       // Atualizar estado local com dados da API
       setProjeto(prev => ({
         ...prev,
-        cliente_id: updatedProjeto.clienteId,
+        cliente_id: updatedProjeto.cliente_id,
         nome: updatedProjeto.nome,
-        pi_id: updatedProjeto.piId,
-        tipo_cobranca: updatedProjeto.tipoCobranca,
-        agencia_id: updatedProjeto.agenciaId,
-        trader_id: updatedProjeto.traderId,
-        colaborador_id: updatedProjeto.colaboradorId,
+        pi_id: updatedProjeto.pi_id,
+        tipo_cobranca: updatedProjeto.tipo_cobranca,
+        agencia_id: updatedProjeto.agencia_id,
+        trader_id: updatedProjeto.trader_id,
+        colaborador_id: updatedProjeto.colaborador_id,
         status: updatedProjeto.status,
-        data_inicio: updatedProjeto.dataInicio ? updatedProjeto.dataInicio.split('T')[0] : null,
-        data_fim: updatedProjeto.dataFim ? updatedProjeto.dataFim.split('T')[0] : null,
-        link_proposta: updatedProjeto.linkProposta,
-        url_destino: updatedProjeto.urlDestino,
-        grupo_revisao: updatedProjeto.grupoRevisao,
-        cliente: updatedProjeto.cliente,
-        trader: updatedProjeto.trader,
-        colaborador: updatedProjeto.colaborador,
-        pi: updatedProjeto.pi ? {
-          id: updatedProjeto.pi.id,
-          identificador: updatedProjeto.pi.identificador,
-          valor_bruto: Number(updatedProjeto.pi.valorBruto),
-          cliente_id: updatedProjeto.pi.cliente_id || null,
-        } : null,
-        agencia: updatedProjeto.agencia,
+        data_inicio: updatedProjeto.data_inicio ? updatedProjeto.data_inicio.split('T')[0] : null,
+        data_fim: updatedProjeto.data_fim ? updatedProjeto.data_fim.split('T')[0] : null,
+        link_proposta: updatedProjeto.link_proposta,
+        url_destino: updatedProjeto.url_destino,
+        grupo_revisao: updatedProjeto.grupo_revisao,
+        cliente: updatedProjeto.clientes || prev.cliente,
+        trader: updatedProjeto.trader || prev.trader,
+        colaborador: updatedProjeto.colaborador || prev.colaborador,
+        pi: updatedProjeto.pis ? {
+          id: updatedProjeto.pis.id,
+          identificador: updatedProjeto.pis.identificador,
+          valor_bruto: Number(updatedProjeto.pis.valor_bruto),
+          cliente_id: updatedProjeto.pis.cliente_id || null,
+        } : prev.pi,
+        agencia: updatedProjeto.agencias || prev.agencia,
+        editado_por_id: updatedProjeto.editado_por_id || null,
+        editado_por_nome: updatedProjeto.editado_por_nome || null,
+        updated_at: updatedProjeto.updated_at || prev.updated_at,
         estrategias: prev.estrategias,
       }))
 
@@ -767,6 +772,11 @@ export function ProjetoDetalhesClient({
           )}
           {diasAteAcabar !== null && diasAteAcabar < 0 && (
             <Badge variant="secondary">Encerrado</Badge>
+          )}
+          {projeto.editado_por_nome && projeto.updated_at && (
+            <span className="text-xs text-muted-foreground">
+              última edição por {projeto.editado_por_nome} às {new Date(projeto.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
           )}
         </div>
         <div className="flex gap-2">

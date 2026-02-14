@@ -148,6 +148,8 @@ export interface Projeto {
   revisao_final_ok: boolean
   revisao_final_data?: string | null
   revisao_final_usuario_id?: number | null
+  editado_por_id?: number | null
+  editado_por_nome?: string | null
   created_at: string
   updated_at: string
   cliente?: Cliente
