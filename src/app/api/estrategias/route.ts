@@ -400,16 +400,17 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Erro ao atualizar estrategia' }, { status: 500 })
     }
 
-    // Atualizar "editado por" no projeto pai
+    // Registrar quem editou no projeto pai via função SQL
     if (estrategia?.projeto?.id) {
-      await supabaseAdmin
-        .from(TABLES.projetos)
-        .update({
-          editado_por_id: session.user?.id ? parseInt(session.user.id as string) : null,
-          editado_por_nome: (session.user?.name as string) || null,
-          updated_at: new Date().toISOString(),
+      const userId = session.user?.id ? parseInt(session.user.id as string) : null
+      const userName = (session.user?.name as string) || null
+      if (userId) {
+        await supabaseAdmin.rpc('set_editado_por', {
+          p_projeto_id: estrategia.projeto.id,
+          p_usuario_id: userId,
+          p_usuario_nome: userName,
         })
-        .eq('id', estrategia.projeto.id)
+      }
     }
 
     return NextResponse.json(estrategia)

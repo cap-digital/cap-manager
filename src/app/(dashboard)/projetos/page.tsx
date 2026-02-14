@@ -61,8 +61,14 @@ export default async function ProjetosPage() {
   const pis = pisRes.data || []
   const agencias = agenciasRes.data || []
 
+  // Buscar dados de edição via RPC (contorna cache do PostgREST)
+  const { data: editadoPorData } = await supabaseAdmin.rpc('get_all_editado_por')
+  const editadoPorMap = new Map<number, any>((editadoPorData || []).map((e: any) => [e.projeto_id, e]))
+
   // Transform data to match expected format
-  const projetosFormatted = projetos.map(projeto => ({
+  const projetosFormatted = projetos.map(projeto => {
+    const editInfo = editadoPorMap.get(projeto.id)
+    return ({
     id: projeto.id,
     cliente_id: projeto.cliente_id,
     cliente: projeto.clientes,
@@ -114,10 +120,11 @@ export default async function ProjetosPage() {
       updated_at: e.updated_at,
     })),
     created_at: projeto.created_at,
-    updated_at: projeto.updated_at,
-    editado_por_id: projeto.editado_por_id || null,
-    editado_por_nome: projeto.editado_por_nome || null,
-  }))
+    updated_at: editInfo?.updated_at || projeto.updated_at,
+    editado_por_id: editInfo?.editado_por_id || null,
+    editado_por_nome: editInfo?.editado_por_nome || null,
+  })
+  })
 
   const pisFormatted = pis.map(pi => ({
     id: pi.id,

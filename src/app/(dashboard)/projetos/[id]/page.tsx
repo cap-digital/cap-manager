@@ -55,6 +55,15 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
   const agencias = agenciasRes.data || []
   const clientes = clientesRes.data || []
 
+  // Buscar dados de edição via RPC (contorna cache do PostgREST)
+  let editadoPor: { editado_por_id: number | null; editado_por_nome: string | null; updated_at: string | null } = { editado_por_id: null, editado_por_nome: null, updated_at: null }
+  if (projeto) {
+    const { data: editData } = await supabaseAdmin.rpc('get_editado_por', { p_projeto_id: projetoId })
+    if (editData && editData.length > 0) {
+      editadoPor = editData[0]
+    }
+  }
+
   if (!projeto) {
     notFound()
   }
@@ -128,9 +137,9 @@ export default async function ProjetoDetalhesPage({ params }: PageProps) {
       updated_at: e.updated_at,
     })),
     created_at: projeto.created_at,
-    updated_at: projeto.updated_at,
-    editado_por_id: projeto.editado_por_id || null,
-    editado_por_nome: projeto.editado_por_nome || null,
+    updated_at: editadoPor.updated_at || projeto.updated_at,
+    editado_por_id: editadoPor.editado_por_id || null,
+    editado_por_nome: editadoPor.editado_por_nome || null,
   }
 
   const pisFormatted = pis.map(pi => ({

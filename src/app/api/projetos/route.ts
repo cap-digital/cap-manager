@@ -125,9 +125,6 @@ export async function PUT(request: Request) {
         link_proposta: data.link_proposta || null,
         url_destino: data.url_destino || null,
         grupo_revisao: data.grupo_revisao || null,
-        editado_por_id: session.user?.id ? parseInt(session.user.id as string) : null,
-        editado_por_nome: (session.user?.name as string) || null,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', parseInt(id))
       .select(`
@@ -146,8 +143,24 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
     }
 
+    // Registrar quem editou via função SQL (contorna cache do PostgREST)
+    const userId = session.user?.id ? parseInt(session.user.id as string) : null
+    const userName = (session.user?.name as string) || null
+    if (userId) {
+      await supabaseAdmin.rpc('set_editado_por', {
+        p_projeto_id: parseInt(id),
+        p_usuario_id: userId,
+        p_usuario_nome: userName,
+      })
+    }
+
     console.log('PUT /api/projetos - Projeto atualizado:', projeto.id)
-    return NextResponse.json(projeto)
+    return NextResponse.json({
+      ...projeto,
+      editado_por_id: userId,
+      editado_por_nome: userName,
+      updated_at: new Date().toISOString(),
+    })
   } catch (error) {
     console.error('Erro ao atualizar projeto:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
