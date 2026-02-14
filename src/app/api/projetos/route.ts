@@ -144,14 +144,18 @@ export async function PUT(request: Request) {
     }
 
     // Registrar quem editou via função SQL (contorna cache do PostgREST)
-    const userId = session.user?.id ? parseInt(session.user.id as string) : null
-    const userName = (session.user?.name as string) || null
+    const userId = (session.user as any)?.id ? parseInt((session.user as any).id) : null
+    const userName = (session.user as any)?.name || null
+    console.log('PUT /api/projetos - editado_por userId:', userId, 'userName:', userName)
     if (userId) {
-      await supabaseAdmin.rpc('set_editado_por', {
+      const { error: rpcError } = await supabaseAdmin.rpc('set_editado_por', {
         p_projeto_id: parseInt(id),
         p_usuario_id: userId,
         p_usuario_nome: userName,
       })
+      if (rpcError) {
+        console.error('Erro ao registrar editado_por:', rpcError)
+      }
     }
 
     console.log('PUT /api/projetos - Projeto atualizado:', projeto.id)

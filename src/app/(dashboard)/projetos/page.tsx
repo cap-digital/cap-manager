@@ -62,7 +62,9 @@ export default async function ProjetosPage() {
   const agencias = agenciasRes.data || []
 
   // Buscar dados de edição via RPC (contorna cache do PostgREST)
-  const { data: editadoPorData } = await supabaseAdmin.rpc('get_all_editado_por')
+  const { data: editadoPorData, error: editError } = await supabaseAdmin.rpc('get_all_editado_por')
+  if (editError) console.error('Erro ao buscar editado_por:', editError)
+  console.log('editado_por data:', JSON.stringify(editadoPorData))
   const editadoPorMap = new Map<number, any>((editadoPorData || []).map((e: any) => [e.projeto_id, e]))
 
   // Transform data to match expected format

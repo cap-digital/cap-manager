@@ -402,14 +402,17 @@ export async function PUT(request: Request) {
 
     // Registrar quem editou no projeto pai via função SQL
     if (estrategia?.projeto?.id) {
-      const userId = session.user?.id ? parseInt(session.user.id as string) : null
-      const userName = (session.user?.name as string) || null
+      const userId = (session.user as any)?.id ? parseInt((session.user as any).id) : null
+      const userName = (session.user as any)?.name || null
       if (userId) {
-        await supabaseAdmin.rpc('set_editado_por', {
+        const { error: rpcError } = await supabaseAdmin.rpc('set_editado_por', {
           p_projeto_id: estrategia.projeto.id,
           p_usuario_id: userId,
           p_usuario_nome: userName,
         })
+        if (rpcError) {
+          console.error('Erro ao registrar editado_por:', rpcError)
+        }
       }
     }
 
